@@ -603,6 +603,20 @@ export async function getClubs() {
     return result.rows;
 }
 
+export async function getClub(id) {
+    const result = await query(`SELECT * FROM clubs WHERE id = $1`, [id]);
+    return result.rows[0];
+}
+
+export async function getPlayersByClub(clubId) {
+    const result = await query(`
+        SELECT * FROM players 
+        WHERE club_id = $1 
+        ORDER BY ranking ASC NULLS LAST, name ASC
+    `, [clubId]);
+    return result.rows;
+}
+
 export async function createClub(formData) {
     try {
         const name = formData.get('name');

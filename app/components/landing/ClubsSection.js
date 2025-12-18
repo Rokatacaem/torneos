@@ -28,7 +28,7 @@ export default async function ClubsSection() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {displayClubs.map((club) => (
-                        <div key={club.id} className="group bg-[#111827] border border-white/5 rounded-2xl p-6 hover:border-blue-500/30 transition-all hover:shadow-2xl hover:shadow-blue-900/10">
+                        <Link href={`/clubs/${club.id}`} key={club.id} className="group bg-[#111827] border border-white/5 rounded-2xl p-6 hover:border-blue-500/30 transition-all hover:shadow-2xl hover:shadow-blue-900/10 block">
                             <div className="flex items-start justify-between mb-6">
                                 <div className="p-3 bg-blue-500/10 rounded-xl text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-all">
                                     <MapPin size={24} />
@@ -60,7 +60,7 @@ export default async function ClubsSection() {
                                     <div className="text-[10px] uppercase text-slate-500 font-bold tracking-wider">Pool</div>
                                 </div>
                             </div>
-                        </div>
+                        </Link>
                     ))}
                 </div>
 

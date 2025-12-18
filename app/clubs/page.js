@@ -80,10 +80,10 @@ export default async function PublicClubsPage() {
                                     </div>
                                 </div>
 
-                                <button className="w-full py-3 rounded-lg bg-blue-600/10 text-blue-500 font-bold text-sm hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center gap-2">
+                                <Link href={`/clubs/${club.id}`} className="w-full py-3 rounded-lg bg-blue-600/10 text-blue-500 font-bold text-sm hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center gap-2">
                                     Ver Detalles
                                     <ArrowRight size={16} />
-                                </button>
+                                </Link>
                             </div>
                         </div>
                     ))}
