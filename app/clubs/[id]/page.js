@@ -49,10 +49,11 @@ export default async function ClubDetailPage({ params }) {
                         </div>
 
                         <Link
-                            href="/clubs"
-                            className="p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors border border-white/5"
+                            href="/"
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-white/5 text-slate-400 hover:text-white"
                         >
-                            <ArrowLeft size={24} className="text-slate-400" />
+                            <ArrowLeft size={20} />
+                            <span className="font-medium">Volver a Inicio</span>
                         </Link>
                     </div>
                 </div>
