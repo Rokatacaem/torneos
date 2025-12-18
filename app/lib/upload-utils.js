@@ -25,6 +25,8 @@ export async function saveFile(file, folder = 'uploads') {
         return `/${folder}/${filename}`;
     } catch (error) {
         console.error('Error saving file:', error);
-        throw new Error('Failed to upload file');
+        // In production (Vercel), valid uploads might fail due to read-only FS.
+        // We return null so the data can be saved without the image, instead of crashing.
+        return null;
     }
 }
