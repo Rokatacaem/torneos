@@ -1,5 +1,6 @@
 import Hero from '@/app/components/landing/Hero';
 import QuickAccess from '@/app/components/landing/QuickAccess';
+import ClubsSection from '@/app/components/landing/ClubsSection'; // Added
 import NewsSection from '@/app/components/landing/NewsSection';
 import Link from 'next/link';
 
@@ -23,7 +24,7 @@ export default function Home() {
             <Link href="/" className="text-white">Inicio</Link>
             <Link href="/ranking" className="hover:text-white transition-colors">Ranking</Link>
             <Link href="/tournaments" className="hover:text-white transition-colors">Torneos</Link>
-            <Link href="#" className="hover:text-white transition-colors">Clubes</Link>
+            <Link href="/clubs" className="hover:text-white transition-colors">Clubes</Link>
             <Link href="#" className="hover:text-white transition-colors">Contacto</Link>
           </div>
 
@@ -41,6 +42,7 @@ export default function Home() {
       <main>
         <Hero />
         <QuickAccess />
+        <ClubsSection />
         <NewsSection />
       </main>
 
