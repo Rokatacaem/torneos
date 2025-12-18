@@ -37,14 +37,22 @@ Recomendamos **Neon Console (neon.tech)** por ser gratuita y rápida.
 
 1. **Crear Usuario Admin**:
     * Como no tienes acceso a consola local en Vercel, deberás insertar el usuario admin directamente en la Base de Datos (SQL) o crear una ruta temporal (solo dev) para crearlo.
-    * SQL Manual:
 
-        ```sql
+    ```sql
         -- La contraseña debe estar hasheada con bcrypt.
-        -- Puedes usar bcrypt-generator.com para crear el hash de tu clave.
-        INSERT INTO users (username, password, role) 
-        VALUES ('admin', '$2a$12$EjemploHash...', 'admin');
+        INSERT INTO users (name, email, password, role) 
+        VALUES ('Admin', 'admin@fechillar.cl', '$2bfs...', 'admin'); 
         ```
+
+2. **Carga de Datos Iniciales (CLAVE)**:
+    * Debes poblar la base de datos de producción con los Clubes y el Ranking actual.
+    * Desde tu entorno local, cambia temporalmente la `DATABASE_URL` en `.env.local` para que apunte a la **BD de Producción**, o ejecuta los scripts pasando la URL:
+    * **Clubes**:
+      `DATABASE_URL="postgres://..." node scripts/seed-clubs.js`
+    * **Ranking y Jugadores**:
+      `DATABASE_URL="postgres://..." node scripts/import-full-rankings.js`
+
+    *Esto asegurará que el sistema inicie con toda la información real.*
 
 2. **DNS (Dominio)**:
     * Ve a Vercel -> Settings -> Domains.

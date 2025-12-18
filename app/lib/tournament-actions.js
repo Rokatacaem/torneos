@@ -255,7 +255,7 @@ export async function getGlobalRanking() {
         FROM players p
         LEFT JOIN clubs c ON p.club_id = c.id
         WHERE p.ranking > 0
-        ORDER BY p.ranking DESC, p.name ASC
+        ORDER BY p.ranking ASC, p.name ASC
     `);
     return res.rows;
 }

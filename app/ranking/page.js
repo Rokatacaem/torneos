@@ -100,6 +100,10 @@ export default async function PublicRankingPage() {
                                         </div>
                                     </th>
 
+                                    <th className="px-5 py-4 text-center border-l border-white/5 hidden lg:table-cell text-xs opacity-60">Torneos</th>
+                                    <th className="px-5 py-4 text-center border-l border-white/5 hidden lg:table-cell text-xs opacity-60">Carambolas</th>
+                                    <th className="px-5 py-4 text-center border-l border-white/5 hidden lg:table-cell text-xs opacity-60">Entradas</th>
+
                                     <th className="px-5 py-4 text-center border-l border-white/5 hidden md:table-cell">HCP</th>
                                     <th className="px-5 py-4 text-right hidden md:table-cell">Promedio</th>
                                 </tr>
@@ -153,6 +157,17 @@ export default async function PublicRankingPage() {
                                                 {pointsAnnual}
                                             </td>
 
+                                            {/* New Stats Columns */}
+                                            <td className="px-5 py-4 text-center border-l border-white/5 hidden lg:table-cell text-slate-400">
+                                                {p.tournaments_played || 0}
+                                            </td>
+                                            <td className="px-5 py-4 text-center border-l border-white/5 hidden lg:table-cell text-slate-400">
+                                                {p.total_carambolas || 0}
+                                            </td>
+                                            <td className="px-5 py-4 text-center border-l border-white/5 hidden lg:table-cell text-slate-400">
+                                                {p.total_innings || 0}
+                                            </td>
+
                                             <td className="px-5 py-4 text-center border-l border-white/5 hidden md:table-cell">
                                                 <span className={`
                                                     font-mono font-bold
@@ -160,11 +175,11 @@ export default async function PublicRankingPage() {
                                                         hcp >= 24 ? 'text-orange-400' :
                                                             'text-green-400'}
                                                 `}>
-                                                    {hcp}
+                                                    {p.handicap || hcp}
                                                 </span>
                                             </td>
                                             <td className="px-5 py-4 text-right font-mono text-slate-500 hidden md:table-cell">
-                                                {avg.toFixed(3)}
+                                                {p.average ? Number(p.average).toFixed(3) : avg.toFixed(3)}
                                             </td>
                                         </tr>
                                     );

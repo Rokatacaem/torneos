@@ -4,6 +4,7 @@ import { MapPin, Users, ArrowLeft, ArrowRight } from 'lucide-react';
 
 export default async function PublicClubsPage() {
     const clubs = await getClubs();
+    console.log('[Debug] Clubs Page - Clubs found:', clubs.length, clubs);
 
     return (
         <div className="min-h-screen bg-[#0B1120] text-white">
