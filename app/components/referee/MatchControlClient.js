@@ -354,10 +354,6 @@ function MatchControlClientContent({ initialMatch }) {
                 <div className="text-center flex flex-col">
                     <div className="flex items-center gap-3 justify-center mb-1">
                         <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{match.phase_name || 'PARTIDO'}</span>
-                        <div className="bg-slate-800 px-4 py-2 rounded text-sm font-mono text-orange-400 border border-orange-500/30 flex items-center gap-2">
-                            <span className="font-bold">ENTRADA</span>
-                            <span className="text-white font-black text-2xl">{match.innings || 0}</span>
-                        </div>
                     </div>
                     <span className="text-xs font-medium text-slate-300">
                         {targetDisplay}
@@ -386,6 +382,16 @@ function MatchControlClientContent({ initialMatch }) {
                     resetTrigger={resetTrigger}
                     onStatusChange={setTimerStatus}
                 />
+
+                {/* LARGE INNINGS DISPLAY */}
+                <div className="flex justify-center my-2">
+                    <div className="bg-slate-900/80 border border-slate-700/50 rounded-2xl px-12 py-4 flex flex-col items-center shadow-2xl backdrop-blur-sm">
+                        <span className="text-orange-500 font-bold tracking-[0.2em] text-xs uppercase mb-1">Entrada Actual</span>
+                        <span className="text-6xl md:text-7xl font-black text-white tabular-nums leading-none tracking-tighter">
+                            {match.innings || 0}
+                        </span>
+                    </div>
+                </div>
 
                 {/* Score Controls */}
                 <div className="flex-1 flex gap-4 mt-6">
