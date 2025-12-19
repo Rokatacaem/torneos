@@ -166,7 +166,7 @@ export default function ShotClock({
 
             {/* Main Timer Display */}
             <div className={cn(
-                "relative z-10 text-8xl font-mono font-black border-[6px] rounded-full w-48 h-48 flex items-center justify-center transition-all duration-300 bg-slate-950",
+                "relative z-10 text-6xl md:text-8xl font-mono font-black border-[6px] rounded-full w-32 h-32 md:w-48 md:h-48 flex items-center justify-center transition-all duration-300 bg-slate-950",
                 getColors()
             )}>
                 {seconds}
@@ -209,16 +209,16 @@ export default function ShotClock({
                 {status === 'running' ? (
                     <button
                         onClick={handlePause}
-                        className="flex items-center justify-center w-20 h-20 rounded-full bg-yellow-600 hover:bg-yellow-500 text-white transition-all active:scale-95 shadow-xl shadow-yellow-900/20"
+                        className="flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-yellow-600 hover:bg-yellow-500 text-white transition-all active:scale-95 shadow-xl shadow-yellow-900/20"
                     >
-                        <Pause size={40} fill="currentColor" />
+                        <Pause size={32} fill="currentColor" className="md:w-10 md:h-10" />
                     </button>
                 ) : (
                     <button
                         onClick={handleStart}
-                        className="flex items-center justify-center w-20 h-20 rounded-full bg-green-600 hover:bg-green-500 text-white transition-all active:scale-95 shadow-xl shadow-green-900/20"
+                        className="flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-green-600 hover:bg-green-500 text-white transition-all active:scale-95 shadow-xl shadow-green-900/20"
                     >
-                        <Play size={40} fill="currentColor" className="ml-1" />
+                        <Play size={32} fill="currentColor" className="ml-1 md:w-10 md:h-10" />
                     </button>
                 )}
 

@@ -123,19 +123,21 @@ function MatchControlClientContent({ initialMatch }) {
     }
 
     // Check for finish conditions
+    // Check for finish conditions
     const checkFinish = (currentMatch) => {
         const p1Reached = p1Target && currentMatch.score_p1 >= p1Target;
         const p2Reached = p2Target && currentMatch.score_p2 >= p2Target;
         const inningsReached = maxInnings && currentMatch.innings >= maxInnings;
 
-        if (p1Reached || p2Reached || inningsReached) {
-            setIsMatchFinished(true);
-        }
+        // Update finished state bidirectionally (allows undoing a finish)
+        setIsMatchFinished(p1Reached || p2Reached || inningsReached);
     };
 
     // Optimistic Updates
     const handleUpdate = async (p1Delta, p2Delta, inningDelta, nextPlayerId = null) => {
-        if (isMatchFinished) return;
+        // Block ADDING to the score/innings if match is already finished
+        const isAdding = p1Delta > 0 || p2Delta > 0 || inningDelta > 0;
+        if (isMatchFinished && isAdding) return;
 
         // Block scoring if timer is not running (only for positive point changes)
         if ((p1Delta > 0 || p2Delta > 0) && timerStatus !== 'running') {
@@ -352,9 +354,9 @@ function MatchControlClientContent({ initialMatch }) {
                 <div className="text-center flex flex-col">
                     <div className="flex items-center gap-3 justify-center mb-1">
                         <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{match.phase_name || 'PARTIDO'}</span>
-                        <div className="bg-slate-800 px-3 py-1 rounded text-xs font-mono text-orange-400 border border-orange-500/30 flex items-center gap-2">
-                            <span>ENTRADA</span>
-                            <span className="text-white font-bold text-lg">{match.innings || 0}</span>
+                        <div className="bg-slate-800 px-4 py-2 rounded text-sm font-mono text-orange-400 border border-orange-500/30 flex items-center gap-2">
+                            <span className="font-bold">ENTRADA</span>
+                            <span className="text-white font-black text-2xl">{match.innings || 0}</span>
                         </div>
                     </div>
                     <span className="text-xs font-medium text-slate-300">
