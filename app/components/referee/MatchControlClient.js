@@ -54,11 +54,8 @@ function MatchControlClientContent({ initialMatch }) {
     const [match, setMatch] = useState(initialMatch);
     const [isPending, startTransition] = useTransition();
 
-    // Debug logging
-    const [debugLogs, setDebugLogs] = useState([]);
+    // Debug logging (Console only)
     const addLog = (msg) => {
-        const time = new Date().toLocaleTimeString();
-        setDebugLogs(prev => [`[${time}] ${msg}`, ...prev].slice(0, 5));
         console.log(`[MC_DEBUG] ${msg}`);
     };
 
@@ -378,12 +375,7 @@ function MatchControlClientContent({ initialMatch }) {
 
             {/* Main Control Area */}
             <div className="flex-1 flex flex-col p-4 max-w-xl mx-auto w-full relative">
-                {/* DEBUG LOGS */}
-                {debugLogs.length > 0 && (
-                    <div className="absolute top-0 right-0 bg-black/80 text-green-400 text-[10px] p-2 rounded max-w-[200px] pointer-events-none z-50 font-mono">
-                        {debugLogs.map((log, i) => <div key={i}>{log}</div>)}
-                    </div>
-                )}
+
 
                 {/* SHOT CLOCK */}
                 <ShotClock
