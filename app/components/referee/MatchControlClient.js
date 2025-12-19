@@ -16,7 +16,7 @@ export default function MatchControlClient({ initialMatch }) {
     const [timerStatus, setTimerStatus] = useState('idle');
 
     // Local State
-    const [activePlayer, setActivePlayer] = useState('p1');
+    const [activePlayer, setActivePlayer] = useState(match.current_player_id ? (match.current_player_id === match.player1_id ? 'p1' : 'p2') : 'p1');
     const [resetTrigger, setResetTrigger] = useState(0);
 
     // Referee Name Logic
@@ -27,8 +27,8 @@ export default function MatchControlClient({ initialMatch }) {
     const [isMatchFinished, setIsMatchFinished] = useState(match.status === 'completed');
 
     // Lag Logic
-    const isNewMatch = (match.score_p1 === 0 && match.score_p2 === 0 && match.innings === 0);
-    const [hasSelectedStart, setHasSelectedStart] = useState(!isNewMatch);
+    // If start_player_id is set, we know lag is done.
+    const [hasSelectedStart, setHasSelectedStart] = useState(!!match.start_player_id);
 
     // Determine Limits
     const isGroup = match.phase_type === 'group';
@@ -60,13 +60,10 @@ export default function MatchControlClient({ initialMatch }) {
     };
 
     // Optimistic Updates
-    const handleUpdate = async (p1Delta, p2Delta, inningDelta) => {
+    const handleUpdate = async (p1Delta, p2Delta, inningDelta, nextPlayerId = null) => {
         if (isMatchFinished) return;
 
         // Block scoring if timer is not running (only for positive point changes)
-        // Allow correction (negative) or inning updates even if stopped? 
-        // User said: "no debe permitir agregar carambola sin haber iniciado el cronómetro".
-        // Assuming corrections are allowed, but adding points needs timer.
         if ((p1Delta > 0 || p2Delta > 0) && timerStatus !== 'running') {
             alert("Debes iniciar el cronómetro para agregar carambolas.");
             return;
@@ -91,7 +88,7 @@ export default function MatchControlClient({ initialMatch }) {
         }
 
         startTransition(async () => {
-            await updateMatchScore(match.id, p1Delta, p2Delta, inningDelta);
+            await updateMatchScore(match.id, p1Delta, p2Delta, inningDelta, nextPlayerId);
             router.refresh();
         });
     };
@@ -108,32 +105,64 @@ export default function MatchControlClient({ initialMatch }) {
     };
 
     // Layout State (Standard = P1 Left, Swapped = P2 Left)
-    const [layout, setLayout] = useState('standard');
+    // Initialize based on start_player_id if exists
+    const getInitialLayout = () => {
+        if (match.start_player_id) {
+            return match.start_player_id === match.player1_id ? 'standard' : 'swapped';
+        }
+        return 'standard';
+    };
+    const [layout, setLayout] = useState(getInitialLayout);
 
-    const handleStartSelection = (startPlayer) => {
-        setActivePlayer(startPlayer);
+    // Need to update local layout state if start_player_id comes in via refresh but was empty initially? 
+    // Effect generally not needed if we trust initialMatch, but good for safety.
+    useEffect(() => {
+        if (match.start_player_id) {
+            setLayout(match.start_player_id === match.player1_id ? 'standard' : 'swapped');
+            setHasSelectedStart(true);
+        }
+    }, [match.start_player_id, match.player1_id]);
+
+    // Also update activePlayer if from server
+    useEffect(() => {
+        if (match.current_player_id) {
+            setActivePlayer(match.current_player_id === match.player1_id ? 'p1' : 'p2');
+        }
+    }, [match.current_player_id, match.player1_id]);
+
+
+    const handleStartSelection = async (startPlayerKey) => {
+        const startPlayerId = startPlayerKey === 'p1' ? match.player1_id : match.player2_id;
+
+        setActivePlayer(startPlayerKey);
         setHasSelectedStart(true);
-        // Winner of Lag (Start Player) gets White Ball and Left Side
-        setLayout(startPlayer === 'p1' ? 'standard' : 'swapped');
+        setLayout(startPlayerKey === 'p1' ? 'standard' : 'swapped');
+
+        // Save to DB
+        await import('@/app/lib/referee-actions').then(mod =>
+            mod.setMatchStart(match.id, startPlayerId, startPlayerId) // Start player is also current player initially
+        );
     };
 
     const toggleTurn = () => {
         if (isMatchFinished) return;
 
-        // Logic: End of Inning = When "Yellow Ball" (Right Player/Second Player) finishes turn?
-        // Or strictly strictly: P2 finishes?
-        // Traditional Carom: Innings count when P2 finishes.
-        // With swap: If P2 started (White/Left), P1 is Yellow/Right. So P1 finish triggers inning.
-        // Generalized: The player who did NOT start (Second Player) triggers inning inc.
-
         const secondPlayer = layout === 'standard' ? 'p2' : 'p1';
+        let inningInc = 0;
 
         if (activePlayer === secondPlayer) {
-            handleUpdate(0, 0, 1);
+            inningInc = 1;
         }
 
-        setActivePlayer(prev => prev === 'p1' ? 'p2' : 'p1');
+        const nextPlayerKey = activePlayer === 'p1' ? 'p2' : 'p1';
+        const nextPlayerId = nextPlayerKey === 'p1' ? match.player1_id : match.player2_id;
+
+        setActivePlayer(nextPlayerKey);
         setResetTrigger(prev => prev + 1);
+
+        // Update DB with turn change logic
+        // We assume handleUpdate supports passing nextPlayerId
+        handleUpdate(0, 0, inningInc, nextPlayerId);
     };
 
     // Helper to get render data
