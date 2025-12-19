@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
-import { updateMatchScore, setRefereeName, finishMatch } from '@/app/lib/referee-actions';
+import { updateMatchScore, setRefereeName, finishMatch, setMatchStart } from '@/app/lib/referee-actions';
 import { useRouter } from 'next/navigation';
 import ShotClock from './ShotClock';
 import { ArrowLeftRight, CheckCircle2 } from 'lucide-react';
@@ -16,7 +16,7 @@ export default function MatchControlClient({ initialMatch }) {
     const [timerStatus, setTimerStatus] = useState('idle');
 
     // Local State
-    const [activePlayer, setActivePlayer] = useState(match.current_player_id ? (match.current_player_id === match.player1_id ? 'p1' : 'p2') : 'p1');
+    const [activePlayer, setActivePlayer] = useState(match.current_player_id ? (match.current_player_id == match.player1_id ? 'p1' : 'p2') : 'p1');
     const [resetTrigger, setResetTrigger] = useState(0);
 
     // Referee Name Logic
@@ -108,7 +108,7 @@ export default function MatchControlClient({ initialMatch }) {
     // Initialize based on start_player_id if exists
     const getInitialLayout = () => {
         if (match.start_player_id) {
-            return match.start_player_id === match.player1_id ? 'standard' : 'swapped';
+            return match.start_player_id == match.player1_id ? 'standard' : 'swapped';
         }
         return 'standard';
     };
@@ -118,7 +118,7 @@ export default function MatchControlClient({ initialMatch }) {
     // Effect generally not needed if we trust initialMatch, but good for safety.
     useEffect(() => {
         if (match.start_player_id) {
-            setLayout(match.start_player_id === match.player1_id ? 'standard' : 'swapped');
+            setLayout(match.start_player_id == match.player1_id ? 'standard' : 'swapped');
             setHasSelectedStart(true);
         }
     }, [match.start_player_id, match.player1_id]);
@@ -139,9 +139,7 @@ export default function MatchControlClient({ initialMatch }) {
         setLayout(startPlayerKey === 'p1' ? 'standard' : 'swapped');
 
         // Save to DB
-        await import('@/app/lib/referee-actions').then(mod =>
-            mod.setMatchStart(match.id, startPlayerId, startPlayerId) // Start player is also current player initially
-        );
+        await setMatchStart(match.id, startPlayerId, startPlayerId); // Start player is also current player initially
     };
 
     const toggleTurn = () => {
