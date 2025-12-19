@@ -1,32 +1,24 @@
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
-import { mkdir } from 'fs/promises';
+import { put } from '@vercel/blob';
 
 export async function saveFile(file, folder = 'uploads') {
     if (!file || !file.name) return null;
 
     try {
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-
-        // Ensure directory exists
-        const uploadDir = join(process.cwd(), 'public', folder);
-        await mkdir(uploadDir, { recursive: true });
-
-        // Unique filename to avoid collisions
+        // Generate unique filename
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         const ext = file.name.split('.').pop();
-        const filename = `${file.name.split('.')[0]}-${uniqueSuffix}.${ext}`;
-        const filepath = join(uploadDir, filename);
+        const filename = `${folder}/${file.name.split('.')[0]}-${uniqueSuffix}.${ext}`;
 
-        await writeFile(filepath, buffer);
+        // Upload to Vercel Blob
+        // access: 'public' required for public serving
+        const blob = await put(filename, file, {
+            access: 'public',
+        });
 
         // Return public URL
-        return `/${folder}/${filename}`;
+        return blob.url;
     } catch (error) {
-        console.error('Error saving file:', error);
-        // In production (Vercel), valid uploads might fail due to read-only FS.
-        // We return null so the data can be saved without the image, instead of crashing.
+        console.error('Error saving file to Vercel Blob:', error);
         return null;
     }
 }
