@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { getTournaments, getMatches, getTournamentPlayers } from '@/app/lib/tournament-actions';
 import { formatDate } from '@/app/lib/utils';
-import { Trophy, Calendar } from 'lucide-react';
+import { Trophy, Calendar, ArrowLeft } from 'lucide-react';
 import TVDashboard from '@/app/components/tournaments/TVDashboard';
 
 export const dynamic = 'force-dynamic';
