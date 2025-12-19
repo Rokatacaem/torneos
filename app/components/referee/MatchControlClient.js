@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import ShotClock from './ShotClock';
 import { ArrowLeftRight, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/app/lib/utils';
-
 import React from 'react';
 
 class ErrorBoundary extends React.Component {
@@ -42,8 +41,6 @@ class ErrorBoundary extends React.Component {
     }
 }
 
-
-
 export default function MatchControlClient(props) {
     return (
         <ErrorBoundary>
@@ -52,11 +49,18 @@ export default function MatchControlClient(props) {
     );
 }
 
-// NOTE: Actual function implementation follows below, need to rename
 function MatchControlClientContent({ initialMatch }) {
     const router = useRouter();
     const [match, setMatch] = useState(initialMatch);
     const [isPending, startTransition] = useTransition();
+
+    // Debug logging
+    const [debugLogs, setDebugLogs] = useState([]);
+    const addLog = (msg) => {
+        const time = new Date().toLocaleTimeString();
+        setDebugLogs(prev => [`[${time}] ${msg}`, ...prev].slice(0, 5));
+        console.log(`[MC_DEBUG] ${msg}`);
+    };
 
     // Timer State
     const [timerStatus, setTimerStatus] = useState('idle');
@@ -72,9 +76,27 @@ function MatchControlClientContent({ initialMatch }) {
     // Match Status Logic
     const [isMatchFinished, setIsMatchFinished] = useState(match.status === 'completed');
 
-    // Lag Logic
-    // If start_player_id is set, we know lag is done.
-    const [hasSelectedStart, setHasSelectedStart] = useState(!!match.start_player_id);
+    // Lag Logic - Robust Initialization
+    // Check localStorage first, then DB
+    const getInitialStart = () => {
+        if (typeof window === 'undefined') return !!match.start_player_id; // Server/Hydration safe
+
+        try {
+            const localStart = localStorage.getItem(`match_start_${match.id}`);
+            if (localStart === 'done') return true;
+        } catch (e) { }
+
+        return !!match.start_player_id;
+    };
+
+    // We use a simple effect to sync local storage on mount if DB says yes
+    useEffect(() => {
+        if (match.start_player_id) {
+            localStorage.setItem(`match_start_${match.id}`, 'done');
+        }
+    }, [match.start_player_id, match.id]);
+
+    const [hasSelectedStart, setHasSelectedStart] = useState(getInitialStart);
 
     // Determine Limits
     const isGroup = match.phase_type === 'group';
@@ -188,9 +210,11 @@ function MatchControlClientContent({ initialMatch }) {
 
     const handleStartSelection = async (startPlayerKey) => {
         try {
+            addLog(`Selecting start: ${startPlayerKey}`);
             const startPlayerId = startPlayerKey === 'p1' ? match.player1_id : match.player2_id;
 
             if (!startPlayerId) {
+                addLog("ERROR: ID missing");
                 console.error("ID de jugador no encontrado");
                 return;
             }
@@ -199,6 +223,10 @@ function MatchControlClientContent({ initialMatch }) {
             setActivePlayer(startPlayerKey);
             setHasSelectedStart(true);
             setLayout(startPlayerKey === 'p1' ? 'standard' : 'swapped');
+
+            // Backup to local storage
+            localStorage.setItem(`match_start_${match.id}`, 'done');
+            addLog("Local state set + localStorage saved");
 
             // 2. Actualización Optimista del Objeto Match
             setMatch(prev => ({
@@ -210,7 +238,9 @@ function MatchControlClientContent({ initialMatch }) {
 
             // 3. Persistencia en DB
             await setMatchStart(match.id, startPlayerId, startPlayerId);
+            addLog("Server action called");
         } catch (error) {
+            addLog(`ERROR: ${error.message}`);
             console.error("Error al guardar selección:", error);
             setHasSelectedStart(false); // Revertir en caso de error
             alert("No se pudo guardar la selección. Intente nuevamente.");
