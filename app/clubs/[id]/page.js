@@ -32,8 +32,19 @@ export default async function ClubDetailPage({ params }) {
                 <div className="max-w-7xl mx-auto px-6 h-full flex items-end relative z-20 pb-8">
                     <div className="flex flex-col md:flex-row md:items-end gap-6 w-full">
                         {/* Logo Placeholder */}
-                        <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center shadow-2xl border-4 border-[#0B1120]">
-                            <span className="text-3xl font-bold text-white">{club.short_name || club.name.substring(0, 2).toUpperCase()}</span>
+                        {/* Logo */}
+                        <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center shadow-2xl border-4 border-[#0B1120] overflow-hidden relative">
+                            {club.logo_url ? (
+                                <img
+                                    src={club.logo_url}
+                                    alt={`Logo ${club.name}`}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <span className="text-3xl font-bold text-white uppercase">
+                                    {club.short_name || club.name.substring(0, 2)}
+                                </span>
+                            )}
                         </div>
 
                         <div className="flex-1">
@@ -76,14 +87,30 @@ export default async function ClubDetailPage({ params }) {
                             <div>
                                 <span className="block text-slate-500 text-xs uppercase tracking-wider font-bold mb-1">Mesas</span>
                                 <div className="grid grid-cols-2 gap-2 mt-2">
-                                    <div className="bg-white/5 p-2 rounded text-center">
-                                        <div className="font-bold text-lg text-white">{club.tables_billar || 0}</div>
-                                        <div className="text-[10px] text-slate-500">Billar</div>
-                                    </div>
-                                    <div className="bg-white/5 p-2 rounded text-center">
-                                        <div className="font-bold text-lg text-white">{club.tables_pool || 0}</div>
-                                        <div className="text-[10px] text-slate-500">Pool</div>
-                                    </div>
+                                    {club.tables_billar > 0 && (
+                                        <div className="bg-white/5 p-2 rounded text-center">
+                                            <div className="font-bold text-lg text-white">{club.tables_billar}</div>
+                                            <div className="text-[10px] text-slate-500">Billar</div>
+                                        </div>
+                                    )}
+                                    {club.tables_pool > 0 && (
+                                        <div className="bg-white/5 p-2 rounded text-center">
+                                            <div className="font-bold text-lg text-white">{club.tables_pool}</div>
+                                            <div className="text-[10px] text-slate-500">Pool</div>
+                                        </div>
+                                    )}
+                                    {club.tables_snooker > 0 && (
+                                        <div className="bg-white/5 p-2 rounded text-center">
+                                            <div className="font-bold text-lg text-white">{club.tables_snooker}</div>
+                                            <div className="text-[10px] text-slate-500">Snooker</div>
+                                        </div>
+                                    )}
+                                    {club.tables_bola9 > 0 && (
+                                        <div className="bg-white/5 p-2 rounded text-center">
+                                            <div className="font-bold text-lg text-white">{club.tables_bola9}</div>
+                                            <div className="text-[10px] text-slate-500">Bola 9</div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

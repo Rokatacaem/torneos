@@ -53,6 +53,14 @@ export default async function PublicTournamentsPage() {
     // This part should be unreachable if logic works, but keeping list just in case
     return (
         <div className="container py-8">
+            <Link
+                href="/"
+                className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-lg bg-card hover:bg-accent/10 transition-colors border border-border text-muted-foreground hover:text-foreground"
+            >
+                <ArrowLeft size={20} />
+                <span className="font-medium">Volver a Inicio</span>
+            </Link>
+
             <h1 className="text-3xl font-bold mb-8 flex items-center gap-3">
                 <Trophy className="text-primary" size={32} />
                 Torneos

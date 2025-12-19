@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 import { calculateGroupStandings, calculateGlobalStandings } from '@/app/lib/standings-utils';
 import BracketModule from './BracketModule';
 import GeneralTableModule from './GeneralTableModule';
@@ -56,7 +58,15 @@ export default function TVDashboard({ tournament, matches, players }) {
                     </div>
                 )}
 
-                <div className="flex items-center h-full py-1 z-10">
+                <div className="flex items-center h-full py-1 z-10 gap-4">
+                    <Link
+                        href="/"
+                        className="text-slate-400 hover:text-white transition-colors bg-white/10 hover:bg-white/20 p-2 rounded-full border border-white/5"
+                        title="Volver a Inicio"
+                    >
+                        <ArrowLeft size={24} />
+                    </Link>
+
                     {tournament.logo_image_url ? (
                         <div className="aspect-square h-full rounded-full bg-white/10 shadow-lg flex items-center justify-center border-4 border-[#061020] overflow-hidden">
                             <img src={tournament.logo_image_url} alt="Logo" className="w-full h-full object-cover" />

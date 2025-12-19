@@ -3,7 +3,7 @@ import { decrypt } from '@/app/lib/auth';
 import { cookies } from 'next/headers';
 
 // 1. Specify protected and public routes
-const protectedRoutes = ['/admin'];
+const protectedRoutes = ['/admin', '/referee', '/mi-perfil'];
 const publicRoutes = ['/login', '/tournaments', '/'];
 
 export default async function middleware(req) {

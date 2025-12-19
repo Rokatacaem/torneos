@@ -12,8 +12,12 @@ export default async function PublicRankingPage() {
             <header className="bg-[#0B1120] border-b border-white/10 p-6 md:p-8">
                 <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="flex items-center gap-4">
-                        <Link href="/" className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition text-slate-400 hover:text-white">
-                            <ArrowLeft size={24} />
+                        <Link
+                            href="/"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-white/5 text-slate-400 hover:text-white"
+                        >
+                            <ArrowLeft size={20} />
+                            <span className="font-medium hidden md:inline">Volver a Inicio</span>
                         </Link>
                         <div>
                             <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
