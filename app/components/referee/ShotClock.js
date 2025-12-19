@@ -8,11 +8,16 @@ export default function ShotClock({
     initialSeconds = 40,
     activePlayer,
     onTimeout,
-    resetTrigger
+    resetTrigger,
+    onStatusChange
 }) {
     const [seconds, setSeconds] = useState(initialSeconds);
     const [isRunning, setIsRunning] = useState(false);
     const [status, setStatus] = useState('idle'); // idle, running, paused, timeout
+
+    useEffect(() => {
+        if (onStatusChange) onStatusChange(status);
+    }, [status, onStatusChange]);
 
     // Extensions State
     const [extensions, setExtensions] = useState({ p1: 2, p2: 2 });

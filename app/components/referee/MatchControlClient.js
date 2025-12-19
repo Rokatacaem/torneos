@@ -12,6 +12,9 @@ export default function MatchControlClient({ initialMatch }) {
     const [match, setMatch] = useState(initialMatch);
     const [isPending, startTransition] = useTransition();
 
+    // Timer State
+    const [timerStatus, setTimerStatus] = useState('idle');
+
     // Local State
     const [activePlayer, setActivePlayer] = useState('p1');
     const [resetTrigger, setResetTrigger] = useState(0);
@@ -59,6 +62,15 @@ export default function MatchControlClient({ initialMatch }) {
     // Optimistic Updates
     const handleUpdate = async (p1Delta, p2Delta, inningDelta) => {
         if (isMatchFinished) return;
+
+        // Block scoring if timer is not running (only for positive point changes)
+        // Allow correction (negative) or inning updates even if stopped? 
+        // User said: "no debe permitir agregar carambola sin haber iniciado el cronómetro".
+        // Assuming corrections are allowed, but adding points needs timer.
+        if ((p1Delta > 0 || p2Delta > 0) && timerStatus !== 'running') {
+            alert("Debes iniciar el cronómetro para agregar carambolas.");
+            return;
+        }
 
         const newState = {
             ...match,
@@ -175,18 +187,24 @@ export default function MatchControlClient({ initialMatch }) {
                 <div className="grid grid-cols-2 gap-4 w-full max-w-md">
                     <button
                         onClick={() => handleStartSelection('p1')}
-                        className="p-6 bg-slate-900 border border-white/10 rounded-xl hover:border-blue-500 hover:bg-blue-900/20 active:scale-95 transition-all text-center flex flex-col items-center gap-4 group"
+                        className="p-6 bg-slate-900 border border-white/10 rounded-xl hover:border-white hover:bg-white/10 active:scale-95 transition-all text-center flex flex-col items-center gap-4 group"
                     >
-                        <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-2xl font-bold text-slate-300 group-hover:text-blue-400 group-hover:bg-blue-900/50">1</div>
-                        <span className="font-bold text-lg">{match.player1_name}</span>
+                        {/* White Ball Style */}
+                        <div className="w-16 h-16 rounded-full bg-white shadow-[0_0_15px_rgba(255,255,255,0.3)] flex items-center justify-center text-2xl font-black text-black group-hover:scale-110 transition-transform">
+                        </div>
+                        <span className="font-bold text-lg text-white group-hover:text-white transition-colors">{match.player1_name}</span>
+                        <span className="text-xs uppercase text-slate-500 font-bold tracking-widest">Bola Blanca</span>
                     </button>
 
                     <button
                         onClick={() => handleStartSelection('p2')}
-                        className="p-6 bg-slate-900 border border-white/10 rounded-xl hover:border-blue-500 hover:bg-blue-900/20 active:scale-95 transition-all text-center flex flex-col items-center gap-4 group"
+                        className="p-6 bg-slate-900 border border-white/10 rounded-xl hover:border-yellow-400 hover:bg-yellow-900/10 active:scale-95 transition-all text-center flex flex-col items-center gap-4 group"
                     >
-                        <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-2xl font-bold text-slate-300 group-hover:text-blue-400 group-hover:bg-blue-900/50">2</div>
-                        <span className="font-bold text-lg">{match.player2_name}</span>
+                        {/* Yellow Ball Style */}
+                        <div className="w-16 h-16 rounded-full bg-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.3)] flex items-center justify-center text-2xl font-black text-black group-hover:scale-110 transition-transform">
+                        </div>
+                        <span className="font-bold text-lg text-white group-hover:text-yellow-400 transition-colors">{match.player2_name}</span>
+                        <span className="text-xs uppercase text-yellow-600 font-bold tracking-widest">Bola Amarilla</span>
                     </button>
                 </div>
             </div>
@@ -282,6 +300,7 @@ export default function MatchControlClient({ initialMatch }) {
                     initialSeconds={match.shot_clock_seconds || 40}
                     activePlayer={activePlayer}
                     resetTrigger={resetTrigger}
+                    onStatusChange={setTimerStatus}
                 />
 
                 {/* Score Controls */}
@@ -371,9 +390,9 @@ export default function MatchControlClient({ initialMatch }) {
                 <div className="mt-8 flex flex-col gap-3">
                     <button
                         onClick={toggleTurn}
-                        className="w-full bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 font-bold py-6 rounded-xl text-xl shadow-lg uppercase tracking-wider border border-white/5 flex items-center justify-center gap-3 active:scale-[0.99] transition-transform"
+                        className="w-full bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 font-bold py-4 rounded-xl text-lg shadow-lg uppercase tracking-wider border border-white/5 flex items-center justify-center gap-3 active:scale-[0.99] transition-transform"
                     >
-                        <ArrowLeftRight size={28} />
+                        <ArrowLeftRight size={24} />
                         Finalizar Turno
                     </button>
                     <div className="text-center text-[10px] text-slate-600 uppercase tracking-widest mt-2">
