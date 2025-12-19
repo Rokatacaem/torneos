@@ -21,15 +21,30 @@ export default async function middleware(req) {
         return NextResponse.redirect(new URL('/login', req.nextUrl));
     }
 
-    // 5. Redirect to /admin if the user is authenticated and tries to access login
+    // 4.5 ROLE BASED PROTECTION
+    // Prevent non-admins from accessing /admin
+    if (path.startsWith('/admin') && session?.role !== 'admin') {
+        if (session?.role === 'referee') return NextResponse.redirect(new URL('/referee', req.nextUrl));
+        if (session?.role === 'player') return NextResponse.redirect(new URL('/mi-perfil', req.nextUrl));
+        return NextResponse.redirect(new URL('/', req.nextUrl));
+    }
+    // Prevent players/referees from accessing each other's protected areas? (optional, but good practice)
+    if (path.startsWith('/referee') && session?.role !== 'referee' && session?.role !== 'admin') {
+        return NextResponse.redirect(new URL('/login', req.nextUrl)); // Or home
+    }
+
+
+    // 5. Redirect validated users away from Login/Public pages to their Dashboard
     if (
         isPublicRoute &&
         session?.userId &&
         !req.nextUrl.pathname.startsWith('/admin') &&
-        req.nextUrl.pathname !== '/' // Allow visiting home, but login should skip to admin
+        req.nextUrl.pathname !== '/'
     ) {
         if (path === '/login') {
-            return NextResponse.redirect(new URL('/admin', req.nextUrl));
+            if (session.role === 'admin') return NextResponse.redirect(new URL('/admin', req.nextUrl));
+            if (session.role === 'referee') return NextResponse.redirect(new URL('/referee', req.nextUrl));
+            if (session.role === 'player') return NextResponse.redirect(new URL('/mi-perfil', req.nextUrl));
         }
     }
 
