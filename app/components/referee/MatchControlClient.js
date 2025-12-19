@@ -94,6 +94,15 @@ function MatchControlClientContent({ initialMatch }) {
         maxInnings = null;
     }
 
+    // Define targetDisplay for UI
+    let targetDisplay = '';
+    if (match.use_handicap) {
+        targetDisplay = `Hándicap (${p1Target} - ${p2Target})`;
+    } else {
+        const limit = isGroup ? match.group_points_limit : match.playoff_points_limit;
+        targetDisplay = `${limit} Puntos`;
+    }
+
     // Check for finish conditions
     const checkFinish = (currentMatch) => {
         const p1Reached = p1Target && currentMatch.score_p1 >= p1Target;
