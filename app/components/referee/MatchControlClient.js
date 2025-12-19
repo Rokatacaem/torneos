@@ -147,8 +147,8 @@ export default function MatchControlClient({ initialMatch }) {
         if (isPlayer1) {
             return {
                 key: 'p1',
-                name: match.player1_name,
-                score: match.score_p1,
+                name: match.player1_name || 'Jugador 1',
+                score: match.score_p1 || 0,
                 isWhite: side === 'left', // If on left, it's White by definition of this requirement
                 ballColorText: side === 'left' ? 'Bola Blanca' : 'Bola Amarilla',
                 ballColorClass: side === 'left' ? 'text-white' : 'text-yellow-400'
@@ -156,8 +156,8 @@ export default function MatchControlClient({ initialMatch }) {
         } else {
             return {
                 key: 'p2',
-                name: match.player2_name,
-                score: match.score_p2,
+                name: match.player2_name || 'Jugador 2',
+                score: match.score_p2 || 0,
                 isWhite: side === 'left',
                 ballColorText: side === 'left' ? 'Bola Blanca' : 'Bola Amarilla',
                 ballColorClass: side === 'left' ? 'text-white' : 'text-yellow-400'
