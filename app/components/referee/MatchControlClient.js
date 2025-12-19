@@ -132,14 +132,34 @@ export default function MatchControlClient({ initialMatch }) {
 
 
     const handleStartSelection = async (startPlayerKey) => {
-        const startPlayerId = startPlayerKey === 'p1' ? match.player1_id : match.player2_id;
+        try {
+            const startPlayerId = startPlayerKey === 'p1' ? match.player1_id : match.player2_id;
 
-        setActivePlayer(startPlayerKey);
-        setHasSelectedStart(true);
-        setLayout(startPlayerKey === 'p1' ? 'standard' : 'swapped');
+            if (!startPlayerId) {
+                console.error("ID de jugador no encontrado");
+                return;
+            }
 
-        // Save to DB
-        await setMatchStart(match.id, startPlayerId, startPlayerId); // Start player is also current player initially
+            // 1. Actualización Local Inmediata
+            setActivePlayer(startPlayerKey);
+            setHasSelectedStart(true);
+            setLayout(startPlayerKey === 'p1' ? 'standard' : 'swapped');
+
+            // 2. Actualización Optimista del Objeto Match
+            setMatch(prev => ({
+                ...prev,
+                start_player_id: startPlayerId,
+                current_player_id: startPlayerId,
+                status: 'in_progress'
+            }));
+
+            // 3. Persistencia en DB
+            await setMatchStart(match.id, startPlayerId, startPlayerId);
+        } catch (error) {
+            console.error("Error al guardar selección:", error);
+            setHasSelectedStart(false); // Revertir en caso de error
+            alert("No se pudo guardar la selección. Intente nuevamente.");
+        }
     };
 
     const toggleTurn = () => {
