@@ -60,9 +60,11 @@ export default function ShotClock({
     // Timer Logic
     useEffect(() => {
         let interval = null;
-        if (status === 'running' && seconds > 0) {
+        if (status === 'running') {
             interval = setInterval(() => {
                 setSeconds(prev => {
+                    if (prev <= 0) return 0; // Safety check
+
                     const next = prev - 1;
 
                     // Audio Cues
@@ -79,7 +81,7 @@ export default function ShotClock({
             }, 1000);
         }
         return () => clearInterval(interval);
-    }, [status, seconds, onTimeout]);
+    }, [status]); // Removed seconds and onTimeout from fast-cycle deps
 
     // Derived Visual State
     const getVisualState = () => {
