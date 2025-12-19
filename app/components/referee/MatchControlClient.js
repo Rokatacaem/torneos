@@ -7,7 +7,53 @@ import ShotClock from './ShotClock';
 import { ArrowLeftRight, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/app/lib/utils';
 
-export default function MatchControlClient({ initialMatch }) {
+import React from 'react';
+
+class ErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false, error: null, errorInfo: null };
+    }
+
+    static getDerivedStateFromError(error) {
+        return { hasError: true };
+    }
+
+    componentDidCatch(error, errorInfo) {
+        console.error("MatchControlClient Error:", error, errorInfo);
+        this.setState({ error, errorInfo });
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="p-10 text-red-500 bg-slate-900 min-h-screen">
+                    <h1 className="text-2xl font-bold mb-4">Algo salió mal en el control de arbitraje</h1>
+                    <pre className="bg-black p-4 rounded text-xs font-mono overflow-auto max-w-full">
+                        {this.state.error?.toString()}
+                        <br />
+                        {this.state.errorInfo?.componentStack}
+                    </pre>
+                </div>
+            );
+        }
+
+        return this.props.children;
+    }
+}
+
+
+
+export default function MatchControlClient(props) {
+    return (
+        <ErrorBoundary>
+            <MatchControlClientContent {...props} />
+        </ErrorBoundary>
+    );
+}
+
+// NOTE: Actual function implementation follows below, need to rename
+function MatchControlClientContent({ initialMatch }) {
     const router = useRouter();
     const [match, setMatch] = useState(initialMatch);
     const [isPending, startTransition] = useTransition();
