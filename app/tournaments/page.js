@@ -86,7 +86,7 @@ export default async function PublicTournamentsPage() {
                             <div className="space-y-2 mb-6 flex-1">
                                 <div className="flex items-center text-sm text-muted-foreground">
                                     <Calendar size={16} className="mr-2" />
-                                    {new Date(t.start_date).toLocaleDateString()}
+                                    {formatDate(t.start_date)}
                                 </div>
                                 <div className="text-sm text-muted-foreground">
                                     Formato: {
