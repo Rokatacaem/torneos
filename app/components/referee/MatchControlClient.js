@@ -347,7 +347,13 @@ function MatchControlClientContent({ initialMatch }) {
             </div>
 
             {/* Main Control Area */}
-            <div className="flex-1 flex flex-col p-4 max-w-xl mx-auto w-full">
+            <div className="flex-1 flex flex-col p-4 max-w-xl mx-auto w-full relative">
+                {/* DEBUG LOGS */}
+                {debugLogs.length > 0 && (
+                    <div className="absolute top-0 right-0 bg-black/80 text-green-400 text-[10px] p-2 rounded max-w-[200px] pointer-events-none z-50 font-mono">
+                        {debugLogs.map((log, i) => <div key={i}>{log}</div>)}
+                    </div>
+                )}
 
                 {/* SHOT CLOCK */}
                 <ShotClock
