@@ -22,11 +22,11 @@ El objetivo es unificar la gestión deportiva (torneos, rankings, jueces) con la
 * **Torneo en Vivo (`/torneos/[id]`)**:
   * Resultados en tiempo real (Livescore).
   * Brackets y programación de partidos.
-* **Clubes (`/clubes`)**: Mapa y directorio de clubes federados.
+* **Clubes (`/clubes`)**: Mapa y directorio de clubes federados, con fichas de detalle y jugadores asociados.
 
 ### 🔵 Nivel 2: Jugadores Federados (Login Requerido)
 
-*Autogestión para atletas.*
+*Autogestión para atletas (Fase 2).*
 
 * **Perfil (`/mi-perfil`)**: Edición de datos, foto, club actual.
 * **Inscripciones**: Postular a torneos abiertos con un clic.
@@ -38,8 +38,8 @@ El objetivo es unificar la gestión deportiva (torneos, rankings, jueces) con la
 *Gestión interna.*
 
 * **Admin Central (`/admin`)**: Gestión global de jugadores, clubes, noticias y validaciones.
-* **Gestión de Torneos**: Creación de eventos, sorteos, configuración de fases.
-* **Mesa de Control**: Interfaz para árbitros, control de shot-clock y registro de resultados.
+* **Gestión de Torneos**: Creación de eventos, sorteos (Snake Seeding), configuración de fases y Playoff.
+* **Mesa de Control**: Interfaz especializada para árbitros con control de shot-clock, innings y transmisión de resultados en vivo.
 
 ---
 
@@ -60,11 +60,13 @@ En lugar de separar "Web Institucional" (Wordpress) y "App de Torneos", usaremos
 ├── componentes/home/ (Hero, Noticias, Features)
 ├── ranking/page.js   (Vista pública del Ranking)
 ├── torneos/page.js   (Vista pública de lista)
+├── clubs/[id]/page.js (Ficha de detalle de Club)
 └── ...
 
 /admin (Raíz Privada)
 ├── players/          (Gestión de BD Jugadores)
 ├── ranking/          (Herramientas de cálculo y exportación)
+├── tournaments/      (Gestión completa de torneos)
 └── ...
 ```
 
@@ -72,18 +74,29 @@ En lugar de separar "Web Institucional" (Wordpress) y "App de Torneos", usaremos
 
 ## 4. Hoja de Ruta de Implementación
 
-### Fase 1: Visibilidad (Q1) - *En Progreso*
+### Fase 1: Visibilidad (Q1) - *En Cierre*
 
-*Meta: Que el público vea la actividad.*
-* [x] Motor de Torneos y Brackets.
-* [x] Sistema de Ranking Dual (Nacional/Anual).
+*Meta: Que el público vea la actividad y la gestión sea operativa.*
+
+* [x] **Motor de Torneos**:
+  * [x] Creación de Grupos y Snake Seeding.
+  * [x] Generación de Brackets y lógica de Playoffs (incluyendo ajustes/repechaje).
+* [x] **Gestión de Clubes**:
+  * [x] Directorio y fichas de detalle.
+  * [x] Asociación de jugadores y conteo de mesas.
+* [x] **Sistema de Ranking**:
+  * [x] Implementación Ranking Dual (Nacional/Anual).
+  * [x] Categorización automática (A/B/C).
+* [x] **Mesa de Control (Árbitros)**:
+  * [x] Interfaz con Shot-Clock y conteo de entradas.
+  * [x] Adaptabilidad móvil.
 * [ ] **Diseño Home**: Transformar la página de inicio en una landing institucional atractiva.
-* [ ] **Vistas Públicas**: Asegurar que `/ranking` y `/torneos` se vean bien sin ser admin.
 * [ ] **Despliegue**: Poner en producción en `www.fechillar.cl`.
 
 ### Fase 2: Interacción (Q2)
 
 *Meta: Que el jugador se autogestione.*
+
 * [ ] Sistema de Usuarios para Jugadores (Login).
 * [ ] Vinculación "Usuario Web" -> "Ficha de Jugador".
 * [ ] Formulario de Inscripción Online.
@@ -91,8 +104,10 @@ En lugar de separar "Web Institucional" (Wordpress) y "App de Torneos", usaremos
 ### Fase 3: Automatización (Q3)
 
 *Meta: Eficiencia comercial.*
+
 * [ ] Pasarela de Pagos (Webpay/MercadoPago).
 * [ ] Generación automática de licencias/carnet digital.
+* [ ] Gestión de Deudas y Límites (Iniciado).
 
 ---
 
@@ -103,4 +118,4 @@ En lugar de separar "Web Institucional" (Wordpress) y "App de Torneos", usaremos
 * **Base de Datos**: PostgreSQL (Gestionada).
 
 ---
-*Documento generado el 17/12/2025 - V1.0*
+*Documento actualizado el 21/12/2025*

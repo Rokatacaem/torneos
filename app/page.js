@@ -72,7 +72,7 @@ export default function Home() {
           </div>
         </div>
         <div className="max-w-6xl mx-auto px-6 mt-12 pt-8 border-t border-white/5 text-center text-xs">
-          &copy; {new Date().getFullYear()} Sistema Fechillar. Desarrollado por Roberto.
+          &copy; {new Date().getFullYear()} Sistema Fechillar. Desarrollado por Rodrigo Zúñiga.
         </div>
       </footer>
     </div>

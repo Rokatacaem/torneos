@@ -98,16 +98,19 @@ function MatchControlClientContent({ initialMatch }) {
     // Determine Limits
     const isGroup = match.phase_type === 'group';
     let p1Target, p2Target;
+    let limit; // Declare limit here for broader scope
+
     if (match.use_handicap) {
         p1Target = match.player1_handicap;
         p2Target = match.player2_handicap;
+        limit = null; // Not applicable for handicap
     } else {
-        const limit = isGroup ? match.group_points_limit : match.playoff_points_limit;
+        limit = isGroup ? (match.config_group_points || match.group_points_limit) : (match.config_playoff_points || match.playoff_points_limit);
         p1Target = limit;
         p2Target = limit;
     }
 
-    let maxInnings = isGroup ? match.group_innings_limit : match.playoff_innings_limit;
+    let maxInnings = isGroup ? (match.config_group_innings || match.group_innings_limit) : (match.config_playoff_innings || match.playoff_innings_limit);
     const isFinal = match.round_label === 'Final' || match.round_label === 'Gran Final';
     if (!isGroup && isFinal) {
         maxInnings = null;
@@ -300,6 +303,9 @@ function MatchControlClientContent({ initialMatch }) {
     const right = getPlayerData('right');
 
     const handleScoreClick = (playerKey, delta) => {
+        // [NEW] Strict Validation: Only active player can score
+        if (playerKey !== activePlayer) return;
+
         if (playerKey === 'p1') handleUpdate(delta, 0, 0);
         else handleUpdate(0, delta, 0);
     };
@@ -344,6 +350,51 @@ function MatchControlClientContent({ initialMatch }) {
 
     // ... (Keep Referee/Finished modals)
 
+    // Referee Name Modal
+    if (showRefereeModal && hasSelectedStart && !isMatchFinished) {
+        return (
+            <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300">
+                <div className="bg-[#1A2333] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+                    <div className="p-6 text-center space-y-4">
+                        <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto text-blue-400">
+                            <CheckCircle2 size={32} />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-white">Identificar Árbitro</h2>
+                            <p className="text-sm text-slate-400">Por favor, ingresa tu nombre para el acta del partido.</p>
+                        </div>
+                        <form onSubmit={handleRefereeSubmit} className="space-y-4">
+                            <input
+                                type="text"
+                                value={refereeNameInput}
+                                onChange={(e) => setRefereeNameInput(e.target.value)}
+                                placeholder="Nombre Juez / Árbitro"
+                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500 transition-colors text-center font-medium"
+                                autoFocus
+                            />
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowRefereeModal(false)}
+                                    className="px-4 py-3 rounded-xl font-bold text-slate-400 hover:bg-white/5 transition-colors"
+                                >
+                                    Omitir
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={!refereeNameInput.trim()}
+                                    className="px-4 py-3 rounded-xl font-bold bg-blue-600 text-white hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Confirmar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-black text-white flex flex-col font-sans selection:bg-orange-500/30">
             {/* Top Bar for Referee */}
@@ -377,7 +428,7 @@ function MatchControlClientContent({ initialMatch }) {
 
                 {/* SHOT CLOCK */}
                 <ShotClock
-                    initialSeconds={match.shot_clock_seconds || 40}
+                    initialSeconds={match.config_shot_clock || match.shot_clock_seconds || 40}
                     activePlayer={activePlayer}
                     resetTrigger={resetTrigger}
                     onStatusChange={setTimerStatus}

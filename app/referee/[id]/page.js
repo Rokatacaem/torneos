@@ -8,11 +8,11 @@ export default async function RefereeMatchPage({ params }) {
         SELECT m.*, 
                p1.player_name as player1_name, 
                p2.player_name as player2_name,
-               t.shot_clock_seconds,
-               t.group_points_limit,
-               t.group_innings_limit,
-               t.playoff_points_limit,
-               t.playoff_innings_limit,
+               t.shot_clock_seconds as config_shot_clock,
+               t.group_points_limit as config_group_points,
+               t.group_innings_limit as config_group_innings,
+               t.playoff_points_limit as config_playoff_points,
+               t.playoff_innings_limit as config_playoff_innings,
                ph.type as phase_type,
                ph.name as phase_name
         FROM tournament_matches m
