@@ -203,8 +203,9 @@ export default function TVDashboard({ tournament, matches, players }) {
                             <div className="absolute top-0 bottom-0 left-[33%] right-[33%] bg-white"></div>
                         </div>
                     </div>
-                    <div className="absolute bottom-1 right-2 text-[10px] text-slate-500 font-bold">
-                        CLUB BILLAR SANTIAGO
+                    <div className="absolute bottom-1 right-2 w-full text-right pr-2">
+                        <div className="text-[10px] text-slate-500 font-bold leading-none">CLUB BILLAR SANTIAGO</div>
+                        <div className="text-[8px] text-slate-400 font-medium leading-none mt-1">Dev by Rodrigo Zúñiga</div>
                     </div>
                 </div>
             </footer >
