@@ -110,11 +110,21 @@ function MatchControlClientContent({ initialMatch }) {
         p2Target = limit;
     }
 
-    let maxInnings = isGroup ? (match.config_group_innings || match.group_innings_limit) : (match.config_playoff_innings || match.playoff_innings_limit);
+    let maxInningsRaw = isGroup ? (match.config_group_innings || match.group_innings_limit) : (match.config_playoff_innings || match.playoff_innings_limit);
+    let maxInnings = maxInningsRaw ? parseInt(maxInningsRaw) : null;
+
     const isFinal = match.round_label === 'Final' || match.round_label === 'Gran Final';
     if (!isGroup && isFinal) {
         maxInnings = null;
     }
+
+    // Logic: User wants 1-based "Current Inning".
+    // DB stores "Completed Innings" (starts at 0).
+    // So Current = Completed + 1.
+    // EXCEPT if match is finished due to max innings, we show the Max (e.g. 20), not 21.
+    const displayInnings = (isMatchFinished && maxInnings && match.innings >= maxInnings)
+        ? match.innings
+        : (match.innings || 0) + 1;
 
     // Define targetDisplay for UI
     let targetDisplay = '';
@@ -132,9 +142,25 @@ function MatchControlClientContent({ initialMatch }) {
         const p2Reached = p2Target && currentMatch.score_p2 >= p2Target;
         const inningsReached = maxInnings && currentMatch.innings >= maxInnings;
 
+        console.log('CHECK FINISH DEBUG:', {
+            p1Target, p1Score: currentMatch.score_p1,
+            p2Target, p2Score: currentMatch.score_p2,
+            maxInnings, currentInnings: currentMatch.innings,
+            inningsReached,
+            isGroup, phase: match.phase_type
+        });
+
         // Update finished state bidirectionally (allows undoing a finish)
         setIsMatchFinished(p1Reached || p2Reached || inningsReached);
     };
+
+    // Safety Effect: Auto-finish if loaded state is already over limits
+    useEffect(() => {
+        if (!isMatchFinished && maxInnings && match.innings >= maxInnings) {
+            console.log("Auto-finishing because innings >= maxInnings");
+            setIsMatchFinished(true);
+        }
+    }, [match.innings, maxInnings, isMatchFinished]);
 
     // Optimistic Updates
     const handleUpdate = async (p1Delta, p2Delta, inningDelta, nextPlayerId = null) => {
@@ -259,6 +285,19 @@ function MatchControlClientContent({ initialMatch }) {
             inningInc = 1;
         }
 
+        // PREVENT EXCEEDING LIMIT
+        const nextInnings = (match.innings || 0) + inningInc;
+        if (maxInnings && nextInnings > maxInnings) {
+            // Check if we are already finished?
+            // If strictly >, we shouldn't increment.
+            // But usually we finish exactly ON the max innings. 
+            // If nextInnings == maxInnings, it's fine, we update and checkFinish will handle it.
+            // If nextInnings > maxInnings, we stop.
+            inningInc = 0;
+            setIsMatchFinished(true); // Force finish just in case
+            return;
+        }
+
         const nextPlayerKey = activePlayer === 'p1' ? 'p2' : 'p1';
         const nextPlayerId = nextPlayerKey === 'p1' ? match.player1_id : match.player2_id;
 
@@ -348,7 +387,75 @@ function MatchControlClientContent({ initialMatch }) {
         );
     }
 
-    // ... (Keep Referee/Finished modals)
+    // Match Finished Modal
+    if (isMatchFinished) {
+        // Determine winner based on score
+        const p1Score = match.score_p1 || 0;
+        const p2Score = match.score_p2 || 0;
+        let winnerName, winnerColor;
+
+        if (p1Score > p2Score) {
+            winnerName = match.player1_name;
+            winnerColor = "text-white"; // Assuming P1 White
+        } else if (p2Score > p1Score) {
+            winnerName = match.player2_name;
+            winnerColor = "text-yellow-400"; // Assuming P2 Yellow
+        } else {
+            winnerName = "Empate";
+            winnerColor = "text-slate-300";
+        }
+
+        return (
+            <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-500">
+                <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative">
+                    {/* Confetti effect or similar could go here */}
+
+                    <div className="p-8 text-center space-y-6">
+                        <div className="space-y-2">
+                            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Partido Finalizado</h2>
+                            <h1 className="text-4xl font-black text-white uppercase italic tracking-wider">
+                                {winnerName === "Empate" ? "EMPATE" : "¡GANADOR!"}
+                            </h1>
+                        </div>
+
+                        {winnerName !== "Empate" && (
+                            <div className="py-6">
+                                <div className={cn("text-5xl font-black drop-shadow-lg", winnerColor)}>
+                                    {winnerName}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-4 bg-black/40 rounded-2xl p-6 border border-white/5">
+                            <div className="text-center">
+                                <div className="text-xs text-slate-500 font-bold uppercase mb-1">{match.player1_name}</div>
+                                <div className="text-4xl font-black text-white">{p1Score}</div>
+                            </div>
+                            <div className="text-center border-l border-white/10">
+                                <div className="text-xs text-slate-500 font-bold uppercase mb-1">{match.player2_name}</div>
+                                <div className="text-4xl font-black text-yellow-400">{p2Score}</div>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-4 pt-4">
+                            <button
+                                onClick={() => setIsMatchFinished(false)}
+                                className="flex-1 py-4 rounded-xl font-bold text-slate-400 hover:bg-white/5 hover:text-white transition-colors"
+                            >
+                                Corregir
+                            </button>
+                            <button
+                                onClick={() => router.push('/referee')}
+                                className="flex-1 py-4 rounded-xl font-bold bg-green-600 text-white hover:bg-green-500 shadow-lg shadow-green-900/20 transition-all active:scale-95"
+                            >
+                                Finalizar y Salir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     // Referee Name Modal
     if (showRefereeModal && hasSelectedStart && !isMatchFinished) {
@@ -439,7 +546,7 @@ function MatchControlClientContent({ initialMatch }) {
                     <div className="bg-slate-900/80 border border-slate-700/50 rounded-2xl px-12 py-4 flex flex-col items-center shadow-2xl backdrop-blur-sm">
                         <span className="text-orange-500 font-bold tracking-[0.2em] text-xs uppercase mb-1">Entrada Actual</span>
                         <span className="text-6xl md:text-7xl font-black text-white tabular-nums leading-none tracking-tighter">
-                            {match.innings || 0}
+                            {displayInnings}
                         </span>
                     </div>
                 </div>
@@ -528,20 +635,10 @@ function MatchControlClientContent({ initialMatch }) {
                 </div>
 
                 {/* Bottom Actions */}
-                <div className="mt-8 flex flex-col gap-3">
-                    <button
-                        onClick={toggleTurn}
-                        className="w-full bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 font-bold py-4 rounded-xl text-lg shadow-lg uppercase tracking-wider border border-white/5 flex items-center justify-center gap-3 active:scale-[0.99] transition-transform"
-                    >
-                        <ArrowLeftRight size={24} />
-                        Finalizar Turno
-                    </button>
-                    <div className="text-center text-[10px] text-slate-600 uppercase tracking-widest mt-2">
-                        Al finalizar el turno, cambiará el jugador activo
-                    </div>
-                </div>
+                {/* Bottom Actions Removed per user request */}
 
             </div>
+            {/* DEBUG Banner Removed */}
         </div>
     );
 }

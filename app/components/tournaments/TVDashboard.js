@@ -82,11 +82,41 @@ export default function TVDashboard({ tournament, matches, players }) {
                     <h1 className="text-3xl lg:text-4xl xl:text-5xl font-black text-white tracking-widest leading-none uppercase font-serif drop-shadow-md truncate">
                         <span className="text-yellow-500">{tournament.name?.split(' ')[0] || 'TORNEO'}</span> {tournament.name?.split(' ').slice(1).join(' ')}
                     </h1>
-                    <h2 className="text-lg lg:text-xl xl:text-2xl font-bold text-cyan-400 tracking-[0.2em] uppercase mt-1 drop-shadow-sm leading-none flex items-center justify-center gap-4">
-                        <span>INDIVIDUAL ABIERTO</span>
-                        <span className="text-slate-500">•</span>
-                        <span className="text-white bg-cyan-900/50 px-2 rounded text-base">{viewMode === 'groups' ? 'FASE DE GRUPOS' : 'FASE FINAL'}</span>
-                    </h2>
+
+                    {/* Dynamic Rules Display */}
+                    <div className="flex items-center justify-center gap-6 mt-2">
+                        <div className="flex items-center gap-2 bg-slate-800/80 px-3 py-1 rounded border border-white/10 text-xs lg:text-sm font-bold uppercase tracking-wider text-cyan-400">
+                            <span>{viewMode === 'groups' ? 'FASE GRUPOS' : 'FASE FINAL'}</span>
+                        </div>
+
+                        <div className="flex items-center gap-4 text-xs lg:text-sm font-bold text-slate-300">
+                            <div className="flex items-center gap-1">
+                                <span className="text-yellow-500">META:</span>
+                                <span className="text-white text-lg leading-none">
+                                    {viewMode === 'groups' ? (tournament.group_points_limit || '-') : (tournament.playoff_points_limit || '-')}
+                                </span>
+                                <span className="text-[10px] text-slate-500">PTS</span>
+                            </div>
+
+                            <div className="w-px h-4 bg-white/20"></div>
+
+                            <div className="flex items-center gap-1">
+                                <span className="text-yellow-500">MAX:</span>
+                                <span className="text-white text-lg leading-none">
+                                    {viewMode === 'groups' ? (tournament.group_innings_limit || '-') : (tournament.playoff_innings_limit || '-')}
+                                </span>
+                                <span className="text-[10px] text-slate-500">ENT</span>
+                            </div>
+
+                            <div className="w-px h-4 bg-white/20"></div>
+
+                            <div className="flex items-center gap-1">
+                                <span className="text-yellow-500">RELOJ:</span>
+                                <span className="text-white text-lg leading-none">{tournament.shot_clock_seconds || 40}</span>
+                                <span className="text-[10px] text-slate-500">SEG</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="flex items-center h-full py-1">
