@@ -135,7 +135,6 @@ function MatchControlClientContent({ initialMatch }) {
     if (match.use_handicap) {
         targetDisplay = `Hándicap (${p1Target} - ${p2Target})`;
     } else {
-        const limit = isGroup ? match.group_points_limit : match.playoff_points_limit;
         targetDisplay = `${limit} Puntos`;
     }
 
