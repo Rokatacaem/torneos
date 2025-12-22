@@ -28,7 +28,7 @@ export default async function AdminLayout({ children }) {
                     {children}
                 </main>
                 <footer className="h-12 border-t flex items-center justify-center text-xs text-muted-foreground bg-background/50">
-                    &copy; {new Date().getFullYear()} Sistema Fechillar. Desarrollado por Roberto.
+                    &copy; {new Date().getFullYear()} Sistema Fechillar. Desarrollado por Rodrigo Zúñiga.
                 </footer>
             </div>
         </div>

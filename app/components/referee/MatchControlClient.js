@@ -59,6 +59,10 @@ function MatchControlClientContent({ initialMatch }) {
         console.log(`[MC_DEBUG] ${msg}`);
     };
 
+    useEffect(() => {
+        console.log("MatchControlClient Loaded - VERSION: 2025-12-21 21:00 FIXES (NoBtn, Innings+1, Copyright)");
+    }, []);
+
     // Timer State
     const [timerStatus, setTimerStatus] = useState('idle');
 
