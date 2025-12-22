@@ -13,6 +13,9 @@ export default async function RefereeMatchPage({ params }) {
                t.group_innings_limit as config_group_innings,
                t.playoff_points_limit as config_playoff_points,
                t.playoff_innings_limit as config_playoff_innings,
+               t.use_handicap,
+               p1.handicap as player1_handicap,
+               p2.handicap as player2_handicap,
                ph.type as phase_type,
                ph.name as phase_name
         FROM tournament_matches m
