@@ -22,30 +22,32 @@ export default function EditTournamentPage({ params }) {
     const [groupSize, setGroupSize] = useState('4');
     const [blockDuration, setBlockDuration] = useState('');
 
-    // Debugging replacement
-    // const { debugGetTournament } = require('../../../../../lib/debug-actions'); 
-
+    import { debugGetTournament } from '@/app/lib/debug-actions';
 
     useEffect(() => {
-        // Dynamic import to use the debug action
-        import('@/app/lib/debug-actions').then(({ debugGetTournament }) => {
-            debugGetTournament(id).then(result => {
+        setLoading(true);
+        debugGetTournament(id)
+            .then(result => {
                 if (!result.success) {
+                    // Show the raw error from server
                     setError(`Error Interno: ${result.error} (ID: ${result.idReceived})`);
                     setLoading(false);
                     return;
                 }
-                const data = result.data;
 
+                const data = result.data;
                 if (!data) {
                     setError('Torneo no encontrado');
+                    setLoading(false);
                     return;
                 }
+
                 setInitialData(data);
 
-                // Format dates for input (datetime-local expects YYYY-MM-DDThh:mm)
+                // Format dates for input
                 const fmtDate = (d) => d ? new Date(d).toISOString().slice(0, 16) : '';
 
+                // Safely prepare initial form data
                 setInitialData({
                     ...data,
                     start_date: fmtDate(data.start_date),
@@ -53,14 +55,16 @@ export default function EditTournamentPage({ params }) {
                 });
 
                 if (data.group_size) setGroupSize(data.group_size.toString());
-                if (data.block_duration) setBlockDuration(data.block_duration.toString());
+                if (data.block_duration) setBlockDuration(data.block_duration?.toString() || '');
 
                 setLoading(false);
-            }).catch(err => {
+            })
+            .catch(err => {
+                // Catch any client-side errors during processing
+                console.error("Client processing error:", err);
                 setError(`Client Error: ${err.message}`);
                 setLoading(false);
             });
-        });
     }, [id]);
 
     async function handleSubmit(formData) {
