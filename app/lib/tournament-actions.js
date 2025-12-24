@@ -102,84 +102,90 @@ export async function createTournament(formData) {
     return result.rows[0];
 }
 
+// Safe integer parsing
+function safeParseInt(val, fallback = null) {
+    const parsed = parseInt(val);
+    return isNaN(parsed) ? fallback : parsed;
+}
+
 export async function updateTournament(id, formData) {
-    const name = formData.get('name');
-    const start_date = formData.get('start_date');
-    const end_date = formData.get('end_date');
-    const max_players = parseInt(formData.get('max_players'));
-    const format = formData.get('format');
-    const group_size = parseInt(formData.get('group_size'));
-    const shot_clock_seconds = parseInt(formData.get('shot_clock_seconds') || '40');
-    const group_points_limit = parseInt(formData.get('group_points_limit') || '30');
-    const group_innings_limit = parseInt(formData.get('group_innings_limit') || '20');
-    const playoff_points_limit = parseInt(formData.get('playoff_points_limit') || '40');
-    const playoff_innings_limit = parseInt(formData.get('playoff_innings_limit') || '30');
-    const use_handicap = formData.get('use_handicap') === 'true';
-    const block_duration = parseInt(formData.get('block_duration')) || null;
-    const tables_available = parseInt(formData.get('tables_available')) || 4;
-    const host_club_id = formData.get('host_club_id') || null;
-    const discipline = formData.get('discipline') || null;
-
-    const semifinal_points_limit = parseInt(formData.get('semifinal_points_limit')) || null;
-    const semifinal_innings_limit = parseInt(formData.get('semifinal_innings_limit')) || null;
-    const final_points_limit = parseInt(formData.get('final_points_limit')) || null;
-    const final_innings_limit = parseInt(formData.get('final_innings_limit')) || null;
-
-    // File Uploads (Update only if new file provided)
-    let banner_image_url = null;
-    let logo_image_url = null;
-
-    const bannerFile = formData.get('banner_image');
-    if (bannerFile && bannerFile.size > 0) {
-        banner_image_url = await saveFile(bannerFile, 'tournaments');
-    }
-
-    const logoFile = formData.get('logo_image');
-    if (logoFile && logoFile.size > 0) {
-        logo_image_url = await saveFile(logoFile, 'tournaments');
-    }
-
-    // --- Dynamic SQL Construction ---
-    let queryStr = `
-        UPDATE tournaments 
-        SET name = $1, start_date = $2, end_date = $3, max_players = $4, format = $5, group_size = $6, 
-            shot_clock_seconds = $7, group_points_limit = $8, group_innings_limit = $9, 
-            playoff_points_limit = $10, playoff_innings_limit = $11, use_handicap = $12, 
-            block_duration = $13, tables_available = $14,
-            semifinal_points_limit = $15, semifinal_innings_limit = $16, final_points_limit = $17, final_innings_limit = $18,
-            playoff_target_size = $19, qualifiers_per_group = $20, host_club_id = $21, discipline = $22
-    `;
-
-    // Initialize params array with the base 22 parameters
-    const params = [
-        name, start_date, end_date, max_players, format, group_size,
-        shot_clock_seconds, group_points_limit, group_innings_limit,
-        playoff_points_limit, playoff_innings_limit, use_handicap,
-        block_duration, tables_available,
-        semifinal_points_limit, semifinal_innings_limit, final_points_limit, final_innings_limit,
-        playoff_target_size, qualifiers_per_group, host_club_id, discipline
-    ];
-
-    let paramIndex = 23; // Start index for subsequent parameters
-
-    if (banner_image_url) {
-        queryStr += `, banner_image_url = $${paramIndex}`;
-        params.push(banner_image_url);
-        paramIndex++;
-    }
-
-    if (logo_image_url) {
-        queryStr += `, logo_image_url = $${paramIndex}`;
-        params.push(logo_image_url);
-        paramIndex++;
-    }
-
-    queryStr += ` WHERE id = $${paramIndex} RETURNING *`;
-    params.push(id);
-
-    console.log("Executing updateTournament with params:", params);
-
     try {
+        const name = formData.get('name');
+        const start_date = formData.get('start_date');
+        const end_date = formData.get('end_date');
+        const max_players = safeParseInt(formData.get('max_players'));
+        const format = formData.get('format');
+        const group_size = safeParseInt(formData.get('group_size'));
+        const shot_clock_seconds = safeParseInt(formData.get('shot_clock_seconds'), 40);
+        const group_points_limit = safeParseInt(formData.get('group_points_limit'), 30);
+        const group_innings_limit = safeParseInt(formData.get('group_innings_limit'), 20);
+        const playoff_points_limit = safeParseInt(formData.get('playoff_points_limit'), 40);
+        const playoff_innings_limit = safeParseInt(formData.get('playoff_innings_limit'), 30);
+        const use_handicap = formData.get('use_handicap') === 'true';
+        const block_duration = safeParseInt(formData.get('block_duration'));
+        const tables_available = safeParseInt(formData.get('tables_available'), 4);
+        const host_club_id = formData.get('host_club_id') || null;
+        const discipline = formData.get('discipline') || null;
+
+        const semifinal_points_limit = safeParseInt(formData.get('semifinal_points_limit'));
+        const semifinal_innings_limit = safeParseInt(formData.get('semifinal_innings_limit'));
+        const final_points_limit = safeParseInt(formData.get('final_points_limit'));
+        const final_innings_limit = safeParseInt(formData.get('final_innings_limit'));
+
+        // File Uploads (Update only if new file provided)
+        let banner_image_url = null;
+        let logo_image_url = null;
+
+        const bannerFile = formData.get('banner_image');
+        if (bannerFile && bannerFile.size > 0) {
+            banner_image_url = await saveFile(bannerFile, 'tournaments');
+        }
+
+        const logoFile = formData.get('logo_image');
+        if (logoFile && logoFile.size > 0) {
+            logo_image_url = await saveFile(logoFile, 'tournaments');
+        }
+
+        // --- Dynamic SQL Construction ---
+        let queryStr = `
+            UPDATE tournaments 
+            SET name = $1, start_date = $2, end_date = $3, max_players = $4, format = $5, group_size = $6, 
+                shot_clock_seconds = $7, group_points_limit = $8, group_innings_limit = $9, 
+                playoff_points_limit = $10, playoff_innings_limit = $11, use_handicap = $12, 
+                block_duration = $13, tables_available = $14,
+                semifinal_points_limit = $15, semifinal_innings_limit = $16, final_points_limit = $17, final_innings_limit = $18,
+                playoff_target_size = $19, qualifiers_per_group = $20, host_club_id = $21, discipline = $22
+        `;
+
+        // Initialize params array with the base 22 parameters
+        const params = [
+            name, start_date, end_date, max_players, format, group_size,
+            shot_clock_seconds, group_points_limit, group_innings_limit,
+            playoff_points_limit, playoff_innings_limit, use_handicap,
+            block_duration, tables_available,
+            semifinal_points_limit, semifinal_innings_limit, final_points_limit, final_innings_limit,
+            playoff_target_size, qualifiers_per_group, host_club_id, discipline
+        ];
+
+        let paramIndex = 23; // Start index for subsequent parameters
+
+        if (banner_image_url) {
+            queryStr += `, banner_image_url = $${paramIndex}`;
+            params.push(banner_image_url);
+            paramIndex++;
+        }
+
+        if (logo_image_url) {
+            queryStr += `, logo_image_url = $${paramIndex}`;
+            params.push(logo_image_url);
+            paramIndex++;
+        }
+
+        queryStr += ` WHERE id = $${paramIndex} RETURNING *`;
+        params.push(id);
+
+        console.log("Executing updateTournament with params:", params);
+
         const result = await query(queryStr, params);
 
         // Auto-promote from Waitlist Logic (Restored)
