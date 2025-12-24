@@ -17,7 +17,11 @@ export default async function EditTournamentPage({ params }) {
             );
         }
 
-        return <EditTournamentForm tournament={tournament} />;
+        // Fix: Serialize Date objects to strings to prevent "Server Components render" error
+        // passing non-serializable props to Client Component.
+        const sanitizedTournament = JSON.parse(JSON.stringify(tournament));
+
+        return <EditTournamentForm tournament={sanitizedTournament} />;
     } catch (error) {
         return (
             <div className="p-8 text-red-500 flex flex-col items-center gap-4">
