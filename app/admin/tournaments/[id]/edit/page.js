@@ -22,30 +22,44 @@ export default function EditTournamentPage({ params }) {
     const [groupSize, setGroupSize] = useState('4');
     const [blockDuration, setBlockDuration] = useState('');
 
+    // Debugging replacement
+    // const { debugGetTournament } = require('../../../../../lib/debug-actions'); 
+
+
     useEffect(() => {
-        getTournament(id).then(data => {
-            if (!data) {
-                setError('Torneo no encontrado');
-                return;
-            }
-            setInitialData(data);
+        // Dynamic import to use the debug action
+        import('@/app/lib/debug-actions').then(({ debugGetTournament }) => {
+            debugGetTournament(id).then(result => {
+                if (!result.success) {
+                    setError(`Error Interno: ${result.error} (ID: ${result.idReceived})`);
+                    setLoading(false);
+                    return;
+                }
+                const data = result.data;
 
-            // Format dates for input (datetime-local expects YYYY-MM-DDThh:mm)
-            const fmtDate = (d) => d ? new Date(d).toISOString().slice(0, 16) : '';
+                if (!data) {
+                    setError('Torneo no encontrado');
+                    return;
+                }
+                setInitialData(data);
 
-            setInitialData({
-                ...data,
-                start_date: fmtDate(data.start_date),
-                end_date: fmtDate(data.end_date)
+                // Format dates for input (datetime-local expects YYYY-MM-DDThh:mm)
+                const fmtDate = (d) => d ? new Date(d).toISOString().slice(0, 16) : '';
+
+                setInitialData({
+                    ...data,
+                    start_date: fmtDate(data.start_date),
+                    end_date: fmtDate(data.end_date)
+                });
+
+                if (data.group_size) setGroupSize(data.group_size.toString());
+                if (data.block_duration) setBlockDuration(data.block_duration.toString());
+
+                setLoading(false);
+            }).catch(err => {
+                setError(`Client Error: ${err.message}`);
+                setLoading(false);
             });
-
-            if (data.group_size) setGroupSize(data.group_size.toString());
-            if (data.block_duration) setBlockDuration(data.block_duration.toString());
-
-            setLoading(false);
-        }).catch(err => {
-            setError(err.message);
-            setLoading(false);
         });
     }, [id]);
 
