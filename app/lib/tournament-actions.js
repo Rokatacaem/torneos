@@ -139,7 +139,7 @@ export async function updateTournament(id, formData) {
         logo_image_url = await saveFile(logoFile, 'tournaments');
     }
 
-    // Dynamic Update Query
+    // --- Dynamic SQL Construction ---
     let queryStr = `
         UPDATE tournaments 
         SET name = $1, start_date = $2, end_date = $3, max_players = $4, format = $5, group_size = $6, 
@@ -148,6 +148,47 @@ export async function updateTournament(id, formData) {
             block_duration = $13, tables_available = $14,
             semifinal_points_limit = $15, semifinal_innings_limit = $16, final_points_limit = $17, final_innings_limit = $18,
             playoff_target_size = $19, qualifiers_per_group = $20, host_club_id = $21, discipline = $22
+    `;
+
+    // Initialize params array with the base 22 parameters
+    const params = [
+        name, start_date, end_date, max_players, format, group_size,
+        shot_clock_seconds, group_points_limit, group_innings_limit,
+        playoff_points_limit, playoff_innings_limit, use_handicap,
+        block_duration, tables_available,
+        semifinal_points_limit, semifinal_innings_limit, final_points_limit, final_innings_limit,
+        playoff_target_size, qualifiers_per_group, host_club_id, discipline
+    ];
+
+    let paramIndex = 23; // Start index for subsequent parameters
+
+    if (banner_image_url) {
+        queryStr += `, banner_image_url = $${paramIndex}`;
+        params.push(banner_image_url);
+        paramIndex++;
+    }
+
+    if (logo_image_url) {
+        queryStr += `, logo_image_url = $${paramIndex}`;
+        params.push(logo_image_url);
+        paramIndex++;
+    }
+
+    queryStr += ` WHERE id = $${paramIndex} RETURNING *`;
+    params.push(id);
+
+    console.log("Executing updateTournament with params:", params);
+
+    try {
+        const result = await query(queryStr, params);
+        revalidatePath('/tournaments');
+        revalidatePath('/admin/tournaments');
+        revalidatePath(`/admin/tournaments/${id}`);
+        return result.rows[0];
+    } catch (e) {
+        console.error("Database Error in updateTournament:", e);
+        throw new Error(`Failed to update tournament: ${e.message}`);
+    }
     `;
 
     const params = [
@@ -162,15 +203,15 @@ export async function updateTournament(id, formData) {
     let paramIdx = 23;
 
     if (banner_image_url) {
-        queryStr += `, banner_image_url = $${paramIdx++}`;
+        queryStr += `, banner_image_url = $${ paramIdx++ } `;
         params.push(banner_image_url);
     }
     if (logo_image_url) {
-        queryStr += `, logo_image_url = $${paramIdx++}`;
+        queryStr += `, logo_image_url = $${ paramIdx++ } `;
         params.push(logo_image_url);
     }
 
-    queryStr += ` WHERE id = $${paramIdx}`;
+    queryStr += ` WHERE id = $${ paramIdx } `;
     params.push(id);
 
     const result = await query(queryStr + ' RETURNING *', params);
@@ -183,8 +224,8 @@ export async function updateTournament(id, formData) {
         if (newMax) {
             const countRes = await query(`
                 SELECT COUNT(*) as count FROM tournament_players 
-                WHERE tournament_id = $1 AND (status = 'active' OR status IS NULL)
-            `, [id]);
+                WHERE tournament_id = $1 AND(status = 'active' OR status IS NULL)
+        `, [id]);
             let activeCount = parseInt(countRes.rows[0].count);
 
             if (activeCount < newMax) {
@@ -207,8 +248,8 @@ export async function updateTournament(id, formData) {
 
     revalidatePath('/tournaments');
     revalidatePath('/admin/tournaments');
-    revalidatePath(`/admin/tournaments/${id}`);
-    revalidatePath(`/admin/tournaments/${id}/manage`);
+    revalidatePath(`/ admin / tournaments / ${ id } `);
+    revalidatePath(`/ admin / tournaments / ${ id }/manage`);
     revalidatePath(`/tournaments/${id}`);
 
     return result.rows[0];
