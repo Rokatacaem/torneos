@@ -6,6 +6,7 @@ import { useState, useEffect, use } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import Link from 'next/link';
+import TournamentGraphicsGuide from '@/app/components/admin/TournamentGraphicsGuide';
 
 export default function EditTournamentPage({ params }) {
     // Unwrap params using React.use() as enforced in Next.js 15+ async params
@@ -202,6 +203,44 @@ export default function EditTournamentPage({ params }) {
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Reloj (seg)</label>
                                     <input name="shot_clock_seconds" type="number" defaultValue={initialData.shot_clock_seconds} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Images & Graphics */}
+                        <div className="space-y-4 border-t border-border pt-4">
+                            <h3 className="font-semibold text-lg flex items-center gap-2">Gráficas del Torneo</h3>
+
+                            <TournamentGraphicsGuide />
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label htmlFor="logo_image" className="text-sm font-medium">Logo del Torneo</label>
+                                    <input
+                                        id="logo_image"
+                                        name="logo_image"
+                                        type="file"
+                                        accept="image/*"
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                    {initialData.logo_image_url && (
+                                        <p className="text-xs text-green-500">Logo actual cargado.</p>
+                                    )}
+                                    <p className="text-xs text-muted-foreground">Opcional. Se mostrará en el header.</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <label htmlFor="banner_image" className="text-sm font-medium">Banner/Fondo</label>
+                                    <input
+                                        id="banner_image"
+                                        name="banner_image"
+                                        type="file"
+                                        accept="image/*"
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                    {initialData.banner_image_url && (
+                                        <p className="text-xs text-green-500">Banner actual cargado.</p>
+                                    )}
+                                    <p className="text-xs text-muted-foreground">Opcional. Fondo para TV Dashboard.</p>
                                 </div>
                             </div>
                         </div>

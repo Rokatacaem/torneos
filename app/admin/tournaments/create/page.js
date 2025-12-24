@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/app/comp
 import { Save, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/app/lib/utils';
+import TournamentGraphicsGuide from '@/app/components/admin/TournamentGraphicsGuide';
 
 
 export default function CreateTournamentPage() {
@@ -289,30 +290,38 @@ export default function CreateTournamentPage() {
                             <p className="text-xs text-muted-foreground">Tiempo límite para ejecutar el tiro.</p>
                         </div>
 
+
+
                         {/* Límites de Fase */}
                         {/* Imágenes */}
-                        <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
-                            <div className="space-y-2">
-                                <label htmlFor="logo_image" className="text-sm font-medium">Logo del Torneo</label>
-                                <input
-                                    id="logo_image"
-                                    name="logo_image"
-                                    type="file"
-                                    accept="image/*"
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                />
-                                <p className="text-xs text-muted-foreground">Opcional. Se mostrará en el header.</p>
-                            </div>
-                            <div className="space-y-2">
-                                <label htmlFor="banner_image" className="text-sm font-medium">Banner/Fondo</label>
-                                <input
-                                    id="banner_image"
-                                    name="banner_image"
-                                    type="file"
-                                    accept="image/*"
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                />
-                                <p className="text-xs text-muted-foreground">Opcional. Fondo para TV Dashboard.</p>
+                        <div className="space-y-4 border-t border-border pt-4">
+                            <h3 className="font-semibold text-lg flex items-center gap-2">Gráficas del Torneo</h3>
+
+                            <TournamentGraphicsGuide />
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label htmlFor="logo_image" className="text-sm font-medium">Logo del Torneo</label>
+                                    <input
+                                        id="logo_image"
+                                        name="logo_image"
+                                        type="file"
+                                        accept="image/*"
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                    <p className="text-xs text-muted-foreground">Opcional. Se mostrará en el header.</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <label htmlFor="banner_image" className="text-sm font-medium">Banner/Fondo</label>
+                                    <input
+                                        id="banner_image"
+                                        name="banner_image"
+                                        type="file"
+                                        accept="image/*"
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                    <p className="text-xs text-muted-foreground">Opcional. Fondo para TV Dashboard.</p>
+                                </div>
                             </div>
                         </div>
 
