@@ -181,6 +181,37 @@ export async function updateTournament(id, formData) {
 
     try {
         const result = await query(queryStr, params);
+
+        // Auto-promote from Waitlist Logic (Restored)
+        if (result.rows.length > 0) {
+            const tournament = result.rows[0];
+            const newMax = tournament.max_players;
+
+            if (newMax) {
+                const countRes = await query(`
+                    SELECT COUNT(*) as count FROM tournament_players 
+                    WHERE tournament_id = $1 AND(status = 'active' OR status IS NULL)
+                `, [id]);
+                let activeCount = parseInt(countRes.rows[0].count);
+
+                if (activeCount < newMax) {
+                    const spots = newMax - activeCount;
+                    if (spots > 0) {
+                        const waitlistRes = await query(`
+                            SELECT id FROM tournament_players 
+                            WHERE tournament_id = $1 AND status = 'waitlist'
+                            ORDER BY id ASC 
+                            LIMIT $2
+                        `, [id, spots]);
+
+                        for (const row of waitlistRes.rows) {
+                            await query(`UPDATE tournament_players SET status = 'active' WHERE id = $1`, [row.id]);
+                        }
+                    }
+                }
+            }
+        }
+
         revalidatePath('/tournaments');
         revalidatePath('/admin/tournaments');
         revalidatePath(`/admin/tournaments/${id}`);
@@ -189,70 +220,6 @@ export async function updateTournament(id, formData) {
         console.error("Database Error in updateTournament:", e);
         throw new Error(`Failed to update tournament: ${e.message}`);
     }
-    `;
-
-    const params = [
-        name, start_date, end_date, max_players, format, group_size,
-        shot_clock_seconds, group_points_limit, group_innings_limit,
-        playoff_points_limit, playoff_innings_limit, use_handicap,
-        block_duration, tables_available,
-        semifinal_points_limit, semifinal_innings_limit, final_points_limit, final_innings_limit,
-        playoff_target_size, qualifiers_per_group, host_club_id, discipline
-    ];
-
-    let paramIdx = 23;
-
-    if (banner_image_url) {
-        queryStr += `, banner_image_url = $${ paramIdx++ } `;
-        params.push(banner_image_url);
-    }
-    if (logo_image_url) {
-        queryStr += `, logo_image_url = $${ paramIdx++ } `;
-        params.push(logo_image_url);
-    }
-
-    queryStr += ` WHERE id = $${ paramIdx } `;
-    params.push(id);
-
-    const result = await query(queryStr + ' RETURNING *', params);
-
-    // Auto-promote from Waitlist if Max Players check allows
-    if (result.rows.length > 0) {
-        const tournament = result.rows[0];
-        const newMax = tournament.max_players;
-
-        if (newMax) {
-            const countRes = await query(`
-                SELECT COUNT(*) as count FROM tournament_players 
-                WHERE tournament_id = $1 AND(status = 'active' OR status IS NULL)
-        `, [id]);
-            let activeCount = parseInt(countRes.rows[0].count);
-
-            if (activeCount < newMax) {
-                const spots = newMax - activeCount;
-                if (spots > 0) {
-                    const waitlistRes = await query(`
-                        SELECT id FROM tournament_players 
-                        WHERE tournament_id = $1 AND status = 'waitlist'
-                        ORDER BY id ASC 
-                        LIMIT $2
-                    `, [id, spots]);
-
-                    for (const row of waitlistRes.rows) {
-                        await query(`UPDATE tournament_players SET status = 'active' WHERE id = $1`, [row.id]);
-                    }
-                }
-            }
-        }
-    }
-
-    revalidatePath('/tournaments');
-    revalidatePath('/admin/tournaments');
-    revalidatePath(`/ admin / tournaments / ${ id } `);
-    revalidatePath(`/ admin / tournaments / ${ id }/manage`);
-    revalidatePath(`/tournaments/${id}`);
-
-    return result.rows[0];
 }
 
 export async function deleteTournament(id) {
