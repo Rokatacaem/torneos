@@ -25,6 +25,25 @@ export default function EditTournamentForm({ tournament }) {
         setSaving(true);
         setError(null);
 
+        // Client-side File Size Validation (Max 4MB total payload safety)
+        const MAX_SIZE_MB = 4;
+        const MAX_BYTES = MAX_SIZE_MB * 1024 * 1024;
+
+        const logoFile = formData.get('logo_image');
+        const bannerFile = formData.get('banner_image');
+
+        if (logoFile && logoFile.size > MAX_BYTES) {
+            setError(`El logo es muy pesado (${(logoFile.size / 1024 / 1024).toFixed(2)} MB). Máximo permitido: ${MAX_SIZE_MB}MB.`);
+            setSaving(false);
+            return;
+        }
+
+        if (bannerFile && bannerFile.size > MAX_BYTES) {
+            setError(`El banner es muy pesado (${(bannerFile.size / 1024 / 1024).toFixed(2)} MB). Máximo permitido: ${MAX_SIZE_MB}MB.`);
+            setSaving(false);
+            return;
+        }
+
         try {
             await updateTournament(tournament.id, formData);
             router.push(`/admin/tournaments/${tournament.id}`);
