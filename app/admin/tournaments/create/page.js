@@ -44,6 +44,7 @@ export default function CreateTournamentPage() {
     const [tablesAvailable, setTablesAvailable] = useState('4');
     const [selectedClubId, setSelectedClubId] = useState('');
     const [selectedDiscipline, setSelectedDiscipline] = useState('');
+    const [useHandicap, setUseHandicap] = useState(false);
 
     useEffect(() => {
         getClubs().then(setClubs).catch(console.error);
@@ -360,6 +361,25 @@ export default function CreateTournamentPage() {
                             </div>
                         </div>
 
+                        <div className="space-y-4 border-t border-border pt-4">
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        name="use_handicap"
+                                        type="checkbox"
+                                        checked={useHandicap}
+                                        onChange={(e) => setUseHandicap(e.target.checked)}
+                                        className="h-4 w-4 rounded border-gray-300"
+                                    />
+                                    <span className="text-sm font-medium">Usar Handicap (Billar 3 Bandas)</span>
+                                </label>
+                                <p className="text-xs text-muted-foreground ml-6">
+                                    Si se activa, la distancia de partida será el hándicap individual de cada jugador.
+                                    {useHandicap && <span className="text-blue-500 font-semibold block mt-1">Modo Hándicap Activo: Los límites de puntos se ignoran/ocultan.</span>}
+                                </p>
+                            </div>
+                        </div>
+
                         {/* Límites de Fase */}
                         <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
                             <h3 className="col-span-2 font-semibold flex items-center gap-2">Reglas por Fase (Carambolas / Entradas)</h3>
@@ -368,15 +388,17 @@ export default function CreateTournamentPage() {
                             <div className="space-y-1">
                                 <label className="text-xs font-bold uppercase text-muted-foreground">Fase Grupos</label>
                                 <div className="flex gap-2">
+                                    {!useHandicap && (
+                                        <input
+                                            name="group_points_limit"
+                                            type="number"
+                                            placeholder="Pts"
+                                            defaultValue="30"
+                                            className="w-full h-9 rounded-md border bg-background px-2 text-sm"
+                                        />
+                                    )}
                                     <input
-                                        name="group_points"
-                                        type="number"
-                                        placeholder="Pts"
-                                        defaultValue="30"
-                                        className="w-full h-9 rounded-md border bg-background px-2 text-sm"
-                                    />
-                                    <input
-                                        name="group_innings"
+                                        name="group_innings_limit"
                                         type="number"
                                         placeholder="Ent"
                                         defaultValue="20"
@@ -389,15 +411,17 @@ export default function CreateTournamentPage() {
                             <div className="space-y-1">
                                 <label className="text-xs font-bold uppercase text-muted-foreground">Eliminatoria (Base)</label>
                                 <div className="flex gap-2">
+                                    {!useHandicap && (
+                                        <input
+                                            name="playoff_points_limit"
+                                            type="number"
+                                            placeholder="Pts"
+                                            defaultValue="40"
+                                            className="w-full h-9 rounded-md border bg-background px-2 text-sm"
+                                        />
+                                    )}
                                     <input
-                                        name="playoff_points"
-                                        type="number"
-                                        placeholder="Pts"
-                                        defaultValue="40"
-                                        className="w-full h-9 rounded-md border bg-background px-2 text-sm"
-                                    />
-                                    <input
-                                        name="playoff_innings"
+                                        name="playoff_innings_limit"
                                         type="number"
                                         placeholder="Ent"
                                         defaultValue="30"
@@ -410,12 +434,14 @@ export default function CreateTournamentPage() {
                             <div className="space-y-1">
                                 <label className="text-xs font-bold uppercase text-orange-500">Semifinal</label>
                                 <div className="flex gap-2">
-                                    <input
-                                        name="semifinal_points_limit"
-                                        type="number"
-                                        placeholder="Pts"
-                                        className="w-full h-9 rounded-md border bg-background px-2 text-sm border-orange-500/30"
-                                    />
+                                    {!useHandicap && (
+                                        <input
+                                            name="semifinal_points_limit"
+                                            type="number"
+                                            placeholder="Pts"
+                                            className="w-full h-9 rounded-md border bg-background px-2 text-sm border-orange-500/30"
+                                        />
+                                    )}
                                     <input
                                         name="semifinal_innings_limit"
                                         type="number"
@@ -429,12 +455,14 @@ export default function CreateTournamentPage() {
                             <div className="space-y-1">
                                 <label className="text-xs font-bold uppercase text-yellow-500">Gran Final</label>
                                 <div className="flex gap-2">
-                                    <input
-                                        name="final_points_limit"
-                                        type="number"
-                                        placeholder="Pts"
-                                        className="w-full h-9 rounded-md border bg-background px-2 text-sm border-yellow-500/30"
-                                    />
+                                    {!useHandicap && (
+                                        <input
+                                            name="final_points_limit"
+                                            type="number"
+                                            placeholder="Pts"
+                                            className="w-full h-9 rounded-md border bg-background px-2 text-sm border-yellow-500/30"
+                                        />
+                                    )}
                                     <input
                                         name="final_innings_limit"
                                         type="number"

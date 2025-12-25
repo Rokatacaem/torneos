@@ -19,6 +19,7 @@ export default function EditTournamentForm({ tournament }) {
     // Auto-config states
     const [groupSize, setGroupSize] = useState(tournament.group_size?.toString() || '4');
     const [blockDuration, setBlockDuration] = useState(tournament.block_duration?.toString() || '');
+    const [useHandicap, setUseHandicap] = useState(tournament.use_handicap || false);
 
     async function handleSubmit(formData) {
         setSaving(true);
@@ -156,16 +157,69 @@ export default function EditTournamentForm({ tournament }) {
                             </div>
                         </div>
 
+                        {/* Configuración de Playoffs */}
+                        <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
+                            <h3 className="col-span-2 font-semibold flex items-center gap-2">Configuración de Clasificación</h3>
+                            <div className="space-y-2">
+                                <label htmlFor="playoff_target_size" className="text-sm font-medium">Tamaño Cuadro Final</label>
+                                <select
+                                    id="playoff_target_size"
+                                    name="playoff_target_size"
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    defaultValue={tournament.playoff_target_size || 16}
+                                >
+                                    <option value="4">4 Jugadores (Semis)</option>
+                                    <option value="8">8 Jugadores (Cuartos)</option>
+                                    <option value="16">16 Jugadores (Octavos)</option>
+                                    <option value="32">32 Jugadores</option>
+                                    <option value="64">64 Jugadores</option>
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <label htmlFor="qualifiers_per_group" className="text-sm font-medium">Clasifican por Grupo</label>
+                                <input
+                                    id="qualifiers_per_group"
+                                    name="qualifiers_per_group"
+                                    type="number"
+                                    min="1"
+                                    max="4"
+                                    defaultValue={tournament.qualifiers_per_group || 2}
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-4 border-t border-border pt-4">
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        name="use_handicap"
+                                        type="checkbox"
+                                        checked={useHandicap}
+                                        onChange={(e) => setUseHandicap(e.target.checked)}
+                                        className="h-4 w-4 rounded border-gray-300"
+                                    />
+                                    <span className="text-sm font-medium">Usar Handicap (Billar 3 Bandas)</span>
+                                </label>
+                                <p className="text-xs text-muted-foreground ml-6">
+                                    Si se activa, la distancia de partida será el hándicap individual de cada jugador.
+                                    {useHandicap && <span className="text-blue-500 font-semibold block mt-1">Modo Hándicap Activo: Los límites de puntos se ignoran/ocultan.</span>}
+                                </p>
+                            </div>
+                        </div>
+
                         {/* Limits */}
                         <div className="p-4 bg-muted/30 rounded-lg space-y-4 border border-input">
-                            <h3 className="font-semibold text-sm">Límites de Partida (Grupos)</h3>
+                            <h3 className="font-semibold text-sm">Controles de Partida (Fase Grupos)</h3>
                             <div className="grid grid-cols-3 gap-4">
+                                {!useHandicap && (
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Puntos (Distancia)</label>
+                                        <input name="group_points_limit" type="number" defaultValue={tournament.group_points_limit} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                    </div>
+                                )}
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium">Puntos</label>
-                                    <input name="group_points_limit" type="number" defaultValue={tournament.group_points_limit} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Entradas</label>
+                                    <label className="text-sm font-medium">Entradas (Límite)</label>
                                     <input name="group_innings_limit" type="number" defaultValue={tournament.group_innings_limit} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                                 </div>
                                 <div className="space-y-2">
@@ -211,51 +265,6 @@ export default function EditTournamentForm({ tournament }) {
                                     <p className="text-xs text-muted-foreground">Opcional. Fondo para TV Dashboard.</p>
                                 </div>
                             </div>
-                        </div>
-
-                        {/* Configuración de Playoffs */}
-                        <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
-                            <h3 className="col-span-2 font-semibold flex items-center gap-2">Configuración de Clasificación</h3>
-                            <div className="space-y-2">
-                                <label htmlFor="playoff_target_size" className="text-sm font-medium">Tamaño Cuadro Final</label>
-                                <select
-                                    id="playoff_target_size"
-                                    name="playoff_target_size"
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                    defaultValue={tournament.playoff_target_size || 16}
-                                >
-                                    <option value="4">4 Jugadores (Semis)</option>
-                                    <option value="8">8 Jugadores (Cuartos)</option>
-                                    <option value="16">16 Jugadores (Octavos)</option>
-                                    <option value="32">32 Jugadores</option>
-                                    <option value="64">64 Jugadores</option>
-                                </select>
-                            </div>
-                            <div className="space-y-2">
-                                <label htmlFor="qualifiers_per_group" className="text-sm font-medium">Clasifican por Grupo</label>
-                                <input
-                                    id="qualifiers_per_group"
-                                    name="qualifiers_per_group"
-                                    type="number"
-                                    min="1"
-                                    max="4"
-                                    defaultValue={tournament.qualifiers_per_group || 2}
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="flex items-center gap-2">
-                                <input
-                                    name="use_handicap"
-                                    type="checkbox"
-                                    value="true"
-                                    defaultChecked={tournament.use_handicap}
-                                    className="h-4 w-4 rounded border-gray-300"
-                                />
-                                <span className="text-sm font-medium">Usar Handicap</span>
-                            </label>
                         </div>
 
                         <button
