@@ -804,6 +804,23 @@ export async function updateGlobalPlayer(id, formData) {
     return result.rows[0];
 }
 
+export async function deleteGlobalPlayer(id) {
+    const session = await getSession();
+    const role = session?.role;
+    if (role !== 'admin' && role !== 'superadmin' && role !== 'SUPERADMIN') {
+        throw new Error('Unauthorized: Only admins can delete players.');
+    }
+
+    try {
+        await query('DELETE FROM players WHERE id = $1', [id]);
+        revalidatePath('/admin/players');
+        return { success: true };
+    } catch (e) {
+        console.error('Error deleting player:', e);
+        throw new Error('No se puede eliminar: El jugador está participando en torneos.');
+    }
+}
+
 // --- FASES Y PARTIDAS ---
 
 export async function getTournamentPhases(tournamentId) {

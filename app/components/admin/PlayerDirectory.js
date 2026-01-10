@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { createGlobalPlayer, updateGlobalPlayer } from '@/app/lib/tournament-actions';
-import { Search, Plus, Pencil, User, Upload } from 'lucide-react';
+import { createGlobalPlayer, updateGlobalPlayer, deleteGlobalPlayer } from '@/app/lib/tournament-actions';
+import { Search, Plus, Pencil, User, Upload, Trash2 } from 'lucide-react';
 import { upload } from '@vercel/blob/client';
 
 export default function PlayerDirectory({ initialPlayers, clubs, role }) {
@@ -16,6 +16,7 @@ export default function PlayerDirectory({ initialPlayers, clubs, role }) {
     const isAdmin = role === 'admin' || role === 'superadmin' || role === 'SUPERADMIN';
     const canEdit = isAdmin;
     const canImport = isAdmin;
+    const canDelete = isAdmin;
     const canCreate = true; // Delegates CAN create
 
     // Filtered Players
@@ -73,6 +74,22 @@ export default function PlayerDirectory({ initialPlayers, clubs, role }) {
             window.location.reload();
         } catch (error) {
             alert('Error updating player: ' + error.message);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function handleDelete(player) {
+        if (!confirm(`¿Estás seguro de eliminar a ${player.name}? Esta acción no se puede deshacer.`)) return;
+
+        setLoading(true);
+        try {
+            await deleteGlobalPlayer(player.id);
+            alert('Jugador eliminado');
+            // Optimistic update or reload
+            setPlayers(prev => prev.filter(p => p.id !== player.id));
+        } catch (error) {
+            alert('Error eliminando: ' + error.message);
         } finally {
             setLoading(false);
         }
@@ -169,6 +186,18 @@ export default function PlayerDirectory({ initialPlayers, clubs, role }) {
                                     className="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-full"
                                 >
                                     <Pencil className="h-4 w-4" />
+                                </button>
+                            </div>
+                        )}
+
+                        {canDelete && (
+                            <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                    onClick={() => handleDelete(p)}
+                                    className="p-2 text-red-500 hover:bg-red-50 rounded-full"
+                                    title="Eliminar Jugador"
+                                >
+                                    <Trash2 className="h-4 w-4" />
                                 </button>
                             </div>
                         )}
