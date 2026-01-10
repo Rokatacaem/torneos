@@ -6,4 +6,4 @@ async function check() {
     console.table(res.rows);
 }
 
-check();
+check().then(() => process.exit(0));

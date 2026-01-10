@@ -23,10 +23,13 @@ export default async function middleware(req) {
 
     // 4.5 ROLE BASED PROTECTION
     // Prevent non-admins from accessing /admin
-    if (path.startsWith('/admin') && session?.role !== 'admin') {
-        if (session?.role === 'referee') return NextResponse.redirect(new URL('/referee', req.nextUrl));
-        if (session?.role === 'player') return NextResponse.redirect(new URL('/mi-perfil', req.nextUrl));
-        return NextResponse.redirect(new URL('/', req.nextUrl));
+    if (path.startsWith('/admin')) {
+        const allowedRoles = ['admin', 'superadmin', 'delegate'];
+        if (!allowedRoles.includes(session?.role)) {
+            if (session?.role === 'referee') return NextResponse.redirect(new URL('/referee', req.nextUrl));
+            if (session?.role === 'player') return NextResponse.redirect(new URL('/mi-perfil', req.nextUrl));
+            return NextResponse.redirect(new URL('/', req.nextUrl));
+        }
     }
     // Prevent players/referees from accessing each other's protected areas? (optional, but good practice)
     if (path.startsWith('/referee') && session?.role !== 'referee' && session?.role !== 'admin') {

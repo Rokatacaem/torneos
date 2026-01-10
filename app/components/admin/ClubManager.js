@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createClub, updateClub, deleteClub } from '@/app/lib/tournament-actions';
 import { useRouter } from 'next/navigation';
+import { upload } from '@vercel/blob/client';
 
 export default function ClubManager({ clubs }) {
     const router = useRouter();
@@ -12,9 +13,6 @@ export default function ClubManager({ clubs }) {
 
     // Form state (used for creation)
     const [newName, setNewName] = useState('');
-    const [newShortName, setNewShortName] = useState('');
-    const [newCountry, setNewCountry] = useState('');
-    const [newCity, setNewCity] = useState('');
 
     async function handleCreate(e) {
         e.preventDefault();
@@ -22,6 +20,18 @@ export default function ClubManager({ clubs }) {
         console.log('Start submit...');
         try {
             const formData = new FormData(e.target);
+            const logoFile = formData.get('logo');
+
+            // Client-side Upload
+            if (logoFile && logoFile.size > 0) {
+                const blob = await upload(logoFile.name, logoFile, {
+                    access: 'public',
+                    handleUploadUrl: '/api/upload',
+                });
+                formData.set('logo_url', blob.url);
+                formData.delete('logo'); // Remove raw file
+            }
+
             const res = await createClub(formData);
             console.log('Server response:', res);
 
@@ -45,6 +55,18 @@ export default function ClubManager({ clubs }) {
         setLoading(true);
         try {
             const formData = new FormData(e.target);
+            const logoFile = formData.get('logo');
+
+            // Client-side Upload
+            if (logoFile && logoFile.size > 0) {
+                const blob = await upload(logoFile.name, logoFile, {
+                    access: 'public',
+                    handleUploadUrl: '/api/upload',
+                });
+                formData.set('logo_url', blob.url);
+                formData.delete('logo'); // Remove raw file
+            }
+
             await updateClub(editingClub.id, formData);
             setEditingClub(null);
             router.refresh();

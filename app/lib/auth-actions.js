@@ -44,6 +44,10 @@ export async function login(prevState, formData) {
         if (user.role === 'player') {
             redirect('/mi-perfil');
         } else {
+            // Admin, Superadmin, Delegate, Referee -> Admin Dashboard (or specific if needed)
+            // Note: Referee has a specific redirect in middleware if they hit /admin, but here we can send them to /admin 
+            // and let middleware handle it, or send them directly.
+            // But for now, let's keep it simple: Everyone else goes to /admin
             redirect('/admin');
         }
     } catch (error) {

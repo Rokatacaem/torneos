@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createGlobalPlayer, updateGlobalPlayer } from '@/app/lib/tournament-actions';
 import { Search, Plus, Pencil, User, Upload } from 'lucide-react';
+import { upload } from '@vercel/blob/client';
 
 export default function PlayerDirectory({ initialPlayers, clubs }) {
     const [players, setPlayers] = useState(initialPlayers);
@@ -22,6 +23,18 @@ export default function PlayerDirectory({ initialPlayers, clubs }) {
         setLoading(true);
         try {
             const formData = new FormData(e.target);
+            const photoFile = formData.get('photo');
+
+            // Client-side Upload
+            if (photoFile && photoFile.size > 0) {
+                const blob = await upload(photoFile.name, photoFile, {
+                    access: 'public',
+                    handleUploadUrl: '/api/upload',
+                });
+                formData.set('photo_url', blob.url);
+                formData.delete('photo'); // Remove raw file
+            }
+
             await createGlobalPlayer(formData);
             alert('Jugador creado correctamente');
             window.location.reload(); // Simple reload to refresh data
@@ -37,6 +50,18 @@ export default function PlayerDirectory({ initialPlayers, clubs }) {
         setLoading(true);
         try {
             const formData = new FormData(e.target);
+            const photoFile = formData.get('photo');
+
+            // Client-side Upload
+            if (photoFile && photoFile.size > 0) {
+                const blob = await upload(photoFile.name, photoFile, {
+                    access: 'public',
+                    handleUploadUrl: '/api/upload',
+                });
+                formData.set('photo_url', blob.url);
+                formData.delete('photo'); // Remove raw file
+            }
+
             await updateGlobalPlayer(editingPlayer.id, formData);
             alert('Jugador actualizado');
             window.location.reload();

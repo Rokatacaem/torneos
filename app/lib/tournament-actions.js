@@ -27,79 +27,86 @@ export async function getTournament(id) {
 
 // Moved to top
 export async function createTournament(formData) {
-    // Extract data from FormData
-    const name = formData.get('name');
-    const start_date = formData.get('start_date');
-    const end_date = formData.get('end_date');
-    const max_players = parseInt(formData.get('max_players'));
-    const format = formData.get('format');
-    const group_size = parseInt(formData.get('group_size'));
-    const shot_clock_seconds = parseInt(formData.get('shot_clock_seconds') || '40');
-    const group_points_limit = parseInt(formData.get('group_points_limit') || '30');
-    const group_innings_limit = parseInt(formData.get('group_innings_limit') || '20');
-    const playoff_points_limit = parseInt(formData.get('playoff_points_limit') || '40');
-    const playoff_innings_limit = parseInt(formData.get('playoff_innings_limit') || '30');
-    const use_handicap = formData.get('use_handicap') === 'true';
-    const block_duration = parseInt(formData.get('block_duration')) || null;
+    try {
+        // Extract data from FormData
+        const name = formData.get('name');
+        const start_date = formData.get('start_date');
+        const end_date = formData.get('end_date');
+        const max_players = parseInt(formData.get('max_players'));
+        const format = formData.get('format');
+        const group_size = parseInt(formData.get('group_size'));
+        const shot_clock_seconds = parseInt(formData.get('shot_clock_seconds') || '40');
+        const group_points_limit = parseInt(formData.get('group_points_limit') || '30');
+        const group_innings_limit = parseInt(formData.get('group_innings_limit') || '20');
+        const playoff_points_limit = parseInt(formData.get('playoff_points_limit') || '40');
+        const playoff_innings_limit = parseInt(formData.get('playoff_innings_limit') || '30');
+        const use_handicap = formData.get('use_handicap') === 'true';
+        const block_duration = parseInt(formData.get('block_duration')) || null;
 
-    // New Fields
-    const semifinal_points_limit = parseInt(formData.get('semifinal_points_limit')) || null;
-    const semifinal_innings_limit = parseInt(formData.get('semifinal_innings_limit')) || null;
-    const final_points_limit = parseInt(formData.get('final_points_limit')) || null;
-    const final_innings_limit = parseInt(formData.get('final_innings_limit')) || null;
+        // New Fields
+        const semifinal_points_limit = parseInt(formData.get('semifinal_points_limit')) || null;
+        const semifinal_innings_limit = parseInt(formData.get('semifinal_innings_limit')) || null;
+        const final_points_limit = parseInt(formData.get('final_points_limit')) || null;
+        const final_innings_limit = parseInt(formData.get('final_innings_limit')) || null;
 
-    // Bug Fix: Declare these!
-    const playoff_target_size = parseInt(formData.get('playoff_target_size')) || 16;
-    const qualifiers_per_group = parseInt(formData.get('qualifiers_per_group')) || 2;
+        const playoff_target_size = parseInt(formData.get('playoff_target_size')) || 16;
+        const qualifiers_per_group = parseInt(formData.get('qualifiers_per_group')) || 2;
 
-    const host_club_id = formData.get('host_club_id') || null;
-    const discipline = formData.get('discipline') || null;
-    let tables_available = parseInt(formData.get('tables_available')) || 4;
+        const host_club_id = formData.get('host_club_id') || null;
+        const discipline = formData.get('discipline') || null;
+        let tables_available = parseInt(formData.get('tables_available')) || 4;
 
-    // If Host Club selected, try to get table count from it to default if tables_available not strictly provided?
-    // Actually, UI usually will set tables_available input. But validation/override here is good.
-    if (host_club_id) {
-        // Optional: Ensure we trust the input from UI or re-fetch?
-        // Let's trust UI input for tables_available, as user might want to use subset of tables.
-        // But we DO need to save host_club_id
+        // File Uploads
+        let banner_image_url = formData.get('banner_image_url') || null;
+        let logo_image_url = formData.get('logo_image_url') || null;
+
+        const bannerFile = formData.get('banner_image');
+        const logoFile = formData.get('logo_image');
+
+        // Verify Token if files are present (Legacy/Fallback Server-Side Upload)
+        if ((bannerFile && bannerFile.size > 0) || (logoFile && logoFile.size > 0)) {
+            if (!process.env.BLOB_READ_WRITE_TOKEN) {
+                // Return a clear error instead of failing silently or crashing
+                return { success: false, message: 'Error de Configuración: Falta BLOB_READ_WRITE_TOKEN para subir imágenes.' };
+            }
+        }
+
+        if (!banner_image_url && bannerFile && bannerFile.size > 0) {
+            banner_image_url = await saveFile(bannerFile, 'tournaments');
+        }
+
+        if (!logo_image_url && logoFile && logoFile.size > 0) {
+            logo_image_url = await saveFile(logoFile, 'tournaments');
+        }
+
+        const result = await query(`
+            INSERT INTO tournaments 
+            (
+                name, start_date, end_date, max_players, format, group_size, shot_clock_seconds, 
+                group_points_limit, group_innings_limit, playoff_points_limit, playoff_innings_limit, 
+                use_handicap, banner_image_url, logo_image_url,
+                semifinal_points_limit, semifinal_innings_limit, final_points_limit, final_innings_limit,
+                block_duration, playoff_target_size, qualifiers_per_group, host_club_id, tables_available, discipline
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
+            RETURNING *
+        `, [
+            name, start_date, end_date, max_players, format, group_size || 4,
+            shot_clock_seconds || 40, group_points_limit, group_innings_limit, playoff_points_limit, playoff_innings_limit,
+            use_handicap || false, banner_image_url, logo_image_url,
+            semifinal_points_limit, semifinal_innings_limit, final_points_limit, final_innings_limit,
+            block_duration, playoff_target_size, qualifiers_per_group, host_club_id, tables_available, discipline
+        ]);
+
+        revalidatePath('/tournaments');
+        revalidatePath('/admin/tournaments');
+
+        // Serialize return value to prevent "Unexpected response" due to Date objects
+        return { success: true, tournament: JSON.parse(JSON.stringify(result.rows[0])) };
+    } catch (e) {
+        console.error("Error creating tournament:", e);
+        return { success: false, message: e.message || 'Error desconocido al crear torneo' };
     }
-
-    // File Uploads
-    let banner_image_url = null;
-    let logo_image_url = null;
-
-    const bannerFile = formData.get('banner_image');
-    if (bannerFile && bannerFile.size > 0) {
-        banner_image_url = await saveFile(bannerFile, 'tournaments');
-    }
-
-    const logoFile = formData.get('logo_image');
-    if (logoFile && logoFile.size > 0) {
-        logo_image_url = await saveFile(logoFile, 'tournaments');
-    }
-
-    const result = await query(`
-    INSERT INTO tournaments 
-    (
-        name, start_date, end_date, max_players, format, group_size, shot_clock_seconds, 
-        group_points_limit, group_innings_limit, playoff_points_limit, playoff_innings_limit, 
-        use_handicap, banner_image_url, logo_image_url,
-        semifinal_points_limit, semifinal_innings_limit, final_points_limit, final_innings_limit,
-        block_duration, playoff_target_size, qualifiers_per_group, host_club_id, tables_available, discipline
-    )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
-    RETURNING *
-  `, [
-        name, start_date, end_date, max_players, format, group_size || 4,
-        shot_clock_seconds || 40, group_points_limit, group_innings_limit, playoff_points_limit, playoff_innings_limit,
-        use_handicap || false, banner_image_url, logo_image_url,
-        semifinal_points_limit, semifinal_innings_limit, final_points_limit, final_innings_limit,
-        block_duration, playoff_target_size, qualifiers_per_group, host_club_id, tables_available, discipline
-    ]);
-
-    revalidatePath('/tournaments');
-    revalidatePath('/admin/tournaments');
-    return result.rows[0];
 }
 
 // Safe integer parsing
@@ -133,16 +140,16 @@ export async function updateTournament(id, formData) {
         const final_innings_limit = safeParseInt(formData.get('final_innings_limit'));
 
         // File Uploads (Update only if new file provided)
-        let banner_image_url = null;
-        let logo_image_url = null;
+        let banner_image_url = formData.get('banner_image_url') || null;
+        let logo_image_url = formData.get('logo_image_url') || null;
 
         const bannerFile = formData.get('banner_image');
-        if (bannerFile && bannerFile.size > 0) {
+        if (!banner_image_url && bannerFile && bannerFile.size > 0) {
             banner_image_url = await saveFile(bannerFile, 'tournaments');
         }
 
         const logoFile = formData.get('logo_image');
-        if (logoFile && logoFile.size > 0) {
+        if (!logo_image_url && logoFile && logoFile.size > 0) {
             logo_image_url = await saveFile(logoFile, 'tournaments');
         }
 
@@ -221,10 +228,12 @@ export async function updateTournament(id, formData) {
         revalidatePath('/tournaments');
         revalidatePath('/admin/tournaments');
         revalidatePath(`/admin/tournaments/${id}`);
-        return result.rows[0];
+
+        return { success: true, tournament: result.rows[0] };
     } catch (e) {
         console.error("Database Error in updateTournament:", e);
-        throw new Error(`Failed to update tournament: ${e.message}`);
+        // Important: Return a serializable object, do NOT throw, to avoid "Unexpected response" from Next.js
+        return { success: false, message: e.message || 'Error desconocido al actualizar torneo' };
     }
 }
 
@@ -646,9 +655,9 @@ export async function createClub(formData) {
         const tables_bola9 = parseInt(formData.get('tables_bola9') || '0');
         const tables_snooker = parseInt(formData.get('tables_snooker') || '0');
 
-        let logo_url = null;
+        let logo_url = formData.get('logo_url') || null;
         const logo = formData.get('logo');
-        if (logo && logo.size > 0) {
+        if (!logo_url && logo && logo.size > 0) {
             console.log('Processing Logo...');
             logo_url = await saveFile(logo, 'clubs');
         }
@@ -678,9 +687,9 @@ export async function updateClub(id, formData) {
     const tables_bola9 = parseInt(formData.get('tables_bola9') || '0');
     const tables_snooker = parseInt(formData.get('tables_snooker') || '0');
 
-    let logo_url = null;
+    let logo_url = formData.get('logo_url') || null;
     const logo = formData.get('logo');
-    if (logo && logo.size > 0) {
+    if (!logo_url && logo && logo.size > 0) {
         logo_url = await saveFile(logo, 'clubs');
     }
 
@@ -732,9 +741,9 @@ export async function createGlobalPlayer(formData) {
     const identification = formData.get('identification') || null;
 
     // Photo Upload
-    let photo_url = null;
+    let photo_url = formData.get('photo_url') || null;
     const photoFile = formData.get('photo');
-    if (photoFile && photoFile.size > 0) {
+    if (!photo_url && photoFile && photoFile.size > 0) {
         photo_url = await saveFile(photoFile, 'players');
     }
 
@@ -754,9 +763,9 @@ export async function updateGlobalPlayer(id, formData) {
     const identification = formData.get('identification') || null;
 
     // Build update query dynamically based on photo presence
-    let photo_url = null;
+    let photo_url = formData.get('photo_url') || null;
     const photoFile = formData.get('photo');
-    if (photoFile && photoFile.size > 0) {
+    if (!photo_url && photoFile && photoFile.size > 0) {
         photo_url = await saveFile(photoFile, 'players');
     }
 

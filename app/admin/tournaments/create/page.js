@@ -8,6 +8,7 @@ import { Save, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/app/lib/utils';
 import TournamentGraphicsGuide from '@/app/components/admin/TournamentGraphicsGuide';
+import { upload } from '@vercel/blob/client';
 
 
 export default function CreateTournamentPage() {
@@ -19,14 +20,58 @@ export default function CreateTournamentPage() {
         setLoading(true);
         setError(null);
 
-        // Client-side validation if needed (e.g. file size)
+        // Client-side File Size Validation (Max 4MB total payload safety)
+        const MAX_SIZE_MB = 4.5; // Increased slightly for client-side check
+        const MAX_BYTES = MAX_SIZE_MB * 1024 * 1024;
+
+        const logoFile = formData.get('logo_image');
+        const bannerFile = formData.get('banner_image');
+
+        if (logoFile && logoFile.size > MAX_BYTES) {
+            setError(`El logo es muy pesado (${(logoFile.size / 1024 / 1024).toFixed(2)} MB). Máximo permitido: ${MAX_SIZE_MB}MB.`);
+            setLoading(false);
+            return;
+        }
+
+        if (bannerFile && bannerFile.size > MAX_BYTES) {
+            setError(`El banner es muy pesado (${(bannerFile.size / 1024 / 1024).toFixed(2)} MB). Máximo permitido: ${MAX_SIZE_MB}MB.`);
+            setLoading(false);
+            return;
+        }
 
         try {
-            await createTournament(formData);
-            router.push('/admin/tournaments');
-            router.refresh();
+            // Upload Images to Vercel Blob (Client-Side)
+            if (logoFile && logoFile.size > 0) {
+                const blob = await upload(logoFile.name, logoFile, {
+                    access: 'public',
+                    handleUploadUrl: '/api/upload',
+                });
+                formData.set('logo_image_url', blob.url);
+            }
+
+            if (bannerFile && bannerFile.size > 0) {
+                const blob = await upload(bannerFile.name, bannerFile, {
+                    access: 'public',
+                    handleUploadUrl: '/api/upload',
+                });
+                formData.set('banner_image_url', blob.url);
+            }
+
+            // Remove raw files to avoid server receiving them (optional, saves bandwidth)
+            formData.delete('logo_image');
+            formData.delete('banner_image');
+
+            const result = await createTournament(formData);
+
+            if (result && result.success) {
+                router.push('/admin/tournaments');
+                router.refresh();
+            } else {
+                setError(result?.message || 'Error al crear el torneo');
+            }
         } catch (e) {
-            setError(e.message || 'Error al crear el torneo');
+            console.error(e);
+            setError(e.message || 'Error inesperado al crear el torneo');
         } finally {
             setLoading(false);
         }

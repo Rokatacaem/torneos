@@ -10,14 +10,12 @@ export function AdminSidebar({ role }) {
     const pathname = usePathname();
 
     const isActive = (path) => pathname === path;
-    const isSuperAdmin = role === 'SUPERADMIN';
+    const isSuperAdmin = role === 'SUPERADMIN' || role === 'superadmin';
 
     return (
         <aside className="w-64 bg-[#0B1120] border-r border-white/10 hidden md:flex flex-col">
             <div className="p-6 flex items-center gap-3">
-                <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-white shadow-lg shadow-blue-900/50">
-                    T
-                </div>
+                <img src="/Logo3DAzul.png" alt="Torneos Pro" className="h-12 w-auto object-contain" />
                 <span className="font-bold text-lg text-white">Torneos Pro</span>
             </div>
 
@@ -106,7 +104,7 @@ export function AdminSidebar({ role }) {
                 )}
 
                 <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-6">Administración</p>
-                {role === 'admin' && (
+                {(role === 'admin' || isSuperAdmin) && (
                     <Link
                         href="/admin/users"
                         className={cn(

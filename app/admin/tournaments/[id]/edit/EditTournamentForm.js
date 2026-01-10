@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/ca
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import TournamentGraphicsGuide from '@/app/components/admin/TournamentGraphicsGuide';
+import { upload } from '@vercel/blob/client';
 
 export default function EditTournamentForm({ tournament }) {
     const router = useRouter();
@@ -25,8 +26,8 @@ export default function EditTournamentForm({ tournament }) {
         setSaving(true);
         setError(null);
 
-        // Client-side File Size Validation (Max 4MB total payload safety)
-        const MAX_SIZE_MB = 4;
+        // Client-side File Size Validation
+        const MAX_SIZE_MB = 4.5;
         const MAX_BYTES = MAX_SIZE_MB * 1024 * 1024;
 
         const logoFile = formData.get('logo_image');
@@ -45,10 +46,37 @@ export default function EditTournamentForm({ tournament }) {
         }
 
         try {
-            await updateTournament(tournament.id, formData);
-            router.push(`/admin/tournaments/${tournament.id}`);
-            router.refresh();
+            // Client-Side Uploads
+            if (logoFile && logoFile.size > 0) {
+                const blob = await upload(logoFile.name, logoFile, {
+                    access: 'public',
+                    handleUploadUrl: '/api/upload',
+                });
+                formData.set('logo_image_url', blob.url);
+            }
+
+            if (bannerFile && bannerFile.size > 0) {
+                const blob = await upload(bannerFile.name, bannerFile, {
+                    access: 'public',
+                    handleUploadUrl: '/api/upload',
+                });
+                formData.set('banner_image_url', blob.url);
+            }
+
+            // Clean up raw files
+            formData.delete('logo_image');
+            formData.delete('banner_image');
+
+            const result = await updateTournament(tournament.id, formData);
+
+            if (result && result.success) {
+                router.push(`/admin/tournaments/${tournament.id}`);
+                router.refresh();
+            } else {
+                throw new Error(result?.message || 'Error desconocido del servidor');
+            }
         } catch (e) {
+            console.error(e);
             setError(e.message || 'Error al actualizar el torneo');
             setSaving(false);
         }
