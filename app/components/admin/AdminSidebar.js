@@ -13,10 +13,9 @@ export function AdminSidebar({ role }) {
     const isSuperAdmin = role === 'SUPERADMIN' || role === 'superadmin';
 
     return (
-        <aside className="w-64 bg-[#0B1120] border-r border-white/10 hidden md:flex flex-col">
-            <div className="p-6 flex items-center gap-3">
-                <img src="/Logo3DAzul.png" alt="Torneos Pro" className="h-12 w-auto object-contain" />
-                <span className="font-bold text-lg text-white">Torneos Pro</span>
+        <aside className="w-64 bg-[#0f2040] border-r border-white/10 hidden md:flex flex-col">
+            <div className="p-4 flex justify-center w-full">
+                <img src="/Logo3DAzul.png" alt="Torneos Pro" className="w-full h-auto object-contain" />
             </div>
 
             <nav className="flex-1 p-4 space-y-1">
