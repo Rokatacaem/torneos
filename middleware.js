@@ -32,8 +32,12 @@ export default async function middleware(req) {
         }
     }
     // Prevent players/referees from accessing each other's protected areas? (optional, but good practice)
-    if (path.startsWith('/referee') && session?.role !== 'referee' && session?.role !== 'admin') {
-        return NextResponse.redirect(new URL('/login', req.nextUrl)); // Or home
+    // Prevent players/referees from accessing each other's protected areas? (optional, but good practice)
+    if (path.startsWith('/referee')) {
+        const allowedRefereeRoles = ['referee', 'admin', 'superadmin', 'SUPERADMIN', 'delegate'];
+        if (!allowedRefereeRoles.includes(session?.role)) {
+            return NextResponse.redirect(new URL('/login', req.nextUrl));
+        }
     }
 
 
