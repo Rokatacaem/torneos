@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { createGlobalPlayer, updateGlobalPlayer, deleteGlobalPlayer } from '@/app/lib/tournament-actions';
-import { Search, Plus, Pencil, User, Upload, Trash2 } from 'lucide-react';
+import { createGlobalPlayer, updateGlobalPlayer, deleteGlobalPlayer, deleteGlobalPlayers } from '@/app/lib/tournament-actions';
+import { Search, Plus, Pencil, User, Upload, Trash2, CheckSquare, Square } from 'lucide-react';
 import { upload } from '@vercel/blob/client';
 
 export default function PlayerDirectory({ initialPlayers, clubs, role }) {
@@ -11,6 +11,7 @@ export default function PlayerDirectory({ initialPlayers, clubs, role }) {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editingPlayer, setEditingPlayer] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [selectedIds, setSelectedIds] = useState([]); // Bulk Selection State
 
     // Check role permissions
     const isAdmin = role === 'admin' || role === 'superadmin' || role === 'SUPERADMIN';
@@ -96,6 +97,38 @@ export default function PlayerDirectory({ initialPlayers, clubs, role }) {
     }
 
 
+
+    // Bulk Actions
+    const handleSelectAll = () => {
+        if (selectedIds.length === filteredPlayers.length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(filteredPlayers.map(p => p.id));
+        }
+    };
+
+    const toggleSelection = (id) => {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+        );
+    };
+
+    const handleBulkDelete = async () => {
+        if (!confirm(`¿Estás seguro de eliminar ${selectedIds.length} jugadores seleccionados?`)) return;
+
+        setLoading(true);
+        try {
+            await deleteGlobalPlayers(selectedIds);
+            alert('Jugadores eliminados correctamente');
+            setPlayers(prev => prev.filter(p => !selectedIds.includes(p.id)));
+            setSelectedIds([]);
+        } catch (error) {
+            alert('Error: ' + error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     async function handleImport(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -147,7 +180,34 @@ export default function PlayerDirectory({ initialPlayers, clubs, role }) {
                 </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 justify-end">
+            <div className="flex flex-wrap gap-2 justify-end mb-4">
+                {canDelete && filteredPlayers.length > 0 && (
+                    <div className="flex items-center gap-2 mr-auto bg-muted px-3 rounded-md">
+                        <button
+                            onClick={handleSelectAll}
+                            className="flex items-center gap-2 text-sm font-medium hover:text-primary py-2"
+                        >
+                            {selectedIds.length === filteredPlayers.length ? (
+                                <CheckSquare className="h-4 w-4" />
+                            ) : (
+                                <Square className="h-4 w-4" />
+                            )}
+                            {selectedIds.length > 0 ? `${selectedIds.length} Seleccionados` : 'Seleccionar Todo'}
+                        </button>
+                        {selectedIds.length > 0 && (
+                            <button
+                                onClick={handleBulkDelete}
+                                className="text-red-500 hover:text-red-700 text-sm font-medium border-l border-zinc-500 pl-3 ml-1"
+                            >
+                                <div className="flex items-center gap-1">
+                                    <Trash2 className="h-4 w-4" />
+                                    Eliminar ({selectedIds.length})
+                                </div>
+                            </button>
+                        )}
+                    </div>
+                )}
+
                 {canImport && (
                     <div className="relative">
                         <input
@@ -178,7 +238,34 @@ export default function PlayerDirectory({ initialPlayers, clubs, role }) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {filteredPlayers.map(p => (
-                    <div key={p.id} className="relative group bg-card border rounded-lg p-4 flex flex-col items-center gap-3 hover:shadow-md transition-shadow">
+                    <div
+                        key={p.id}
+                        className={`relative group bg-card border rounded-lg p-4 flex flex-col items-center gap-3 hover:shadow-md transition-shadow cursor-pointer ${selectedIds.includes(p.id) ? 'ring-2 ring-primary bg-primary/5' : ''}`}
+                        onClick={(e) => {
+                            if (canDelete) {
+                                // Prevent triggering when clicking buttons
+                                if (e.target.closest('button')) return;
+                                toggleSelection(p.id);
+                            }
+                        }}
+                    >
+                        {canDelete && (
+                            <div className="absolute top-2 left-2 z-10">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleSelection(p.id);
+                                    }}
+                                    className="text-primary hover:scale-110 transition-transform"
+                                >
+                                    {selectedIds.includes(p.id) ? (
+                                        <CheckSquare className="h-5 w-5 fill-background" />
+                                    ) : (
+                                        <Square className="h-5 w-5 text-muted-foreground opacity-50 hover:opacity-100" />
+                                    )}
+                                </button>
+                            </div>
+                        )}
                         {canEdit && (
                             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
