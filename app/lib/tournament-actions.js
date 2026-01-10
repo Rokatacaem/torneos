@@ -4,6 +4,7 @@ import { query } from './db';
 import { revalidatePath } from 'next/cache';
 import { saveFile } from './upload-utils';
 import { calculateFechillarHandicap } from '@/app/lib/utils';
+import { getSession } from '@/app/lib/auth';
 
 
 // --- TORNEOS ---
@@ -736,6 +737,11 @@ export async function getGlobalPlayers() {
 }
 
 export async function createGlobalPlayer(formData) {
+    const session = await getSession();
+    if (!session || !session.userId) { // Minimal check: must be logged in
+        throw new Error('Unauthorized');
+    }
+
     const name = formData.get('name');
     const club_id = formData.get('club_id') || null;
     const identification = formData.get('identification') || null;
@@ -758,6 +764,12 @@ export async function createGlobalPlayer(formData) {
 }
 
 export async function updateGlobalPlayer(id, formData) {
+    const session = await getSession();
+    const role = session?.role;
+    if (role !== 'admin' && role !== 'superadmin' && role !== 'SUPERADMIN') {
+        throw new Error('Unauthorized: Only admins can edit players.');
+    }
+
     const name = formData.get('name');
     const club_id = formData.get('club_id') || null;
     const identification = formData.get('identification') || null;

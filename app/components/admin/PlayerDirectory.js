@@ -5,12 +5,18 @@ import { createGlobalPlayer, updateGlobalPlayer } from '@/app/lib/tournament-act
 import { Search, Plus, Pencil, User, Upload } from 'lucide-react';
 import { upload } from '@vercel/blob/client';
 
-export default function PlayerDirectory({ initialPlayers, clubs }) {
+export default function PlayerDirectory({ initialPlayers, clubs, role }) {
     const [players, setPlayers] = useState(initialPlayers);
     const [searchTerm, setSearchTerm] = useState('');
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editingPlayer, setEditingPlayer] = useState(null);
     const [loading, setLoading] = useState(false);
+
+    // Check role permissions
+    const isAdmin = role === 'admin' || role === 'superadmin' || role === 'SUPERADMIN';
+    const canEdit = isAdmin;
+    const canImport = isAdmin;
+    const canCreate = true; // Delegates CAN create
 
     // Filtered Players
     const filteredPlayers = players.filter(p =>
@@ -125,41 +131,47 @@ export default function PlayerDirectory({ initialPlayers, clubs }) {
             </div>
 
             <div className="flex flex-wrap gap-2 justify-end">
-                <div className="relative">
-                    <input
-                        type="file"
-                        accept=".xlsx, .xls"
-                        onChange={handleImport}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        disabled={loading}
-                    />
+                {canImport && (
+                    <div className="relative">
+                        <input
+                            type="file"
+                            accept=".xlsx, .xls"
+                            onChange={handleImport}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            disabled={loading}
+                        />
+                        <button
+                            className="flex items-center gap-2 bg-accent text-accent-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent/80 transition-colors"
+                            disabled={loading}
+                        >
+                            <Upload className="h-4 w-4" />
+                            {loading ? 'Importando...' : 'Importar Excel'}
+                        </button>
+                    </div>
+                )}                {canCreate && (
                     <button
-                        className="flex items-center gap-2 bg-accent text-accent-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent/80 transition-colors"
-                        disabled={loading}
+                        onClick={() => setIsCreateOpen(true)}
+                        className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
                     >
-                        <Upload className="h-4 w-4" />
-                        {loading ? 'Importando...' : 'Importar Excel'}
+                        <Plus className="h-4 w-4" />
+                        Nuevo Jugador
                     </button>
-                </div>                <button
-                    onClick={() => setIsCreateOpen(true)}
-                    className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
-                >
-                    <Plus className="h-4 w-4" />
-                    Nuevo Jugador
-                </button>
+                )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {filteredPlayers.map(p => (
                     <div key={p.id} className="relative group bg-card border rounded-lg p-4 flex flex-col items-center gap-3 hover:shadow-md transition-shadow">
-                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                                onClick={() => setEditingPlayer(p)}
-                                className="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-full"
-                            >
-                                <Pencil className="h-4 w-4" />
-                            </button>
-                        </div>
+                        {canEdit && (
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                    onClick={() => setEditingPlayer(p)}
+                                    className="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-full"
+                                >
+                                    <Pencil className="h-4 w-4" />
+                                </button>
+                            </div>
+                        )}
 
                         <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-muted shadow-sm">
                             {p.photo_url ? (
