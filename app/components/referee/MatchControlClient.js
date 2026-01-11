@@ -119,13 +119,16 @@ function MatchControlClientContent({ initialMatch }) {
         p2Target = limit;
     }
 
-    let maxInningsRaw = match.calculated_innings_limit || (isGroup ? (match.config_group_innings || match.group_innings_limit) : (match.config_playoff_innings || match.playoff_innings_limit));
-    let maxInnings = maxInningsRaw ? parseInt(maxInningsRaw) : null;
-
-    const isFinal = match.round_label === 'Final' || match.round_label === 'Gran Final';
-    if (!isGroup && isFinal) {
-        maxInnings = null;
+    // Use calculated limit from server if available (checking for nullish to allow 0)
+    if (match.calculated_innings_limit !== null && match.calculated_innings_limit !== undefined) {
+        maxInningsRaw = match.calculated_innings_limit;
+    } else {
+        maxInningsRaw = isGroup ? (match.config_group_innings || match.group_innings_limit) : (match.config_playoff_innings || match.playoff_innings_limit);
     }
+
+    let maxInnings = (maxInningsRaw !== null && maxInningsRaw !== undefined && maxInningsRaw !== '') ? parseInt(maxInningsRaw) : null;
+    // If 0, treat as null (unlimited)
+    if (maxInnings === 0) maxInnings = null;
 
     // Logic: User wants 1-based "Current Inning".
     // DB stores "Completed Innings" (starts at 0).

@@ -52,11 +52,11 @@ export default async function RefereeMatchPage({ params }) {
         const isSemi = currentRound === totalRounds - 1;
 
         if (isFinal) {
-            calculated_points_limit = match.config_final_points || match.config_playoff_points || 40;
-            calculated_innings_limit = match.config_final_innings || match.config_playoff_innings || 30;
+            calculated_points_limit = match.config_final_points ?? match.config_playoff_points ?? 40;
+            calculated_innings_limit = match.config_final_innings ?? match.config_playoff_innings ?? 30;
         } else if (isSemi) {
-            calculated_points_limit = match.config_semifinal_points || match.config_playoff_points || 40;
-            calculated_innings_limit = match.config_semifinal_innings || match.config_playoff_innings || 30;
+            calculated_points_limit = match.config_semifinal_points ?? match.config_playoff_points ?? 40;
+            calculated_innings_limit = match.config_semifinal_innings ?? match.config_playoff_innings ?? 30;
         } else {
             // Standard Playoff Round
             calculated_points_limit = match.config_playoff_points || 40;
