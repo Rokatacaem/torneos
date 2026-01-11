@@ -17,7 +17,8 @@ export function calculateGroupStandings(matches) {
                     lost: 0,
                     points: 0,
                     scoreFor: 0,
-                    scoreAgainst: 0
+                    scoreAgainst: 0,
+                    highRun: 0
                 };
             }
         };
@@ -57,6 +58,10 @@ export function calculateGroupStandings(matches) {
             const matchInnings = match.innings || 0;
             p1.innings = (p1.innings || 0) + matchInnings;
             p2.innings = (p2.innings || 0) + matchInnings;
+
+            // Track High Run (SM)
+            if (match.high_run_p1 > (p1.highRun || 0)) p1.highRun = match.high_run_p1;
+            if (match.high_run_p2 > (p2.highRun || 0)) p2.highRun = match.high_run_p2;
         }
     });
 

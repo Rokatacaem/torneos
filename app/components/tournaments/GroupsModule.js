@@ -24,9 +24,10 @@ export default function GroupsModule({ standings }) {
                             <table className="w-full text-[9px] lg:text-[11px] xl:text-xs text-left table-fixed font-medium">
                                 <thead>
                                     <tr className="text-cyan-400 border-b border-white/5 bg-[#030810]/50 text-[8px] lg:text-[10px]">
-                                        <th className="w-[45%] p-0.5 font-bold">JUGADOR</th>
-                                        <th className="w-[15%] text-center p-0.5 font-bold">PJ</th>
-                                        <th className="w-[25%] text-center p-0.5 font-bold">PROM</th>
+                                        <th className="w-[40%] p-0.5 font-bold">JUGADOR</th>
+                                        <th className="w-[12%] text-center p-0.5 font-bold">PJ</th>
+                                        <th className="w-[22%] text-center p-0.5 font-bold">PROM</th>
+                                        <th className="w-[11%] text-center p-0.5 font-bold text-white">SM</th>
                                         <th className="w-[15%] text-center text-white p-0.5 font-black bg-white/5">PTS</th>
                                     </tr>
                                 </thead>
@@ -42,7 +43,8 @@ export default function GroupsModule({ standings }) {
                                                 <span>{p.name.split(' ').slice(-1)[0]} <span className="text-[8px] opacity-70 ml-0.5">{p.name.charAt(0)}.</span></span>
                                             </td>
                                             <td className="p-0.5 text-center font-mono tracking-tighter">{p.played}</td>
-                                            <td className="p-0.5 text-center text-yellow-500 font-mono tracking-tighter">{p.avg}</td>
+                                            <td className="p-0.5 text-center text-yellow-500 font-mono tracking-tighter">{p.average}</td>
+                                            <td className="p-0.5 text-center text-white font-mono tracking-tighter">{p.highRun || 0}</td>
                                             <td className="p-0.5 text-center font-black bg-white/5 text-cyan-200 tracking-tighter">{p.points}</td>
                                         </tr>
                                     ))}
