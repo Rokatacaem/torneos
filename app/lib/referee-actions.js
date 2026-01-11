@@ -4,7 +4,7 @@ import { query } from './db';
 import { revalidatePath } from 'next/cache';
 
 // Optimistic updates happen on client, but this ensures DB consistency
-export async function updateMatchScore(matchId, p1Delta, p2Delta, inningDelta, currentPlayerId = null) {
+export async function updateMatchScore(matchId, p1Delta, p2Delta, inningDelta, currentPlayerId = null, highRunP1 = 0, highRunP2 = 0) {
     // 1. Logic to build dynamic update
     // We want to update score AND potentially current_player_id if provided (turn change)
 
@@ -14,12 +14,14 @@ export async function updateMatchScore(matchId, p1Delta, p2Delta, inningDelta, c
             score_p1 = GREATEST(0, COALESCE(score_p1, 0) + $2),
             score_p2 = GREATEST(0, COALESCE(score_p2, 0) + $3),
             innings = GREATEST(0, COALESCE(innings, 0) + $4),
+            high_run_p1 = GREATEST(COALESCE(high_run_p1, 0), $5),
+            high_run_p2 = GREATEST(COALESCE(high_run_p2, 0), $6),
             status = 'in_progress',
             updated_at = NOW()
     `;
 
-    const params = [matchId, p1Delta, p2Delta, inningDelta];
-    let paramIdx = 5;
+    const params = [matchId, p1Delta, p2Delta, inningDelta, highRunP1, highRunP2];
+    let paramIdx = 7;
 
     if (currentPlayerId) {
         queryStr += `, current_player_id = $${paramIdx++}`;

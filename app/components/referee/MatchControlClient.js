@@ -78,6 +78,9 @@ function MatchControlClientContent({ initialMatch }) {
     // Match Status Logic
     const [isMatchFinished, setIsMatchFinished] = useState(match.status === 'completed');
 
+    // High Run Logic (Local Tracking)
+    const [currentRun, setCurrentRun] = useState(0);
+
     // Lag Logic - Robust Initialization
     // Check localStorage first, then DB
     const getInitialStart = () => {
@@ -189,11 +192,36 @@ function MatchControlClientContent({ initialMatch }) {
             return;
         }
 
+        // High Run Calculation
+        let newCurrentRun = currentRun;
+        let newHighRunP1 = match.high_run_p1 || 0;
+        let newHighRunP2 = match.high_run_p2 || 0;
+
+        // Increment run if scoring positive
+        if (p1Delta > 0 || p2Delta > 0) {
+            newCurrentRun += 1;
+        }
+
+        // Reset run if turn changes (inningDelta > 0) or explicit payer switch
+        if (inningDelta > 0 || nextPlayerId) {
+            newCurrentRun = 0;
+        }
+
+        // Update High Record if exceeded
+        if (p1Delta > 0) {
+            if (newCurrentRun > newHighRunP1) newHighRunP1 = newCurrentRun;
+        }
+        if (p2Delta > 0) {
+            if (newCurrentRun > newHighRunP2) newHighRunP2 = newCurrentRun;
+        }
+
         const newState = {
             ...match,
             score_p1: (match.score_p1 || 0) + p1Delta,
             score_p2: (match.score_p2 || 0) + p2Delta,
-            innings: (match.innings || 0) + inningDelta
+            innings: (match.innings || 0) + inningDelta,
+            high_run_p1: newHighRunP1,
+            high_run_p2: newHighRunP2
         };
         // Safety checks
         if (newState.score_p1 < 0) newState.score_p1 = 0;
@@ -201,6 +229,7 @@ function MatchControlClientContent({ initialMatch }) {
         if (newState.innings < 0) newState.innings = 0;
 
         setMatch(newState);
+        setCurrentRun(newCurrentRun);
 
         // Determine who just scored/played
         // If p1Delta > 0, it was p1. If p2Delta > 0, it was p2.
@@ -235,7 +264,7 @@ function MatchControlClientContent({ initialMatch }) {
             // But wait, updateMatchScore is async.
             // We need to pass the NEW active player ID to the server update.
             startTransition(async () => {
-                await updateMatchScore(match.id, p1Delta, p2Delta, inningDelta, nextPlayerId);
+                await updateMatchScore(match.id, p1Delta, p2Delta, inningDelta, nextPlayerId, newHighRunP1, newHighRunP2);
                 router.refresh();
             });
             return; // Exit here effectively, as we handled the transition manually
@@ -252,7 +281,7 @@ function MatchControlClientContent({ initialMatch }) {
             setResetTrigger(prev => prev + 1);
 
             startTransition(async () => {
-                await updateMatchScore(match.id, p1Delta, p2Delta, inningDelta, nextPlayerId);
+                await updateMatchScore(match.id, p1Delta, p2Delta, inningDelta, nextPlayerId, newHighRunP1, newHighRunP2);
                 router.refresh();
             });
             return;
@@ -263,7 +292,7 @@ function MatchControlClientContent({ initialMatch }) {
         }
 
         startTransition(async () => {
-            await updateMatchScore(match.id, p1Delta, p2Delta, inningDelta, nextPlayerId);
+            await updateMatchScore(match.id, p1Delta, p2Delta, inningDelta, nextPlayerId, newHighRunP1, newHighRunP2);
             router.refresh();
         });
     };
@@ -389,6 +418,7 @@ function MatchControlClientContent({ initialMatch }) {
         // Update DB with turn change logic
         // We assume handleUpdate supports passing nextPlayerId
         handleUpdate(0, 0, inningInc, nextPlayerId);
+        setCurrentRun(0); // Reset local run on manual toggle
     };
 
     // Helper to get render data
