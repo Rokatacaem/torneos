@@ -6,15 +6,14 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false }
 });
 
-async function listTables() {
+async function check() {
     try {
         const res = await pool.query(`
-            SELECT table_name 
-            FROM information_schema.tables 
-            WHERE table_schema = 'public'
-            ORDER BY table_name;
+            SELECT column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_name = 'tournament_groups';
         `);
-        console.log('Tables:', res.rows.map(r => r.table_name));
+        console.log('Columns:', res.rows.map(r => r.column_name).sort());
     } catch (e) {
         console.error(e);
     } finally {
@@ -22,4 +21,4 @@ async function listTables() {
     }
 }
 
-listTables();
+check();

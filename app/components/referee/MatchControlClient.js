@@ -211,9 +211,10 @@ function MatchControlClientContent({ initialMatch }) {
         let newHighRunP1 = match.high_run_p1 || 0;
         let newHighRunP2 = match.high_run_p2 || 0;
 
-        // Increment run if scoring positive
-        if (p1Delta > 0 || p2Delta > 0) {
-            newCurrentRun += 1;
+        // Increment/Decrement run
+        if (p1Delta !== 0 || p2Delta !== 0) {
+            newCurrentRun += (p1Delta + p2Delta);
+            if (newCurrentRun < 0) newCurrentRun = 0;
         }
 
         // Reset run if turn changes (inningDelta > 0) or explicit payer switch
@@ -772,8 +773,9 @@ function MatchControlClientContent({ initialMatch }) {
                         </div>
                         {/* Status Bar */}
                         {activePlayer === left.key && (
-                            <div className="bg-blue-600 text-white text-xs font-bold text-center py-1 uppercase tracking-widest">
-                                AL TIRO
+                            <div className="bg-blue-600 text-white text-xs font-bold text-center py-1 uppercase tracking-widest flex justify-between px-2">
+                                <span>AL TIRO</span>
+                                <span>SERIE: {currentRun}</span>
                             </div>
                         )}
                     </div>
@@ -817,8 +819,9 @@ function MatchControlClientContent({ initialMatch }) {
                         </div>
                         {/* Status Bar */}
                         {activePlayer === right.key && (
-                            <div className="bg-blue-600 text-white text-xs font-bold text-center py-1 uppercase tracking-widest">
-                                AL TIRO
+                            <div className="bg-blue-600 text-white text-xs font-bold text-center py-1 uppercase tracking-widest flex justify-between px-2">
+                                <span>AL TIRO</span>
+                                <span>SERIE: {currentRun}</span>
                             </div>
                         )}
                     </div>
