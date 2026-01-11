@@ -1,6 +1,8 @@
 import { AdminSidebar } from "@/app/components/admin/AdminSidebar";
 import { getSession } from "@/app/lib/auth";
 
+import { AdminHeader } from "@/app/components/admin/AdminHeader";
+
 export default async function AdminLayout({ children }) {
     const session = await getSession();
     const userRole = session?.role || 'DIRECTOR'; // Default to restricted if unknown
@@ -13,17 +15,7 @@ export default async function AdminLayout({ children }) {
 
             {/* Main Content */}
             <div className="flex-1 flex flex-col">
-                <header className="h-16 border-b bg-card flex items-center justify-between px-6">
-                    <div className="md:hidden">
-                        <span className="font-bold">Admin</span>
-                    </div>
-                    <div className="ml-auto flex items-center gap-4">
-                        <div className="text-sm text-muted-foreground">
-                            Admin User
-                        </div>
-                        <div className="h-8 w-8 bg-accent rounded-full"></div>
-                    </div>
-                </header>
+                <AdminHeader userName={userName} role={userRole} />
                 <main className="flex-1 p-6 overflow-auto">
                     {children}
                 </main>
