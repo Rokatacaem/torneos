@@ -278,7 +278,7 @@ function MatchControlClientContent({ initialMatch }) {
             // But wait, updateMatchScore is async.
             // We need to pass the NEW active player ID to the server update.
             startTransition(async () => {
-                await updateMatchScore(match.id, p1Delta, p2Delta, inningDelta, nextPlayerId, newHighRunP1, newHighRunP2);
+                await updateMatchScore(match.id, { p1Delta, p2Delta, inningDelta, currentPlayerId: nextPlayerId, highRunP1: newHighRunP1, highRunP2: newHighRunP2 });
                 router.refresh();
             });
             return; // Exit here effectively, as we handled the transition manually
@@ -295,7 +295,7 @@ function MatchControlClientContent({ initialMatch }) {
             setResetTrigger(prev => prev + 1);
 
             startTransition(async () => {
-                await updateMatchScore(match.id, p1Delta, p2Delta, inningDelta, nextPlayerId, newHighRunP1, newHighRunP2);
+                await updateMatchScore(match.id, { p1Delta, p2Delta, inningDelta, currentPlayerId: nextPlayerId, highRunP1: newHighRunP1, highRunP2: newHighRunP2 });
                 router.refresh();
             });
             return;
@@ -306,7 +306,7 @@ function MatchControlClientContent({ initialMatch }) {
         }
 
         startTransition(async () => {
-            await updateMatchScore(match.id, p1Delta, p2Delta, inningDelta, nextPlayerId, newHighRunP1, newHighRunP2);
+            await updateMatchScore(match.id, { p1Delta, p2Delta, inningDelta, currentPlayerId: nextPlayerId, highRunP1: newHighRunP1, highRunP2: newHighRunP2 });
             router.refresh();
         });
     };
