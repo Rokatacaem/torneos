@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
-import { updateMatchScore, setRefereeName, finishMatch, setMatchStart } from '@/app/lib/referee-actions';
+import { updateMatchScore, setRefereeName, finishMatch, setMatchStart, finishMatchWO } from '@/app/lib/referee-actions';
 import { useRouter } from 'next/navigation';
 import ShotClock from './ShotClock';
 import { ArrowLeftRight, CheckCircle2 } from 'lucide-react';
@@ -73,6 +73,7 @@ function MatchControlClientContent({ initialMatch }) {
     // Referee Name Logic
     const [refereeNameInput, setRefereeNameInput] = useState('');
     const [showRefereeModal, setShowRefereeModal] = useState(!match.referee_name);
+    const [showWOModal, setShowWOModal] = useState(false);
 
     // Match Status Logic
     const [isMatchFinished, setIsMatchFinished] = useState(match.status === 'completed');
@@ -552,6 +553,62 @@ function MatchControlClientContent({ initialMatch }) {
         );
     }
 
+    // WO Modal
+    if (showWOModal) {
+        return (
+            <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
+                <div className="bg-slate-900 border border-red-500/30 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl relative">
+                    <div className="p-6 text-center space-y-6">
+                        <div className="space-y-2">
+                            <h2 className="text-xl font-bold text-red-500 uppercase tracking-widest">Declarar Walkover (W.O.)</h2>
+                            <p className="text-slate-400 text-sm">El jugador ausente perderá el partido con 0 puntos.</p>
+                            <p className="text-white font-bold">¿Quién es el GANADOR (Presente)?</p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <button
+                                onClick={async () => {
+                                    if (confirm(`¿Confirmar W.O. a favor de ${match.player1_name}?`)) {
+                                        // Calculate target points (limit)
+                                        // p1Target is already calculated in scope? No, it's inside render.
+                                        // We need to pass it or calc it. 
+                                        // Actually `p1Target` is calculated in the component scope above.
+                                        await finishMatchWO(match.id, match.player1_id, p1Target || 0);
+                                        router.refresh();
+                                    }
+                                }}
+                                className="p-4 bg-slate-800 hover:bg-green-900/40 border border-white/10 hover:border-green-500/50 rounded-xl transition-all group"
+                            >
+                                <span className="block text-xs text-slate-500 uppercase font-bold mb-1">Ganador</span>
+                                <span className="block text-lg font-bold text-white group-hover:text-green-400">{match.player1_name}</span>
+                            </button>
+
+                            <button
+                                onClick={async () => {
+                                    if (confirm(`¿Confirmar W.O. a favor de ${match.player2_name}?`)) {
+                                        await finishMatchWO(match.id, match.player2_id, p2Target || 0);
+                                        router.refresh();
+                                    }
+                                }}
+                                className="p-4 bg-slate-800 hover:bg-green-900/40 border border-white/10 hover:border-green-500/50 rounded-xl transition-all group"
+                            >
+                                <span className="block text-xs text-slate-500 uppercase font-bold mb-1">Ganador</span>
+                                <span className="block text-lg font-bold text-white group-hover:text-green-400">{match.player2_name}</span>
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={() => setShowWOModal(false)}
+                            className="w-full py-3 rounded-xl font-bold text-slate-400 hover:bg-white/5 transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-black text-white flex flex-col font-sans selection:bg-orange-500/30">
             {/* Top Bar for Referee */}
@@ -569,12 +626,20 @@ function MatchControlClientContent({ initialMatch }) {
                     </span>
                 </div>
                 {/* Referee Name Indicator */}
-                <div className="w-10 flex items-center justify-center group relative">
-                    <div className="w-8 h-8 rounded-full bg-orange-500/20 text-orange-500 flex items-center justify-center border border-orange-500/30 font-bold text-xs select-none">
-                        J
-                    </div>
-                    <div className="absolute top-full right-0 mt-2 py-1 px-3 bg-slate-800 text-xs rounded border border-white/10 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none data-[show=true]:opacity-100">
-                        {match.referee_name || 'Juez'}
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setShowWOModal(true)}
+                        className="px-2 py-1 bg-red-900/50 hover:bg-red-600 border border-red-500/30 rounded text-[10px] font-bold text-red-200 hover:text-white transition-colors uppercase tracking-wider"
+                    >
+                        W.O.
+                    </button>
+                    <div className="w-10 flex items-center justify-center group relative">
+                        <div className="w-8 h-8 rounded-full bg-orange-500/20 text-orange-500 flex items-center justify-center border border-orange-500/30 font-bold text-xs select-none">
+                            J
+                        </div>
+                        <div className="absolute top-full right-0 mt-2 py-1 px-3 bg-slate-800 text-xs rounded border border-white/10 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none data-[show=true]:opacity-100">
+                            {match.referee_name || 'Juez'}
+                        </div>
                     </div>
                 </div>
             </div>

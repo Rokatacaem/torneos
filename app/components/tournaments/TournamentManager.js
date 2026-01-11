@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { registerPlayer, generateGroups, updatePlayer, searchPlayers, generatePlayoffs, previewGroups, removePlayer } from '@/app/lib/tournament-actions';
+import { registerPlayer, generateGroups, updatePlayer, searchPlayers, generatePlayoffs, previewGroups, removePlayer, disqualifyPlayer } from '@/app/lib/tournament-actions';
 import ManualResultModal from '@/app/components/admin/ManualResultModal';
 import FinalizeTournamentButton from './FinalizeTournamentButton';
 import { useRouter } from 'next/navigation';
@@ -130,6 +130,24 @@ export default function TournamentManager({ tournament, players, matches, clubs 
             await removePlayer(tournament.id, p.id);
             alert('Jugador eliminado');
             router.refresh();
+        } catch (e) {
+            alert(e.message);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function handleDisqualify(p) {
+        if (!confirm(`¿EXPULSAR a ${p.player_name}? \n\n- Se marcará como DESCALIFICADO.\n- Se aplicará W.O. a todos sus partidos pendientes.\n- Esta acción es irreversible.`)) return;
+        setLoading(true);
+        try {
+            const res = await disqualifyPlayer(tournament.id, p.id);
+            if (res.success) {
+                alert(res.message);
+                router.refresh();
+            } else {
+                alert(res.message);
+            }
         } catch (e) {
             alert(e.message);
         } finally {
@@ -272,7 +290,9 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                                             <div className="font-medium">{p.player_name}</div>
                                             {(p.team_name || p.status) && (
                                                 <div className="text-xs text-muted-foreground">
-                                                    {p.team_name} {p.status === 'waitlist' && <span className="text-orange-500 font-bold">(Espera)</span>}
+                                                    {p.team_name}
+                                                    {p.status === 'waitlist' && <span className="text-orange-500 font-bold ml-1">(Espera)</span>}
+                                                    {p.status === 'disqualified' && <span className="text-red-500 font-bold ml-1">(DESCALIFICADO)</span>}
                                                 </div>
                                             )}
                                         </div>
@@ -296,6 +316,13 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                                             title="Editar"
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
+                                        </button>
+                                        <button
+                                            onClick={() => handleDisqualify(p)}
+                                            className="text-slate-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                                            title="Expulsar / Descalificar"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="m4.9 4.9 14.2 14.2" /></svg>
                                         </button>
                                         <button
                                             onClick={() => handleDeletePlayer(p)}

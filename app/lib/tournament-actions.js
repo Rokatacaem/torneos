@@ -1286,3 +1286,74 @@ export async function recalculateGlobalRankingAction() {
     }
 }
 
+export async function disqualifyPlayer(tournamentId, playerId) {
+    const session = await getSession();
+    const role = session?.role;
+    if (role !== 'admin' && role !== 'superadmin' && role !== 'SUPERADMIN') {
+        throw new Error('Unauthorized: Only admins can disqualify players.');
+    }
+
+    try {
+        await query('BEGIN');
+
+        // 1. Mark player as disqualified
+        await query(`
+            UPDATE tournament_players 
+            SET status = 'disqualified' 
+            WHERE tournament_id = $1 AND id = $2
+        `, [tournamentId, playerId]);
+
+        // 2. Resolve future matches as WO
+        // Need tournament limits for points
+        const tournament = await getTournament(tournamentId);
+
+        let pLimit = tournament.group_points_limit; // Default to group limit
+        // Logic to distinguish phase type for limits? 
+        // We can fetch phase info for each match, or simplified: use group limit for all if phase not checked.
+        // Better: Check phase type of match.
+
+        // Fetch all scheduled matches
+        const matchesRequest = await query(`
+            SELECT m.id, m.phase_id, m.player1_id, m.player2_id, p.type as phase_type
+            FROM tournament_matches m
+            JOIN tournament_phases p ON m.phase_id = p.id
+            WHERE m.tournament_id = $1 
+              AND (m.player1_id = $2 OR m.player2_id = $2)
+              AND m.status = 'scheduled'
+        `, [tournamentId, playerId]);
+
+        const groupLimit = tournament.group_points_limit || 0;
+        const playoffLimit = tournament.playoff_points_limit || 0;
+
+        for (const match of matchesRequest.rows) {
+            const winnerId = match.player1_id === playerId ? match.player2_id : match.player1_id;
+            const targetPoints = match.phase_type === 'group' ? groupLimit : playoffLimit;
+
+            // Determine Winner Score Position
+            // If winner is P1
+            const isWinnerP1 = match.player1_id === winnerId; // If disq player is P2
+            const scoreP1 = isWinnerP1 ? targetPoints : 0;
+            const scoreP2 = isWinnerP1 ? 0 : targetPoints;
+
+            await query(`
+                UPDATE tournament_matches
+                SET status = 'completed', 
+                    winner_id = $1, 
+                    score_p1 = $2, 
+                    score_p2 = $3,
+                    win_reason = 'wo',
+                    updated_at = NOW()
+                WHERE id = $4
+            `, [winnerId, scoreP1, scoreP2, match.id]);
+        }
+
+        await query('COMMIT');
+        revalidatePath(`/admin/tournaments/${tournamentId}`);
+        return { success: true, message: 'Jugador descalificado y partidos restantes marcados como W.O.' };
+    } catch (e) {
+        await query('ROLLBACK');
+        console.error(e);
+        return { success: false, message: 'Error al descalificar jugador' };
+    }
+}
+
