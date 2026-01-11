@@ -143,6 +143,8 @@ export async function updateTournament(id, formData) {
         const semifinal_innings_limit = safeParseInt(formData.get('semifinal_innings_limit'));
         const final_points_limit = safeParseInt(formData.get('final_points_limit'));
         const final_innings_limit = safeParseInt(formData.get('final_innings_limit'));
+        const playoff_target_size = safeParseInt(formData.get('playoff_target_size'));
+        const qualifiers_per_group = safeParseInt(formData.get('qualifiers_per_group'));
 
         // File Uploads (Update only if new file provided)
         let banner_image_url = formData.get('banner_image_url') || null;
