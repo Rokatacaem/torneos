@@ -138,40 +138,51 @@ function MatchControlClientContent({ initialMatch }) {
         targetDisplay = `${limit} Puntos`;
     }
 
+    // Contrasalida State
+    const [isCounterAttack, setIsCounterAttack] = useState(false);
+
     // Check for finish conditions
-    // Check for finish conditions
-    const checkFinish = (currentMatch) => {
+    const checkFinish = (currentMatch, playerJustScoredId) => {
         const p1Reached = p1Target && currentMatch.score_p1 >= p1Target;
         const p2Reached = p2Target && currentMatch.score_p2 >= p2Target;
         const inningsReached = maxInnings && currentMatch.innings >= maxInnings;
 
-        console.log('CHECK FINISH DEBUG:', {
-            p1Target, p1Score: currentMatch.score_p1,
-            p2Target, p2Score: currentMatch.score_p2,
-            maxInnings, currentInnings: currentMatch.innings,
-            inningsReached,
-            isGroup, phase: match.phase_type
-        });
+        const isStarter = currentMatch.start_player_id === playerJustScoredId;
 
-        // Update finished state bidirectionally (allows undoing a finish)
-        setIsMatchFinished(p1Reached || p2Reached || inningsReached);
+        // If Starter reaches target FIRST, trigger Contrasalida
+        if ((p1Reached || p2Reached) && isStarter && !inningsReached && !isCounterAttack) {
+            console.log('CONTRASALIDA TRIGGERED');
+            setIsCounterAttack(true);
+            return false; // Do NOT finish match yet
+        }
+
+        // Normal Finish Conditions:
+        // 1. Second player reaches target (Draw or Win).
+        // 2. Innings limit reached.
+        // 3. Counter-attack active but player missed (Handled in toggleTurn?)
+        // Actually, if it's counter attack, we only finish when the turn ENDS or if they reach target.
+
+        if (p1Reached || p2Reached || inningsReached) {
+            setIsMatchFinished(true);
+            return true;
+        }
+        return false;
     };
 
-    // Safety Effect: Auto-finish if loaded state is already over limits
+    // Safety Effect: Auto-finish if innings limit reached
     useEffect(() => {
         if (!isMatchFinished && maxInnings && match.innings >= maxInnings) {
-            console.log("Auto-finishing because innings >= maxInnings");
             setIsMatchFinished(true);
         }
     }, [match.innings, maxInnings, isMatchFinished]);
 
     // Optimistic Updates
     const handleUpdate = async (p1Delta, p2Delta, inningDelta, nextPlayerId = null) => {
-        // Block ADDING to the score/innings if match is already finished
+        // Block ADDING if finished
         const isAdding = p1Delta > 0 || p2Delta > 0 || inningDelta > 0;
         if (isMatchFinished && isAdding) return;
 
-        // Block scoring if timer is not running (only for positive point changes)
+        // Block scoring if timer not running
         if ((p1Delta > 0 || p2Delta > 0) && timerStatus !== 'running') {
             alert("Debes iniciar el cronómetro para agregar carambolas.");
             return;
@@ -189,7 +200,31 @@ function MatchControlClientContent({ initialMatch }) {
         if (newState.innings < 0) newState.innings = 0;
 
         setMatch(newState);
-        checkFinish(newState);
+
+        // Determine who just scored/played
+        // If p1Delta > 0, it was p1. If p2Delta > 0, it was p2.
+        // If only inningDelta, it was the activePlayer finishing turn.
+        const playerJustScoredId = p1Delta > 0 ? match.player1_id : (p2Delta > 0 ? match.player2_id : (activePlayer === 'p1' ? match.player1_id : match.player2_id));
+
+        const finished = checkFinish(newState, playerJustScoredId);
+
+        // If Contrasalida just triggered (by scoring), we must Force Turn Switch immediately?
+        // No, Contrasalida rule implies the starter FINISHES their run (reaches target).
+        // Then the turn passes to opponent for the equalizer.
+        // So if p1Delta causes score >= target and p1 is starter => setIsCounterAttack(true).
+        // The turn switch happens normally or we force it?
+        // In billiards, you keep shooting until you miss or reach distance.
+        // If you reach distance, your turn is OVER (successfully).
+        // So yes, we should force toggleTurn if distance reached during Contrasalida trigger.
+
+        if (!finished && !isCounterAttack && newState.score_p1 >= p1Target && newState.start_player_id === match.player1_id) {
+            // P1 (Starter) reached target. Trigger Contrasalida.
+            setIsCounterAttack(true);
+            // Logic to switch turn provided below
+        }
+        if (!finished && !isCounterAttack && newState.score_p2 >= p2Target && newState.start_player_id === match.player2_id) {
+            setIsCounterAttack(true);
+        }
 
         if (p1Delta > 0 || p2Delta > 0) {
             setResetTrigger(prev => prev + 1);
@@ -281,6 +316,20 @@ function MatchControlClientContent({ initialMatch }) {
     const toggleTurn = () => {
         if (isMatchFinished) return;
 
+        // [CONTRASALIDA LOGIC]
+        // If Contrasalida is Active:
+        // 1. If Active Player is Starter: Switch to Opponent (Give them the chance).
+        // 2. If Active Player is Opponent: They missed or finished. Match Over.
+        const isStarterActive = activePlayer === (match.start_player_id === match.player1_id ? 'p1' : 'p2');
+
+        if (isCounterAttack && !isStarterActive) {
+            // Opponent just finished their Contrasalida turn
+            setIsMatchFinished(true);
+            return;
+        }
+
+        // If Starter is active and Contrasalida is true, we simply proceed to switch turn as normal.
+
         const secondPlayer = layout === 'standard' ? 'p2' : 'p1';
         let inningInc = 0;
 
@@ -290,14 +339,12 @@ function MatchControlClientContent({ initialMatch }) {
 
         // PREVENT EXCEEDING LIMIT
         const nextInnings = (match.innings || 0) + inningInc;
-        if (maxInnings && nextInnings > maxInnings) {
-            // Check if we are already finished?
-            // If strictly >, we shouldn't increment.
-            // But usually we finish exactly ON the max innings. 
-            // If nextInnings == maxInnings, it's fine, we update and checkFinish will handle it.
-            // If nextInnings > maxInnings, we stop.
+        if (maxInnings && nextInnings >= maxInnings) { // Use >= to capture equality finish
+            // Exception: If Player 2 is playing, and Player 1 started, this is the equalizing inning.
+            // But maxInnings usually means absolute stop.
+            // Let's stick to simple: if innings limit reached, finish.
             inningInc = 0;
-            setIsMatchFinished(true); // Force finish just in case
+            setIsMatchFinished(true);
             return;
         }
 
@@ -641,7 +688,12 @@ function MatchControlClientContent({ initialMatch }) {
                 {/* Bottom Actions Removed per user request */}
 
             </div>
-            {/* DEBUG Banner Removed */}
+            {/* Contrasalida Banner */}
+            {isCounterAttack && (
+                <div className="bg-red-600 text-white text-center py-2 font-black uppercase text-xl animate-pulse shadow-lg tracking-widest border-y-2 border-white">
+                    ⚠️ Contrasalida: Último Turno ⚠️
+                </div>
+            )}
         </div>
     );
 }
