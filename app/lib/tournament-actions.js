@@ -56,6 +56,7 @@ export async function createTournament(formData) {
         const host_club_id = formData.get('host_club_id') || null;
         const discipline = formData.get('discipline') || null;
         let tables_available = parseInt(formData.get('tables_available')) || 4;
+        const group_format = formData.get('group_format') || 'round_robin';
 
         // File Uploads
         let banner_image_url = formData.get('banner_image_url') || null;
@@ -87,16 +88,18 @@ export async function createTournament(formData) {
                 group_points_limit, group_innings_limit, playoff_points_limit, playoff_innings_limit, 
                 use_handicap, banner_image_url, logo_image_url,
                 semifinal_points_limit, semifinal_innings_limit, final_points_limit, final_innings_limit,
-                block_duration, playoff_target_size, qualifiers_per_group, host_club_id, tables_available, discipline
+                block_duration, playoff_target_size, qualifiers_per_group, host_club_id, tables_available, discipline,
+                group_format
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
             RETURNING *
         `, [
             name, start_date, end_date, max_players, format, group_size || 4,
             shot_clock_seconds || 40, group_points_limit, group_innings_limit, playoff_points_limit, playoff_innings_limit,
             use_handicap || false, banner_image_url, logo_image_url,
             semifinal_points_limit, semifinal_innings_limit, final_points_limit, final_innings_limit,
-            block_duration, playoff_target_size, qualifiers_per_group, host_club_id, tables_available, discipline
+            block_duration, playoff_target_size, qualifiers_per_group, host_club_id, tables_available, discipline,
+            group_format
         ]);
 
         revalidatePath('/tournaments');
@@ -134,6 +137,7 @@ export async function updateTournament(id, formData) {
         const tables_available = safeParseInt(formData.get('tables_available'), 4);
         const host_club_id = formData.get('host_club_id') || null;
         const discipline = formData.get('discipline') || null;
+        const group_format = formData.get('group_format') || 'round_robin';
 
         const semifinal_points_limit = safeParseInt(formData.get('semifinal_points_limit'));
         const semifinal_innings_limit = safeParseInt(formData.get('semifinal_innings_limit'));
@@ -162,20 +166,22 @@ export async function updateTournament(id, formData) {
                 playoff_points_limit = $10, playoff_innings_limit = $11, use_handicap = $12, 
                 block_duration = $13, tables_available = $14,
                 semifinal_points_limit = $15, semifinal_innings_limit = $16, final_points_limit = $17, final_innings_limit = $18,
-                playoff_target_size = $19, qualifiers_per_group = $20, host_club_id = $21, discipline = $22
+                playoff_target_size = $19, qualifiers_per_group = $20, host_club_id = $21, discipline = $22,
+                group_format = $23
         `;
 
-        // Initialize params array with the base 22 parameters
+        // Initialize params array with the base 23 parameters
         const params = [
             name, start_date, end_date, max_players, format, group_size,
             shot_clock_seconds, group_points_limit, group_innings_limit,
             playoff_points_limit, playoff_innings_limit, use_handicap,
             block_duration, tables_available,
             semifinal_points_limit, semifinal_innings_limit, final_points_limit, final_innings_limit,
-            playoff_target_size, qualifiers_per_group, host_club_id, discipline
+            playoff_target_size, qualifiers_per_group, host_club_id, discipline,
+            group_format
         ];
 
-        let paramIndex = 23; // Start index for subsequent parameters
+        let paramIndex = 24; // Start index for subsequent parameters
 
         if (banner_image_url) {
             queryStr += `, banner_image_url = $${paramIndex}`;
@@ -997,15 +1003,32 @@ export async function generateGroups(tournamentId) { // Removed groupCount param
         if (pIds.length === 2) {
             // Match 1: P1 vs P2
             await query(`
-                INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status)
-                VALUES ($1, $2, $3, $4, $5, 'scheduled')
+                INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
+                VALUES ($1, $2, $3, $4, $5, 'scheduled', 1)
              `, [tournamentId, phaseId, groupId, pIds[0], pIds[1]]);
 
             // Match 2: P2 vs P1 (Vuelta)
             await query(`
-                INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status)
-                VALUES ($1, $2, $3, $4, $5, 'scheduled')
+                INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
+                VALUES ($1, $2, $3, $4, $5, 'scheduled', 2)
              `, [tournamentId, phaseId, groupId, pIds[1], pIds[0]]);
+
+            continue;
+        }
+
+        // GSL Format (Double Elimination) - Only for 4 Players
+        if (tournament.group_format === 'gsl' && pIds.length === 4) {
+            // Match 1: Seed 1 vs Seed 4
+            await query(`
+                INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
+                VALUES ($1, $2, $3, $4, $5, 'scheduled', 1)
+            `, [tournamentId, phaseId, groupId, pIds[0], pIds[3]]);
+
+            // Match 2: Seed 2 vs Seed 3
+            await query(`
+                INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
+                VALUES ($1, $2, $3, $4, $5, 'scheduled', 1)
+            `, [tournamentId, phaseId, groupId, pIds[1], pIds[2]]);
 
             continue;
         }
@@ -1014,8 +1037,8 @@ export async function generateGroups(tournamentId) { // Removed groupCount param
         for (let i = 0; i < pIds.length; i++) {
             for (let j = i + 1; j < pIds.length; j++) {
                 await query(`
-            INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status)
-            VALUES ($1, $2, $3, $4, $5, 'scheduled')
+            INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
+            VALUES ($1, $2, $3, $4, $5, 'scheduled', 1)
         `, [tournamentId, phaseId, groupId, pIds[i], pIds[j]]);
             }
         }
@@ -1136,7 +1159,16 @@ export async function generatePlayoffs(tournamentId) {
             const avg = stats.innings > 0 ? stats.score / stats.innings : 0;
             return { pid: parseInt(pid), ...stats, avg };
         })
-            .sort((a, b) => b.points - a.points || b.avg - a.avg);
+            .sort((a, b) => {
+                // Modified Sort for GSL: Prioritize efficiency (Fewer matches to reach same points = Q1 vs Q2)
+                if (tournament.group_format === 'gsl') {
+                    if (b.points !== a.points) return b.points - a.points;
+                    if (a.matches !== b.matches) return a.matches - b.matches; // Less matches is better (2-0 vs 2-1)
+                    return b.avg - a.avg;
+                }
+                // Standard Round Robin Sort
+                return b.points - a.points || b.avg - a.avg;
+            });
 
         // Take qualifiersPerGroup
         for (let i = 0; i < qualifiersPerGroup; i++) {

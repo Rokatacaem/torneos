@@ -167,6 +167,20 @@ export default function EditTournamentForm({ tournament }) {
                             <h3 className="font-semibold text-sm">Configuración de Grupos</h3>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
+                                    <label className="text-sm font-medium">Formato de Fase de Grupos</label>
+                                    <select
+                                        name="group_format"
+                                        defaultValue={tournament.group_format || 'round_robin'}
+                                        onChange={(e) => {
+                                            if (e.target.value === 'gsl') setGroupSize('4');
+                                        }}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    >
+                                        <option value="round_robin">Todos contra Todos (Round Robin)</option>
+                                        <option value="gsl">Doble Eliminación (GSL)</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
                                     <label className="text-sm font-medium">Tamaño Grupo</label>
                                     <input
                                         name="group_size"
@@ -272,6 +286,51 @@ export default function EditTournamentForm({ tournament }) {
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Reloj (seg)</label>
                                     <input name="shot_clock_seconds" type="number" defaultValue={tournament.shot_clock_seconds} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                </div>
+                            </div>
+
+                            {/* Límites de Fase - Eliminatoria */}
+                            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10 mt-4">
+                                <h3 className="col-span-2 font-semibold text-sm">Eliminatoria (Base)</h3>
+                                {!useHandicap && (
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-medium">Puntos</label>
+                                        <input name="playoff_points_limit" type="number" defaultValue={tournament.playoff_points_limit} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                    </div>
+                                )}
+                                <div className="space-y-2">
+                                    <label className="text-xs font-medium">Entradas</label>
+                                    <input name="playoff_innings_limit" type="number" defaultValue={tournament.playoff_innings_limit} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                </div>
+                            </div>
+
+                            {/* Semifinal */}
+                            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10 mt-4">
+                                <h3 className="col-span-2 font-semibold text-sm text-orange-500">Semifinal (Opcional)</h3>
+                                {!useHandicap && (
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-medium">Puntos</label>
+                                        <input name="semifinal_points_limit" type="number" defaultValue={tournament.semifinal_points_limit} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm border-orange-500/30" placeholder="Igual a Base" />
+                                    </div>
+                                )}
+                                <div className="space-y-2">
+                                    <label className="text-xs font-medium">Entradas</label>
+                                    <input name="semifinal_innings_limit" type="number" defaultValue={tournament.semifinal_innings_limit} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm border-orange-500/30" placeholder="Igual a Base" />
+                                </div>
+                            </div>
+
+                            {/* Final */}
+                            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10 mt-4">
+                                <h3 className="col-span-2 font-semibold text-sm text-yellow-500">Gran Final (Opcional)</h3>
+                                {!useHandicap && (
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-medium">Puntos</label>
+                                        <input name="final_points_limit" type="number" defaultValue={tournament.final_points_limit} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm border-yellow-500/30" placeholder="Igual a Base" />
+                                    </div>
+                                )}
+                                <div className="space-y-2">
+                                    <label className="text-xs font-medium">Entradas</label>
+                                    <input name="final_innings_limit" type="number" defaultValue={tournament.final_innings_limit} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm border-yellow-500/30" placeholder="Igual a Base" />
                                 </div>
                             </div>
                         </div>

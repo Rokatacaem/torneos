@@ -113,12 +113,13 @@ function MatchControlClientContent({ initialMatch }) {
         p2Target = match.player2_handicap;
         limit = null; // Not applicable for handicap
     } else {
-        limit = isGroup ? (match.config_group_points || match.group_points_limit) : (match.config_playoff_points || match.playoff_points_limit);
+        // Use calculated limit from server if available, otherwise fallback to config
+        limit = match.calculated_points_limit || (isGroup ? (match.config_group_points || match.group_points_limit) : (match.config_playoff_points || match.playoff_points_limit));
         p1Target = limit;
         p2Target = limit;
     }
 
-    let maxInningsRaw = isGroup ? (match.config_group_innings || match.group_innings_limit) : (match.config_playoff_innings || match.playoff_innings_limit);
+    let maxInningsRaw = match.calculated_innings_limit || (isGroup ? (match.config_group_innings || match.group_innings_limit) : (match.config_playoff_innings || match.playoff_innings_limit));
     let maxInnings = maxInningsRaw ? parseInt(maxInningsRaw) : null;
 
     const isFinal = match.round_label === 'Final' || match.round_label === 'Gran Final';

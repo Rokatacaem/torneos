@@ -279,6 +279,26 @@ export default function CreateTournamentPage() {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
+                                <label htmlFor="group_format" className="text-sm font-medium">Formato de Fase de Grupos</label>
+                                <select
+                                    id="group_format"
+                                    name="group_format"
+                                    defaultValue="round_robin"
+                                    onChange={(e) => {
+                                        const format = e.target.value;
+                                        if (format === 'gsl') {
+                                            setGroupSize('4');
+                                        }
+                                    }}
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                >
+                                    <option value="round_robin">Todos contra Todos (Round Robin)</option>
+                                    <option value="gsl">Doble Eliminación (GSL)</option>
+                                </select>
+                                <p className="text-xs text-muted-foreground">GSL requiere grupos de 4 jugadores exactos.</p>
+                            </div>
+
+                            <div className="space-y-2">
                                 <label htmlFor="group_size" className="text-sm font-medium">Jugadores por Grupo</label>
                                 <select
                                     id="group_size"
@@ -483,14 +503,14 @@ export default function CreateTournamentPage() {
                                         <input
                                             name="semifinal_points_limit"
                                             type="number"
-                                            placeholder="Pts"
+                                            placeholder="Igual a Base"
                                             className="w-full h-9 rounded-md border bg-background px-2 text-sm border-orange-500/30"
                                         />
                                     )}
                                     <input
                                         name="semifinal_innings_limit"
                                         type="number"
-                                        placeholder="Ent"
+                                        placeholder="Igual a Base"
                                         className="w-full h-9 rounded-md border bg-background px-2 text-sm border-orange-500/30"
                                     />
                                 </div>
@@ -504,14 +524,14 @@ export default function CreateTournamentPage() {
                                         <input
                                             name="final_points_limit"
                                             type="number"
-                                            placeholder="Pts"
+                                            placeholder="Igual a Base"
                                             className="w-full h-9 rounded-md border bg-background px-2 text-sm border-yellow-500/30"
                                         />
                                     )}
                                     <input
                                         name="final_innings_limit"
                                         type="number"
-                                        placeholder="Ent"
+                                        placeholder="Igual a Base"
                                         className="w-full h-9 rounded-md border bg-background px-2 text-sm border-yellow-500/30"
                                     />
                                 </div>

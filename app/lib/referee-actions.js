@@ -62,12 +62,22 @@ export async function setRefereeName(matchId, name) {
     revalidatePath(`/referee/${matchId}`);
 }
 
+
 export async function finishMatch(matchId, winnerId) {
     await query(`
         UPDATE tournament_matches
         SET status = 'completed', winner_id = $2, updated_at = NOW()
         WHERE id = $1
     `, [matchId, winnerId]);
+
+    // Check for GSL Advancement
+    try {
+        const { checkGSLAdvancement } = await import('./gsl-logic');
+        await checkGSLAdvancement(matchId);
+    } catch (e) {
+        console.error("Error in GSL Check:", e);
+    }
+
     revalidatePath('/');
     revalidatePath('/tournaments');
     revalidatePath('/referee');
@@ -106,6 +116,14 @@ export async function finishMatchWO(matchId, winnerId, targetPoints) {
             updated_at = NOW()
         WHERE id = $1
     `, [matchId, winnerId, scoreP1, scoreP2]);
+
+    // Check for GSL Advancement
+    try {
+        const { checkGSLAdvancement } = await import('./gsl-logic');
+        await checkGSLAdvancement(matchId);
+    } catch (e) {
+        console.error("Error in GSL Check:", e);
+    }
 
     revalidatePath('/');
     revalidatePath('/tournaments');
