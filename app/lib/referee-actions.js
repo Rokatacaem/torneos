@@ -70,6 +70,7 @@ export async function finishMatch(matchId, winnerId) {
     `, [matchId, winnerId]);
     revalidatePath('/');
     revalidatePath('/tournaments');
+    revalidatePath('/referee');
 }
 
 export async function finishMatchWO(matchId, winnerId, targetPoints) {
@@ -108,4 +109,5 @@ export async function finishMatchWO(matchId, winnerId, targetPoints) {
 
     revalidatePath('/');
     revalidatePath('/tournaments');
+    revalidatePath('/referee');
 }
