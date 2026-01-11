@@ -163,8 +163,22 @@ function MatchControlClientContent({ initialMatch }) {
         // Normal Finish Conditions:
         // 1. Second player reaches target (Draw or Win).
         // 2. Innings limit reached.
-        // 3. Counter-attack active but player missed (Handled in toggleTurn?)
-        // Actually, if it's counter attack, we only finish when the turn ENDS or if they reach target.
+
+        if (isCounterAttack) {
+            // In Contrasalida, match finishes ONLY if the equalizer (2nd player) reaches target.
+            const starterId = currentMatch.start_player_id;
+            const isP1Starter = starterId === currentMatch.player1_id;
+
+            if (isP1Starter && p2Reached) {
+                setIsMatchFinished(true);
+                return true;
+            }
+            if (!isP1Starter && p1Reached) {
+                setIsMatchFinished(true);
+                return true;
+            }
+            return false;
+        }
 
         if (p1Reached || p2Reached || inningsReached) {
             setIsMatchFinished(true);
