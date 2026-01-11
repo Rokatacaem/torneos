@@ -1,6 +1,9 @@
 import { getTournament, getTournamentPlayers, getMatches } from '@/app/lib/tournament-actions';
 import TVDashboard from '@/app/components/tournaments/TVDashboard';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function PublicTournamentDetailPage({ params }) {
     const { id } = await params;
     const tournament = await getTournament(id);
