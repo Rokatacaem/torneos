@@ -9,8 +9,15 @@ async function getActiveMatches() {
                p1.player_name as player1_name, 
                p2.player_name as player2_name,
                g.name as group_name,
-               ph.name as phase_name
+               ph.name as phase_name,
+               ph.type as phase_type,
+               t.group_points_limit,
+               t.playoff_points_limit,
+               t.group_innings_limit,
+               t.playoff_innings_limit,
+               t.format
         FROM tournament_matches m
+        JOIN tournaments t ON m.tournament_id = t.id
         JOIN tournament_phases ph ON m.phase_id = ph.id
         LEFT JOIN tournament_groups g ON m.group_id = g.id
         LEFT JOIN tournament_players p1 ON m.player1_id = p1.id
@@ -58,9 +65,23 @@ export default async function RefereePage() {
                                 </div>
                             </div>
 
-                            <div className="mt-2 text-center text-xs text-green-400 font-medium border-t border-white/5 pt-2">
-                                Toca para Controlar
-                            </div>
+                            {(() => {
+                                const target = m.phase_type === 'group' ? m.group_points_limit : m.playoff_points_limit;
+                                const isFinished = target && ((m.score_p1 || 0) >= target || (m.score_p2 || 0) >= target);
+
+                                if (isFinished) {
+                                    return (
+                                        <div className="mt-2 text-center text-xs text-red-400 font-bold border-t border-white/5 pt-2 animate-pulse">
+                                            TERMINADO - TOCA PARA CONFIRMAR
+                                        </div>
+                                    );
+                                }
+                                return (
+                                    <div className="mt-2 text-center text-xs text-green-400 font-medium border-t border-white/5 pt-2">
+                                        Toca para Controlar
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </Link>
                 ))}

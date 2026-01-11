@@ -9,7 +9,7 @@ async function checkLatestMatch() {
 
     try {
         const res = await pool.query(`
-            SELECT id, score_p1, score_p2, high_run_p1, high_run_p2, updated_at
+            SELECT id, score_p1, score_p2, status, high_run_p1, high_run_p2, updated_at
             FROM tournament_matches
             ORDER BY updated_at DESC
             LIMIT 5;
