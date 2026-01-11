@@ -572,7 +572,18 @@ function MatchControlClientContent({ initialMatch }) {
                                 Corregir
                             </button>
                             <button
-                                onClick={() => router.push('/referee')}
+                                onClick={async () => {
+                                    // Determine Winner ID based on current scores
+                                    let winnerId = null;
+                                    const finalP1 = match.score_p1 || 0;
+                                    const finalP2 = match.score_p2 || 0;
+
+                                    if (finalP1 > finalP2) winnerId = match.player1_id;
+                                    else if (finalP2 > finalP1) winnerId = match.player2_id;
+
+                                    await finishMatch(match.id, winnerId);
+                                    router.push('/referee');
+                                }}
                                 className="flex-1 py-4 rounded-xl font-bold bg-green-600 text-white hover:bg-green-500 shadow-lg shadow-green-900/20 transition-all active:scale-95"
                             >
                                 Finalizar y Salir
