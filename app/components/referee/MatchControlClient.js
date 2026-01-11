@@ -220,11 +220,42 @@ function MatchControlClientContent({ initialMatch }) {
 
         if (!finished && !isCounterAttack && newState.score_p1 >= p1Target && newState.start_player_id === match.player1_id) {
             // P1 (Starter) reached target. Trigger Contrasalida.
+            // AND Automatically switch turn to Opponent (P2) so they can play their last turn.
+            addLog("Contrasalida triggered for P1. Switching to P2.");
             setIsCounterAttack(true);
-            // Logic to switch turn provided below
+
+            // Force switch to P2
+            const nextPlayerId = match.player2_id;
+            setActivePlayer('p2');
+            setResetTrigger(prev => prev + 1);
+            // We are already inside handleUpdate, so we just need to insure the DB update reflects the new player?
+            // Actually handleUpdate calls updateMatchScore with `nextPlayerId`.
+            // So we override the default `nextPlayerId` (which was null) with match.player2_id
+
+            // But wait, updateMatchScore is async.
+            // We need to pass the NEW active player ID to the server update.
+            startTransition(async () => {
+                await updateMatchScore(match.id, p1Delta, p2Delta, inningDelta, nextPlayerId);
+                router.refresh();
+            });
+            return; // Exit here effectively, as we handled the transition manually
         }
+
         if (!finished && !isCounterAttack && newState.score_p2 >= p2Target && newState.start_player_id === match.player2_id) {
+            // P2 (Starter) reached target. Trigger Contrasalida.
+            addLog("Contrasalida triggered for P2. Switching to P1.");
             setIsCounterAttack(true);
+
+            // Force switch to P1
+            const nextPlayerId = match.player1_id;
+            setActivePlayer('p1');
+            setResetTrigger(prev => prev + 1);
+
+            startTransition(async () => {
+                await updateMatchScore(match.id, p1Delta, p2Delta, inningDelta, nextPlayerId);
+                router.refresh();
+            });
+            return;
         }
 
         if (p1Delta > 0 || p2Delta > 0) {
