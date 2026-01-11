@@ -992,7 +992,25 @@ export async function generateGroups(tournamentId) { // Removed groupCount param
     // Generar partidos por grupo
     for (const groupId of groups) {
         const pIds = groupAssignments[groupId];
-        // Round robin: todos contra todos
+
+        // Special Case: 2 Players -> Double Match (Ida y Vuelta)
+        if (pIds.length === 2) {
+            // Match 1: P1 vs P2
+            await query(`
+                INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status)
+                VALUES ($1, $2, $3, $4, $5, 'scheduled')
+             `, [tournamentId, phaseId, groupId, pIds[0], pIds[1]]);
+
+            // Match 2: P2 vs P1 (Vuelta)
+            await query(`
+                INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status)
+                VALUES ($1, $2, $3, $4, $5, 'scheduled')
+             `, [tournamentId, phaseId, groupId, pIds[1], pIds[0]]);
+
+            continue;
+        }
+
+        // Standard Round robin: todos contra todos
         for (let i = 0; i < pIds.length; i++) {
             for (let j = i + 1; j < pIds.length; j++) {
                 await query(`
