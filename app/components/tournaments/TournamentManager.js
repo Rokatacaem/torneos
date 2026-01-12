@@ -509,79 +509,6 @@ export default function TournamentManager({ tournament, players, matches, clubs 
 
             {activeTab === 'matches' && (
                 <div>
-                    <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
-                        <h3 className="font-semibold">Partidas Programadas</h3>
-                        <div className="flex gap-2">
-                            {matches.length > 0 && (
-                                <button
-                                    onClick={async () => {
-                                        if (!confirm('¿ESTÁS SEGURO? Esto eliminará todos los partidos y grupos generados. Tendrás que generar el fixture nuevamente.')) return;
-                                        setLoading(true);
-                                        try {
-                                            const res = await purgeTournament(tournament.id);
-                                            if (!res.success) throw new Error(res.message);
-                                            alert('Fixture eliminado. Ahora puedes generar uno nuevo.');
-                                            router.refresh();
-                                        } catch (e) { alert(e.message); }
-                                        setLoading(false);
-                                    }}
-                                    disabled={loading}
-                                    className="bg-red-600/20 text-red-500 hover:bg-red-600 hover:text-white px-4 py-2 rounded-md text-sm font-medium border border-red-600/50 transition-colors"
-                                >
-                                    Resetear Fixture
-                                </button>
-                            )}
-                            {matches.length === 0 && players.length >= 2 && (
-                                <button
-                                    onClick={handlePreview}
-                                    disabled={loading}
-                                    className="bg-accent text-accent-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-accent/90 flex items-center gap-2"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg>
-                                    Generar Grupos y Fixture
-                                </button>
-                            )}
-                            {matches.length > 0 && matches.some(m => m.phase_type === 'group') && !matches.some(m => m.phase_type === 'elimination') && (
-                                <button
-                                    onClick={async () => {
-                                        if (!confirm('¿Generar Cruces de Playoffs? Asegúrate de que todos los partidos de grupo estén terminados.')) return;
-                                        setLoading(true);
-                                        try {
-                                            const res = await generatePlayoffs(tournament.id);
-                                            if (!res.success) {
-                                                throw new Error(res.message);
-                                            }
-                                            alert('Llaves generadas exitosamente');
-                                            router.refresh();
-                                        } catch (e) { alert(e.message); }
-                                        setLoading(false);
-                                    }}
-                                    disabled={loading}
-                                    className="bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-bold hover:bg-orange-500 shadow-sm"
-                                >
-                                    Generar Llaves Finales
-                                </button>
-                            )}
-                            <button
-                                onClick={async () => {
-                                    if (!confirm('¿Generar Siguiente Ronda?')) return;
-                                    setLoading(true);
-                                    try {
-                                        const res = await generateNextRound(tournament.id);
-                                        if (!res.success) throw new Error(res.message);
-                                        alert(res.message);
-                                        router.refresh();
-                                    } catch (e) { alert(e.message); }
-                                    setLoading(false);
-                                }}
-                                disabled={loading}
-                                className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-bold hover:bg-blue-500 shadow-sm"
-                            >
-                                Siguiente Ronda
-                            </button>
-                        </div>
-                    </div>
-
                     {matches.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg flex flex-col items-center gap-4">
                             <p>No hay partidas generadas aún.</p>
@@ -602,37 +529,25 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                             >
                                 (Debug) Resetear Fases/Fixture
                             </button>
+                            {players.length >= 2 && (
+                                <button
+                                    onClick={handlePreview}
+                                    disabled={loading}
+                                    className="bg-accent text-accent-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-accent/90 flex items-center gap-2"
+                                >
+                                    Generar Fase de Grupos
+                                </button>
+                            )}
                         </div>
                     ) : (
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {matches.map(m => (
-                                <div
-                                    key={m.id}
-                                    onClick={() => setSelectedMatch(m)}
-                                    className="border rounded-lg p-3 bg-card text-card-foreground shadow-sm cursor-pointer hover:border-primary transition-colors hover:shadow-md"
-                                >
-                                    <div className="flex justify-between text-xs text-muted-foreground mb-2">
-                                        <span>{m.phase_name} - G.{m.group_name} {m.group_start_time && `(${new Date(m.group_start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`}</span>
-                                        <span>Mesa {m.table_number || m.group_table || '?'}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center mb-2">
-                                        <div className={`font-medium ${m.winner_id === m.player1_id ? 'text-primary' : ''}`}>
-                                            {m.player1_name || 'BYE'}
-                                        </div>
-                                        <div className="font-bold text-lg">{m.score_p1}</div>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <div className={`font-medium ${m.winner_id === m.player2_id ? 'text-primary' : ''}`}>
-                                            {m.player2_name || 'BYE'}
-                                        </div>
-                                        <div className="font-bold text-lg">{m.score_p2}</div>
-                                    </div>
-                                    <div className="mt-2 text-xs text-center border-t pt-2 text-muted-foreground">
-                                        {m.status === 'completed' ? 'Finalizado' : 'Pendiente - Click para editar'}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                        <MatchTabs
+                            matches={matches}
+                            loading={loading}
+                            setLoading={setLoading}
+                            onRefresh={() => router.refresh()}
+                            tournamentId={tournament.id}
+                            onSelectMatch={setSelectedMatch}
+                        />
                     )}
                 </div>
             )}
