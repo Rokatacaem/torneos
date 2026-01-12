@@ -1001,16 +1001,12 @@ export async function generateGroups(tournamentId) {
         // Calcular cantidad de grupos necesaria
         const groupCount = Math.ceil(players.length / groupSize);
 
-        // Ordenar por Ranking ASC (Posición)
+        // Ordenar por Promedio General (Average) DESC
         const seededPlayers = players.sort((a, b) => {
-            let rankA = a.ranking;
-            let rankB = b.ranking;
+            const avgA = parseFloat(a.average) || 0;
+            const avgB = parseFloat(b.average) || 0;
 
-            // Treat 0 or null as "No Ranking" (Infinity)
-            if (!rankA) rankA = 9999999;
-            if (!rankB) rankB = 9999999;
-
-            if (rankA !== rankB) return rankA - rankB; // Ascending: 1st is Best
+            if (avgA !== avgB) return avgB - avgA; // Mayor promedio es mejor (Cabeza de serie)
             return a.id - b.id; // Desempate por registro
         });
 
@@ -1126,17 +1122,14 @@ export async function previewGroups(tournamentId) {
 
     const groupCount = Math.ceil(activePlayers.length / groupSize);
 
-    // Sort by Ranking (Seeding)
-    // Modified: User expects Priority to Position (Lower is Better)
+    // Sort by Average (Seeding)
+    // Modified: User requested sort by Average
     const seededPlayers = [...activePlayers].sort((a, b) => {
-        let rankA = a.ranking;
-        let rankB = b.ranking;
+        const avgA = parseFloat(a.average) || 0;
+        const avgB = parseFloat(b.average) || 0;
 
-        // Treat 0 or null as "No Ranking" (Infinity)
-        if (!rankA) rankA = 9999999;
-        if (!rankB) rankB = 9999999;
+        if (avgA !== avgB) return avgB - avgA; // Higher Average first
 
-        if (rankA !== rankB) return rankA - rankB; // Ascending: 1st is Best
         return a.id - b.id;
     });
 
