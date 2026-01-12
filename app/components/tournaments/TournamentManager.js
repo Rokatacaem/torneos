@@ -729,3 +729,230 @@ function PreviewModal({ groups, onClose, onConfirm, loading }) {
         </div>
     );
 }
+
+function MatchTabs({ matches, loading, setLoading, onRefresh, tournamentId, onSelectMatch }) {
+    const [activeTab, setActiveTab] = useState('groups');
+
+    // Group logic
+    const groupMatches = matches.filter(m => m.phase_type === 'group');
+    const eliminationMatches = matches.filter(m => m.phase_type === 'elimination');
+
+    const hasGroups = groupMatches.length > 0;
+    const hasElimination = eliminationMatches.length > 0;
+
+    // Build Elimination Rounds Map
+    const rounds = {};
+    if (hasElimination) {
+        eliminationMatches.forEach(m => {
+            const r = m.round_number || 1;
+            if (!rounds[r]) rounds[r] = [];
+            rounds[r].push(m);
+        });
+    }
+
+    const maxRound = hasElimination ? Math.max(...Object.keys(rounds).map(Number)) : 0;
+
+    // Determine labels based on match count (approximate)
+    const getRoundLabel = (roundNum, matchCount) => {
+        if (matchCount === 1) return 'Final';
+        if (matchCount === 2) return 'Semi-Finales';
+        if (matchCount === 4) return 'Cuartos de Final';
+        if (matchCount === 8) return 'Octavos de Final';
+        return `Ronda ${roundNum}`;
+    };
+
+    // Placeholder logic: If we are at Semi (2 matches), next is Final (1 match).
+    // If not generated, show disabled tab.
+    const tabs = [];
+    if (hasGroups) tabs.push({ id: 'groups', label: 'Fase de Grupos' });
+
+    // Existing rounds
+    Object.keys(rounds).sort((a, b) => a - b).forEach(r => {
+        tabs.push({
+            id: `round_${r}`,
+            label: getRoundLabel(r, rounds[r].length),
+            matches: rounds[r],
+            isRound: true,
+            roundNumber: parseInt(r)
+        });
+    });
+
+    // Future placeholders
+    // Predict next round matches count
+    let lastRoundMatches = hasElimination ? rounds[maxRound] || [] : [];
+    let projectedMatches = lastRoundMatches.length / 2;
+    let projectedRound = maxRound + 1;
+
+    while (projectedMatches >= 1) {
+        tabs.push({
+            id: `round_${projectedRound}`,
+            label: getRoundLabel(projectedRound, projectedMatches),
+            isFuture: true
+        });
+        projectedMatches /= 2;
+        projectedRound++;
+    }
+
+    // Default tab selection
+    if (activeTab === 'groups' && !hasGroups && hasElimination) {
+        // If groups empty, select first round
+        // setActiveTab(`round_${Object.keys(rounds)[0]}`); 
+        // Cannot update state during render. User needs to click or init logic better.
+    }
+
+    const currentTab = tabs.find(t => t.id === activeTab) || tabs[0];
+
+    const generatePlayoffsAction = async () => {
+        if (!confirm('¿Generar Cruces de Playoffs? Asegúrate de que todos los partidos de grupo estén terminados.')) return;
+        setLoading(true);
+        try {
+            const res = await generatePlayoffs(tournamentId);
+            if (!res.success) throw new Error(res.message);
+            alert('Llaves generadas exitosamente');
+            onRefresh();
+            setActiveTab('round_1'); // Switch to first round
+        } catch (e) { alert(e.message); }
+        setLoading(false);
+    };
+
+    const generateNextRoundAction = async () => {
+        if (!confirm('¿Generar Siguiente Ronda?')) return;
+        setLoading(true);
+        try {
+            const res = await generateNextRound(tournamentId);
+            if (!res.success) throw new Error(res.message);
+            alert(res.message);
+            onRefresh();
+            // Next tab logic would be handled by re-render finding new round
+        } catch (e) { alert(e.message); }
+        setLoading(false);
+    };
+
+    const resetFixtureAction = async () => {
+        if (!confirm('¿ESTÁS SEGURO? Eliminará TODO el fixture.')) return;
+        setLoading(true);
+        try {
+            const res = await purgeTournament(tournamentId);
+            if (!res.success) throw new Error(res.message);
+            alert('Fixture eliminado.');
+            onRefresh();
+        } catch (e) { alert(e.message); }
+        setLoading(false);
+    };
+
+    return (
+        <div className="space-y-6">
+            {/* Tabs Header */}
+            <div className="flex flex-wrap gap-2 border-b border-white/10 pb-2 overflow-x-auto">
+                {tabs.map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => !tab.isFuture && setActiveTab(tab.id)}
+                        disabled={tab.isFuture}
+                        className={`px-4 py-2 rounded-t-lg text-sm font-bold transition-colors whitespace-nowrap ${activeTab === tab.id
+                                ? 'bg-blue-600/20 text-blue-400 border-b-2 border-blue-500'
+                                : tab.isFuture
+                                    ? 'text-slate-600 cursor-not-allowed bg-white/5'
+                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                            }`}
+                    >
+                        {tab.label}
+                        {tab.isFuture && <span className="ml-2 text-[10px] opacity-50">(Fase previa en curso)</span>}
+                    </button>
+                ))}
+
+                {/* Reset Button (Always visible but unobtrusive) */}
+                <div className="ml-auto">
+                    <button
+                        onClick={resetFixtureAction}
+                        disabled={loading}
+                        className="text-xs text-red-500/50 hover:text-red-400 underline px-2"
+                    >
+                        Resetear Todo
+                    </button>
+                </div>
+            </div>
+
+            {/* Content */}
+            <div className="min-h-[200px]">
+                {currentTab?.id === 'groups' && (
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                            <h3 className="font-bold text-lg text-white">Fase de Grupos</h3>
+                            {/* Show Generate Playoffs button ONLY if NOT generated yet */}
+                            {!hasElimination && (
+                                <button
+                                    onClick={generatePlayoffsAction}
+                                    disabled={loading}
+                                    className="bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-bold hover:bg-orange-500 shadow-sm"
+                                >
+                                    Generar Llaves Finales
+                                </button>
+                            )}
+                        </div>
+                        <MatchGrid matches={groupMatches} onSelect={onSelectMatch} />
+                    </div>
+                )}
+
+                {currentTab?.isRound && (
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                            <h3 className="font-bold text-lg text-white">{currentTab.label}</h3>
+                            {/* Show Next Round button ONLY if this is the latest round and not Final */}
+                            {currentTab.roundNumber === maxRound && currentTab.matches.length > 1 && (
+                                <button
+                                    onClick={generateNextRoundAction}
+                                    disabled={loading}
+                                    className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-bold hover:bg-blue-500 shadow-sm"
+                                >
+                                    Generar Siguiente Ronda
+                                </button>
+                            )}
+                        </div>
+                        <MatchGrid matches={currentTab.matches} onSelect={onSelectMatch} />
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function MatchGrid({ matches, onSelect }) {
+    if (matches.length === 0) return <div className="text-muted-foreground italic">No hay partidos en esta fase.</div>;
+
+    return (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {matches.map(m => (
+                <div
+                    key={m.id}
+                    onClick={() => onSelect(m)}
+                    className="border border-white/10 rounded-lg p-3 bg-card text-card-foreground shadow-lg cursor-pointer hover:border-blue-500/50 transition-all hover:shadow-blue-900/10 group"
+                >
+                    <div className="flex justify-between text-xs text-slate-500 mb-2">
+                        <span className="font-mono">#{m.id} • {m.group_name ? `G.${m.group_name}` : 'Playoff'}</span>
+                        <span className="bg-slate-800 px-1.5 rounded text-[10px]">Mesa {m.table_number || '?'}</span>
+                    </div>
+
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                            <div className={`font-medium truncate ${m.winner_id === m.player1_id ? 'text-green-400' : 'text-slate-300'}`}>
+                                {m.player1_name || '...'}
+                            </div>
+                            <div className="font-bold text-xl font-mono min-w-[30px] text-right">{m.score_p1}</div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <div className={`font-medium truncate ${m.winner_id === m.player2_id ? 'text-green-400' : 'text-slate-300'}`}>
+                                {m.player2_name || '...'}
+                            </div>
+                            <div className="font-bold text-xl font-mono min-w-[30px] text-right">{m.score_p2}</div>
+                        </div>
+                    </div>
+
+                    <div className="mt-3 text-[10px] text-center border-t border-white/5 pt-2 text-slate-500 uppercase tracking-widest font-semibold group-hover:text-blue-400 transition-colors">
+                        {m.status === 'completed' ? 'Finalizado' : 'Editar Resultado'}
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
