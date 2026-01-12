@@ -7,9 +7,8 @@ export default function GroupsModule({ standings }) {
         .sort();
 
     return (
-        <div className="h-full w-full overflow-hidden p-1 bg-[#0a192f]">
-    // Dynamic Grid Layout based on group count
-    let gridClass = "grid-cols-4 grid-rows-4"; // Default for large tournaments (13-16 groups)
+        // Dynamic Grid Layout based on group count
+        let gridClass = "grid-cols-4 grid-rows-4"; // Default for large tournaments (13-16 groups)
 
     const count = groups.length;
     if (count <= 2) {
@@ -70,8 +69,6 @@ export default function GroupsModule({ standings }) {
                     </div>
                 ))}
             </div>
-        </div>
-    );
         </div>
     );
 }
