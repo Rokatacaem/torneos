@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { registerPlayer, generateGroups, updatePlayer, searchPlayers, generatePlayoffs, previewGroups, removePlayer, removePlayers, disqualifyPlayer } from '@/app/lib/tournament-actions';
+import { registerPlayer, generateGroups, updatePlayer, searchPlayers, generatePlayoffs, previewGroups, removePlayer, removePlayers, disqualifyPlayer, purgeTournament } from '@/app/lib/tournament-actions';
 import ManualResultModal from '@/app/components/admin/ManualResultModal';
 import FinalizeTournamentButton from './FinalizeTournamentButton';
 import { useRouter } from 'next/navigation';
@@ -512,6 +512,25 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                     <div className="mb-4 flex flex-wrap gap-2 justify-between items-center">
                         <h3 className="font-semibold">Partidas Programadas</h3>
                         <div className="flex gap-2">
+                            {matches.length > 0 && (
+                                <button
+                                    onClick={async () => {
+                                        if (!confirm('¿ESTÁS SEGURO? Esto eliminará todos los partidos y grupos generados. Tendrás que generar el fixture nuevamente.')) return;
+                                        setLoading(true);
+                                        try {
+                                            const res = await purgeTournament(tournament.id);
+                                            if (!res.success) throw new Error(res.message);
+                                            alert('Fixture eliminado. Ahora puedes generar uno nuevo.');
+                                            router.refresh();
+                                        } catch (e) { alert(e.message); }
+                                        setLoading(false);
+                                    }}
+                                    disabled={loading}
+                                    className="bg-red-600/20 text-red-500 hover:bg-red-600 hover:text-white px-4 py-2 rounded-md text-sm font-medium border border-red-600/50 transition-colors"
+                                >
+                                    Resetear Fixture
+                                </button>
+                            )}
                             {matches.length === 0 && players.length >= 2 && (
                                 <button
                                     onClick={handlePreview}

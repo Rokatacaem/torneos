@@ -1458,3 +1458,21 @@ export async function disqualifyPlayer(tournamentId, playerId) {
     }
 }
 
+// --- RESET FUNCTIONALITY ---
+
+export async function purgeTournament(tournamentId) {
+    try {
+        await query('BEGIN');
+        await query(`DELETE FROM tournament_matches WHERE tournament_id = $1`, [tournamentId]);
+        await query(`DELETE FROM tournament_groups WHERE phase_id IN (SELECT id FROM tournament_phases WHERE tournament_id = $1)`, [tournamentId]);
+        await query(`DELETE FROM tournament_phases WHERE tournament_id = $1`, [tournamentId]);
+        await query('COMMIT');
+        revalidatePath(`/admin/tournaments/${tournamentId}`);
+        return { success: true, message: 'Fixture eliminado correctamente' };
+    } catch (e) {
+        await query('ROLLBACK');
+        console.error(e);
+        return { success: false, message: e.message };
+    }
+}
+
