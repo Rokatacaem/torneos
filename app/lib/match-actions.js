@@ -35,10 +35,16 @@ export async function updateMatchResult(matchId, formData) {
         const match = matchRes.rows[0];
         const tournamentId = match.tournament_id;
 
+        const manualWinnerId = formData.get('manualWinnerId');
+
         let winnerId = null;
-        if (scoreP1 > scoreP2) winnerId = match.player1_id;
-        else if (scoreP2 > scoreP1) winnerId = match.player2_id;
-        // Empate = null
+        if (manualWinnerId) {
+            winnerId = parseInt(manualWinnerId);
+        } else {
+            if (scoreP1 > scoreP2) winnerId = match.player1_id;
+            else if (scoreP2 > scoreP1) winnerId = match.player2_id;
+        }
+        // Empate = null if manualWinnerId is not set
 
         // Update match in TOURNAMENT_MATCHES table
         // Using correct columns: score_p1, score_p2, high_run_p1, high_run_p2
