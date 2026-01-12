@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { registerPlayer, generateGroups, updatePlayer, searchPlayers, generatePlayoffs, previewGroups, removePlayer, removePlayers, disqualifyPlayer, purgeTournament } from '@/app/lib/tournament-actions';
+import { registerPlayer, generateGroups, updatePlayer, searchPlayers, generatePlayoffs, previewGroups, removePlayer, removePlayers, disqualifyPlayer, purgeTournament, generateNextRound } from '@/app/lib/tournament-actions';
 import ManualResultModal from '@/app/components/admin/ManualResultModal';
 import FinalizeTournamentButton from './FinalizeTournamentButton';
 import { useRouter } from 'next/navigation';
@@ -562,6 +562,23 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                                     Generar Llaves Finales
                                 </button>
                             )}
+                            <button
+                                onClick={async () => {
+                                    if (!confirm('¿Generar Siguiente Ronda?')) return;
+                                    setLoading(true);
+                                    try {
+                                        const res = await generateNextRound(tournament.id);
+                                        if (!res.success) throw new Error(res.message);
+                                        alert(res.message);
+                                        router.refresh();
+                                    } catch (e) { alert(e.message); }
+                                    setLoading(false);
+                                }}
+                                disabled={loading}
+                                className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-bold hover:bg-blue-500 shadow-sm"
+                            >
+                                Siguiente Ronda
+                            </button>
                         </div>
                     </div>
 
