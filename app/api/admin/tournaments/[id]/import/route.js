@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { query } from '@/app/lib/db';
+import { calculateFechillarHandicap } from '@/app/lib/utils';
 import * as XLSX from 'xlsx';
 
 export const dynamic = 'force-dynamic';
@@ -57,46 +58,79 @@ export async function POST(request, { params }) {
                 name = name.trim();
 
                 const clubName = row['Club'] ? row['Club'].trim() : null;
-                const average = parseFloat(row['Promedio']) || 0;
-                const ranking = parseInt(row['Ranking']) || 0;
-                const handicap = parseInt(row['Handicap']) || 0;
+                const excelAverage = parseFloat(row['Promedio']) || 0;
+                let average = excelAverage;
+
+                const excelRanking = parseInt(row['Ranking']) || 0;
+                let ranking = excelRanking;
+
+                const excelHandicap = parseInt(row['Handicap']) || 0;
+                let handicap = excelHandicap;
+
                 const externalId = row['ID']; // Optional global ID
 
                 // 1. Resolve Global Player ID
                 let playerId = null;
                 let clubId = null;
 
-                // Try to find Club ID if clubName provided
+                // Try to find Club ID if clubName provided (helper)
                 if (clubName) {
                     const clubRes = await query('SELECT id FROM clubs WHERE name ILIKE $1', [clubName]);
                     if (clubRes.rows.length > 0) clubId = clubRes.rows[0].id;
                 }
 
+                // Global Player DB Record
+                let playerRecord = null;
+
                 // A. Try by ID
                 if (externalId) {
-                    const pRes = await query('SELECT id FROM players WHERE id = $1', [externalId]);
-                    if (pRes.rows.length > 0) playerId = pRes.rows[0].id;
+                    const pRes = await query('SELECT * FROM players WHERE id = $1', [externalId]);
+                    if (pRes.rows.length > 0) {
+                        playerRecord = pRes.rows[0];
+                        playerId = playerRecord.id;
+                    }
                 }
 
                 // B. Try by Name if no ID found
                 if (!playerId) {
-                    const pRes = await query('SELECT id FROM players WHERE name ILIKE $1', [name]);
-                    if (pRes.rows.length > 0) playerId = pRes.rows[0].id;
+                    const pRes = await query('SELECT * FROM players WHERE name ILIKE $1', [name]);
+                    if (pRes.rows.length > 0) {
+                        playerRecord = pRes.rows[0];
+                        playerId = playerRecord.id;
+                    }
                 }
 
-                // C. Create if not found
-                if (!playerId) {
+                // C. Determine Final Values
+                if (playerId && playerRecord) {
+                    // EXISTS: Use DB values for Average/Handicap if available
+                    // Use DB average if > 0, otherwise fallback to Excel
+                    if (playerRecord.average > 0) {
+                        average = parseFloat(playerRecord.average);
+                    }
+                    // Calculate Handicap from confirmed average
+                    handicap = calculateFechillarHandicap(average);
+
+                    // Use DB ranking if available? Or stick to Excel for tournament-specific seeding?
+                    // Usually Global Ranking is authoritative, but Excel might be the 'Snapshot' for this tournament.
+                    // Prompt says: "traer desde el ranking nacional los promedios y handicap". 
+                    // It mentions Ranking *National* implies DB.
+                    if (playerRecord.ranking > 0) {
+                        ranking = playerRecord.ranking;
+                    }
+                } else {
+                    // NEW: Use Excel values directly
+                    // Calculate handicap if not provided in Excel but Average is?
+                    if (handicap === 0 && average > 0) {
+                        handicap = calculateFechillarHandicap(average);
+                    }
+
+                    // Create new global player
                     const newP = await query(`
                         INSERT INTO players (name, club_id, average, ranking)
                         VALUES ($1, $2, $3, $4)
                         RETURNING id
                     `, [name, clubId, average, ranking]);
                     playerId = newP.rows[0].id;
-                } else {
-                    // Update Global Ranking if provided in import?
-                    if (ranking > 0) {
-                        await query('UPDATE players SET ranking = $1 WHERE id = $2', [ranking, playerId]);
-                    }
                 }
 
                 // 2. Register in Tournament
