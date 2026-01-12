@@ -48,8 +48,8 @@ export default function TVDashboard({ tournament, matches, players }) {
         // 1cm Perimeter (p-4 approx 16px) No overflow.
         <div className="w-screen h-screen bg-[#040e1a] text-white flex flex-col font-sans select-none overflow-hidden p-4">
 
-            {/* --- HEADER (10% Height) --- */}
-            <header className="h-[10%] shrink-0 bg-[#061020] border-b-4 border-yellow-600 flex items-center justify-between px-6 relative shadow-xl z-20 rounded-t-lg overflow-hidden">
+            {/* --- HEADER (8% Height) --- */}
+            <header className="h-[8%] shrink-0 bg-[#061020] border-b-4 border-yellow-600 flex items-center justify-between px-6 relative shadow-xl z-20 rounded-t-lg overflow-hidden">
                 {/* Custom Banner Background */}
                 {tournament.banner_image_url && (
                     <div className="absolute inset-0 z-0">
@@ -64,70 +64,40 @@ export default function TVDashboard({ tournament, matches, players }) {
                         className="text-slate-400 hover:text-white transition-colors bg-white/10 hover:bg-white/20 p-2 rounded-full border border-white/5"
                         title="Volver a Inicio"
                     >
-                        <ArrowLeft size={24} />
+                        <ArrowLeft size={20} />
                     </Link>
 
                     {tournament.logo_image_url ? (
-                        <div className="aspect-square h-full rounded-full bg-white/10 shadow-lg flex items-center justify-center border-4 border-[#061020] overflow-hidden">
-                            <img src={tournament.logo_image_url} alt="Logo" className="w-full h-full object-cover" />
+                        <div className="aspect-square h-full py-1">
+                            <img src={tournament.logo_image_url} alt="Logo" className="h-full w-auto object-contain drop-shadow-md" />
                         </div>
                     ) : (
-                        <div className="aspect-square h-full rounded-full bg-radial-gradient(circle at 30% 30%, #fff, #eab308) shadow-lg flex items-center justify-center border-4 border-[#061020]">
-                            <span className="text-[#061020] font-black text-3xl">8</span>
+                        <div className="aspect-square h-full rounded-full bg-radial-gradient(circle at 30% 30%, #fff, #eab308) shadow-lg flex items-center justify-center border-2 border-[#061020] p-2">
+                            <span className="text-[#061020] font-black text-xl">8</span>
                         </div>
                     )}
                 </div>
 
                 <div className="text-center flex-1 mx-4 flex flex-col justify-center h-full z-10">
-                    <h1 className="text-3xl lg:text-4xl xl:text-5xl font-black text-white tracking-widest leading-none uppercase font-serif drop-shadow-md truncate">
+                    <h1 className="text-2xl lg:text-3xl xl:text-4xl font-black text-white tracking-widest leading-none uppercase font-serif drop-shadow-md truncate">
                         <span className="text-yellow-500">{tournament.name?.split(' ')[0] || 'TORNEO'}</span> {tournament.name?.split(' ').slice(1).join(' ')}
                     </h1>
-
-                    {/* Dynamic Rules Display */}
-                    <div className="flex items-center justify-center gap-6 mt-2">
-                        <div className="flex items-center gap-2 bg-slate-800/80 px-3 py-1 rounded border border-white/10 text-xs lg:text-sm font-bold uppercase tracking-wider text-cyan-400">
-                            <span>{viewMode === 'groups' ? 'FASE GRUPOS' : 'FASE FINAL'}</span>
-                        </div>
-
-                        <div className="flex items-center gap-4 text-xs lg:text-sm font-bold text-slate-300">
-                            <div className="flex items-center gap-1">
-                                <span className="text-yellow-500">META:</span>
-                                <span className="text-white text-lg leading-none">
-                                    {viewMode === 'groups' ? (tournament.group_points_limit || '-') : (tournament.playoff_points_limit || '-')}
-                                </span>
-                                <span className="text-[10px] text-slate-500">PTS</span>
-                            </div>
-
-                            <div className="w-px h-4 bg-white/20"></div>
-
-                            <div className="flex items-center gap-1">
-                                <span className="text-yellow-500">MAX:</span>
-                                <span className="text-white text-lg leading-none">
-                                    {viewMode === 'groups' ? (tournament.group_innings_limit || '-') : (tournament.playoff_innings_limit || '-')}
-                                </span>
-                                <span className="text-[10px] text-slate-500">ENT</span>
-                            </div>
-
-                            <div className="w-px h-4 bg-white/20"></div>
-
-                            <div className="flex items-center gap-1">
-                                <span className="text-yellow-500">RELOJ:</span>
-                                <span className="text-white text-lg leading-none">{tournament.shot_clock_seconds || 40}</span>
-                                <span className="text-[10px] text-slate-500">SEG</span>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
-                <div className="flex items-center h-full py-1">
-                    <div className="aspect-square h-full rounded-full bg-radial-gradient(circle at 30% 30%, #fff, #ef4444) shadow-lg flex items-center justify-center border-4 border-[#061020]">
-                        <span className="text-[#061020] font-black text-3xl">3</span>
+                <div className="flex items-center h-full gap-4">
+                    {/* Rules Mini-Display */}
+                    <div className="hidden xl:flex items-center gap-4 text-xs font-bold text-slate-300 bg-black/20 px-3 py-1 rounded-full border border-white/5">
+                        <span className="text-yellow-500">META: <span className="text-white text-base">{viewMode === 'groups' ? tournament.group_points_limit || '-' : tournament.playoff_points_limit || '-'}</span></span>
+                        <div className="w-px h-3 bg-white/20"></div>
+                        <span className="text-yellow-500">MAX: <span className="text-white text-base">{viewMode === 'groups' ? tournament.group_innings_limit || '-' : tournament.playoff_innings_limit || '-'}</span></span>
+                        <div className="w-px h-3 bg-white/20"></div>
+                        <span className="text-yellow-500">RELOJ: <span className="text-white text-base">{tournament.shot_clock_seconds || 40}</span></span>
                     </div>
                 </div>
             </header>
 
-            {/* --- MAIN CONTENT (78% Height) --- */}
-            <div className="h-[78%] w-full flex py-2 gap-2 relative z-10 transition-opacity duration-1000 ease-in-out">
+            {/* --- MAIN CONTENT (84% Height) --- */}
+            <div className="h-[84%] w-full flex py-2 gap-2 relative z-10 transition-opacity duration-1000 ease-in-out">
                 {viewMode === 'playoffs' ? (
                     <>
                         {/* LEFT: TABLE (25%) */}
@@ -148,8 +118,8 @@ export default function TVDashboard({ tournament, matches, players }) {
                 )}
             </div>
 
-            {/* --- FOOTER (12% Height) --- */}
-            <footer className="h-[12%] shrink-0 bg-[#061020] border-t-4 border-yellow-600 flex relative z-20 rounded-b-lg">
+            {/* --- FOOTER (8% Height) --- */}
+            <footer className="h-[8%] shrink-0 bg-[#061020] border-t-4 border-yellow-600 flex relative z-20 rounded-b-lg">
 
                 {/* Panel Records */}
                 <div className="w-[20%] bg-[#0a192f] border-r border-white/10 p-4 flex flex-col justify-center gap-1">
