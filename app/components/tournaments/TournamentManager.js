@@ -731,7 +731,7 @@ function PreviewModal({ groups, onClose, onConfirm, loading }) {
                                             <div>
                                                 <div className="text-slate-200 font-medium">{p.player_name}</div>
                                                 <div className="text-slate-500 text-xs">
-                                                    Rk: {p.ranking || 0} • HCP: {p.handicap || 0} • {p.team_name}
+                                                    Avg: {p.average || '-'} • Rk: {p.ranking || 0} • HCP: {p.handicap || 0} • {p.team_name}
                                                 </div>
                                             </div>
                                         </div>
