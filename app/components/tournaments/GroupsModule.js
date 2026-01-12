@@ -6,9 +6,8 @@ export default function GroupsModule({ standings }) {
         .filter(key => key.toUpperCase() !== 'GENERAL' && key.toUpperCase() !== 'NULL')
         .sort();
 
-    return (
-        // Dynamic Grid Layout based on group count
-        let gridClass = "grid-cols-4 grid-rows-4"; // Default for large tournaments (13-16 groups)
+    // Dynamic Grid Layout based on group count
+    let gridClass = "grid-cols-4 grid-rows-4"; // Default for large tournaments (13-16 groups)
 
     const count = groups.length;
     if (count <= 2) {
