@@ -1481,3 +1481,71 @@ export async function purgeTournament(tournamentId) {
     }
 }
 
+// --- GENERAR SIGUIENTE RONDA (PLAYOFFS) ---
+
+export async function generateNextRound(tournamentId) {
+    try {
+        const phaseRes = await query(`
+            SELECT id FROM tournament_phases 
+            WHERE tournament_id = $1 AND type = 'elimination'
+            ORDER BY sequence_order DESC LIMIT 1
+        `, [tournamentId]);
+
+        if (phaseRes.rows.length === 0) throw new Error('No hay fase de playoffs activa.');
+        const phaseId = phaseRes.rows[0].id;
+
+        const roundRes = await query(`
+            SELECT MAX(round_number) as max_round 
+            FROM tournament_matches 
+            WHERE phase_id = $1
+        `, [phaseId]);
+        const currentRound = roundRes.rows[0].max_round || 1;
+
+        const matchesRes = await query(`
+            SELECT * FROM tournament_matches 
+            WHERE phase_id = $1 AND round_number = $2
+            ORDER BY id ASC
+        `, [phaseId, currentRound]);
+
+        const matches = matchesRes.rows;
+
+        if (matches.length === 0) throw new Error('No hay partidos en la ronda actual.');
+
+        const unfinished = matches.filter(m => m.status !== 'completed');
+        if (unfinished.length > 0) {
+            throw new Error(`Aún hay ${unfinished.length} partidos pendientes en esta ronda.`);
+        }
+
+        if (matches.length === 1) throw new Error('El torneo ya ha finalizado (Final jugada).');
+
+        const winners = matches.map(m => {
+            if (!m.winner_id) throw new Error(`El partido ${m.id} no tiene ganador.`);
+            return { pid: m.winner_id };
+        });
+
+        const nextRound = currentRound + 1;
+        const nextMatchesCount = winners.length / 2;
+
+        await query('BEGIN');
+
+        for (let i = 0; i < nextMatchesCount; i++) {
+            const p1 = winners[i * 2];
+            const p2 = winners[i * 2 + 1];
+
+            await query(`
+                INSERT INTO tournament_matches (tournament_id, phase_id, player1_id, player2_id, status, round_number)
+                VALUES ($1, $2, $3, $4, 'scheduled', $5)
+            `, [tournamentId, phaseId, p1.pid, p2.pid, nextRound]);
+        }
+
+        await query('COMMIT');
+        revalidatePath(`/admin/tournaments/${tournamentId}`);
+        return { success: true, message: `Ronda ${nextRound} generada con éxito (${nextMatchesCount} partidos).` };
+
+    } catch (e) {
+        await query('ROLLBACK');
+        console.error(e);
+        return { success: false, message: e.message };
+    }
+}
+
