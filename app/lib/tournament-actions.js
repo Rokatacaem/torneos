@@ -1187,7 +1187,12 @@ export async function generatePlayoffs(tournamentId) {
     `, [tournamentId]);
 
     if (existingPhase.rows.length > 0) {
-        throw new Error('Ya existen playoffs generados');
+        const checkMatches = await query('SELECT id FROM tournament_matches WHERE phase_id = $1 LIMIT 1', [existingPhase.rows[0].id]);
+        if (checkMatches.rows.length > 0) {
+            throw new Error('Ya existen playoffs generados');
+        }
+        // Empty phase found (likely from failed generation). Cleanup.
+        await query('DELETE FROM tournament_phases WHERE id = $1', [existingPhase.rows[0].id]);
     }
 
     // 2. Get group results and stats
