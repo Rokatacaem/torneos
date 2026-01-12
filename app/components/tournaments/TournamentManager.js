@@ -243,8 +243,12 @@ export default function TournamentManager({ tournament, players, matches, clubs 
     async function handleGenerateConfirm() {
         setLoading(true);
         try {
-            await generateGroups(tournament.id);
+            const res = await generateGroups(tournament.id);
+            if (!res.success) {
+                throw new Error(res.message);
+            }
             setPreviewData(null); // Close modal
+            alert('Grupos y Fixture generados con éxito');
             router.refresh();
             setActiveTab('matches');
         } catch (err) {
