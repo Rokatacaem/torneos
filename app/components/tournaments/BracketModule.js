@@ -2,15 +2,15 @@
 
 import { useMemo } from 'react';
 
-export default function BracketModule({ matches, phases }) {
-    // 1. Filter Phases
-    const eliminationPhases = phases.filter(p => {
-        if (p.type === 'elimination' || p.type === 'final') return true;
-        const lowerName = p.name.toLowerCase();
-        return !lowerName.includes('grupo') && !lowerName.includes('group');
-    }).sort((a, b) => a.order - b.order);
+export default function BracketModule({ matches }) {
+    // 1. Filter Elimination Matches
+    // We ignore phases array and just look for round_number or type 'elimination'/'final' if available,
+    // but relying on round_number is safer if they are all in one phase.
+    const eliminationMatches = matches.filter(m =>
+        (m.phase_type === 'elimination' || m.phase_type === 'final') && m.round_number > 0
+    );
 
-    if (eliminationPhases.length === 0) {
+    if (eliminationMatches.length === 0) {
         return (
             <div className="h-full w-full flex items-center justify-center bg-[#0a192f] text-slate-500 text-sm">
                 (Esperando Definición de Fases)
@@ -18,51 +18,68 @@ export default function BracketModule({ matches, phases }) {
         );
     }
 
-    // 2. Identify Final and Pre-Final Phases
-    const finalPhase = eliminationPhases[eliminationPhases.length - 1]; // Assume last is final
-    const preFinalPhases = eliminationPhases.slice(0, eliminationPhases.length - 1);
+    // 2. Identify Rounds
+    // Group matches by round number
+    const roundGroups = {};
+    eliminationMatches.forEach(m => {
+        if (!roundGroups[m.round_number]) roundGroups[m.round_number] = [];
+        roundGroups[m.round_number].push(m);
+    });
 
-    // 3. Split Matches for Pre-Final Phases (Top Half vs Bottom Half)
-    const matchesByPhase = useMemo(() => {
-        const map = { left: {}, right: {}, final: [] };
+    const roundNumbers = Object.keys(roundGroups).map(Number).sort((a, b) => a - b);
+    const maxRound = roundNumbers[roundNumbers.length - 1];
 
-        preFinalPhases.forEach(p => {
-            // Sort matches to ensure deterministic split
-            const phaseMatches = matches.filter(m => m.phase_id === p.id).sort((a, b) => a.id - b.id);
-            const mid = Math.ceil(phaseMatches.length / 2);
-            map.left[p.id] = phaseMatches.slice(0, mid);
-            map.right[p.id] = phaseMatches.slice(mid);
-        });
+    // 3. Split Matches (Top Half vs Bottom Half) for Pre-Final Rounds
+    const matchesByRound = { left: {}, right: {}, final: [] };
 
-        if (finalPhase) {
-            map.final = matches.filter(m => m.phase_id === finalPhase.id);
+    roundNumbers.forEach(r => {
+        const roundMatches = roundGroups[r].sort((a, b) => a.id - b.id);
+
+        if (r === maxRound) {
+            matchesByRound.final = roundMatches;
+        } else {
+            const mid = Math.ceil(roundMatches.length / 2);
+            matchesByRound.left[r] = roundMatches.slice(0, mid);
+            matchesByRound.right[r] = roundMatches.slice(mid);
         }
+    });
 
-        return map;
-    }, [matches, preFinalPhases, finalPhase]);
+    // 4. Rounds for Wings (Excluding Final)
+    const wingRounds = roundNumbers.slice(0, -1);
 
-    // Butterfly Layout: [LEFT WING] [FINAL] [RIGHT WING]
-    // Left Wing: 16vos -> Oct -> Qtr -> Semi
-    // Right Wing: Semi <- Qtr <- Oct <- 16vos (Reversed visual order)
+    // Determines label (e.g., Round 1 -> 8vos, Round 2 -> 4tos)
+    // We need to guess the "name" based on maxRound.
+    // If maxRound is 4 (Final), then 3=Semi, 2=4tos, 1=8vos.
+    // But round numbers might be arbitrary (1,2,3...). 
+    // Usually Round 1 is the start.
+    // Let's rely on standard logic: Max = Final.
+    const getRoundName = (r) => {
+        const diff = maxRound - r;
+        if (diff === 0) return 'FINAL';
+        if (diff === 1) return 'SEMIFINAL';
+        if (diff === 2) return 'CUARTOS';
+        if (diff === 3) return 'OCTAVOS';
+        return `RONDA ${r}`;
+    };
 
     return (
         <div className="h-full w-full flex bg-[#0a192f] border-r border-white/5 relative overflow-hidden">
 
             {/* --- LEFT WING --- */}
             <div className="flex-1 flex">
-                {preFinalPhases.map((phase) => (
-                    <div key={`left-${phase.id}`} className="flex-1 flex flex-col border-r border-white/5 last:border-0 relative">
-                        {/* Phase Title */}
+                {wingRounds.map((r) => (
+                    <div key={`left-${r}`} className="flex-1 flex flex-col border-r border-white/5 last:border-0 relative">
+                        {/* Round Title */}
                         <div className="text-center py-1 text-cyan-500 font-black uppercase text-[9px] lg:text-[10px] tracking-widest shrink-0 bg-[#061020]/80">
-                            {phase.name.replace(' de Final', '').replace('Semifinal', 'Semi')}
+                            {getRoundName(r)}
                         </div>
                         {/* Matches */}
                         <div className="flex-1 flex flex-col justify-around px-1 py-1">
-                            {matchesByPhase.left[phase.id].map(m => (
+                            {matchesByRound.left[r]?.map(m => (
                                 <div key={m.id} className="w-full flex justify-center">
                                     <BracketNode match={m} align="left" />
                                 </div>
-                            ))}
+                            )) || <div className="text-white/20 text-xs text-center">-</div>}
                         </div>
                     </div>
                 ))}
@@ -73,8 +90,8 @@ export default function BracketModule({ matches, phases }) {
                 <div className="text-center py-2 text-yellow-500 font-black uppercase text-xs lg:text-sm tracking-[0.2em] shrink-0 bg-black/40">
                     GRAN FINAL
                 </div>
-                <div className="flex-1 flex items-center justify-center p-2">
-                    {matchesByPhase.final.map(m => (
+                <div className="flex-1 flex flex-col items-center justify-center p-2 gap-4">
+                    {matchesByRound.final.map(m => (
                         <BracketNode key={m.id} match={m} isFinal={true} />
                     ))}
                 </div>
@@ -82,19 +99,19 @@ export default function BracketModule({ matches, phases }) {
 
             {/* --- RIGHT WING (Reversed Order) --- */}
             <div className="flex-1 flex flex-row-reverse">
-                {preFinalPhases.map((phase) => (
-                    <div key={`right-${phase.id}`} className="flex-1 flex flex-col border-l border-white/5 first:border-0 relative">
-                        {/* Phase Title */}
+                {wingRounds.map((r) => (
+                    <div key={`right-${r}`} className="flex-1 flex flex-col border-l border-white/5 first:border-0 relative">
+                        {/* Round Title */}
                         <div className="text-center py-1 text-cyan-500 font-black uppercase text-[9px] lg:text-[10px] tracking-widest shrink-0 bg-[#061020]/80">
-                            {phase.name.replace(' de Final', '').replace('Semifinal', 'Semi')}
+                            {getRoundName(r)}
                         </div>
                         {/* Matches */}
                         <div className="flex-1 flex flex-col justify-around px-1 py-1">
-                            {matchesByPhase.right[phase.id].map(m => (
+                            {matchesByRound.right[r]?.map(m => (
                                 <div key={m.id} className="w-full flex justify-center">
                                     <BracketNode match={m} align="right" />
                                 </div>
-                            ))}
+                            )) || <div className="text-white/20 text-xs text-center">-</div>}
                         </div>
                     </div>
                 ))}
