@@ -970,136 +970,152 @@ export async function updateMatchResult(matchId, data) {
 
 // --- LOGICA DE GENERACION (Simplificada por ahora) ---
 
-export async function generateGroups(tournamentId) { // Removed groupCount param as it should be derived
-    // 0. Obtener config del torneo
-    const tournament = await getTournament(tournamentId);
-    const groupSize = tournament.group_size || 4;
+export async function generateGroups(tournamentId) {
+    try {
+        const tournament = await getTournament(tournamentId);
 
-    // 1. Crear Fase de Grupos
-    const phaseRes = await query(`
-    INSERT INTO tournament_phases (tournament_id, name, type, sequence_order)
-    VALUES ($1, 'Fase de Grupos', 'group', 1)
-    RETURNING id
-  `, [tournamentId]);
-    const phaseId = phaseRes.rows[0].id;
+        // 0. Verificar si ya hay fase de grupos
+        const phasesCheck = await query('SELECT id FROM tournament_phases WHERE tournament_id = $1', [tournamentId]);
+        if (phasesCheck.rows.length > 0) {
+            throw new Error('El fixture ya ha sido generado. Elimina las fases existentes para regenerar.');
+        }
 
-    // 2. Obtener jugadores ordenados por ranking
-    const allPlayers = await getTournamentPlayers(tournamentId);
+        const groupSize = tournament.group_size || 4;
 
-    // Filtrar solo jugadores activos
-    const players = allPlayers.filter(p => p.status === 'active' || !p.status);
-
-    // Calcular cantidad de grupos necesaria
-    const groupCount = Math.ceil(players.length / groupSize);
-
-    // Ordenar por Ranking ASC (Posición)
-    // Fix: Ordenar por posición (1º es mejor)
-    const seededPlayers = players.sort((a, b) => {
-        let rankA = a.ranking;
-        let rankB = b.ranking;
-
-        // Treat 0 or null as "No Ranking" (Infinity)
-        if (!rankA) rankA = 9999999;
-        if (!rankB) rankB = 9999999;
-
-        if (rankA !== rankB) return rankA - rankB; // Ascending: 1st is Best
-        return a.id - b.id; // Desempate por registro
-    });
-
-    // 3. Crear Grupos con Horarios y Mesas (Numerados 1, 2, 3...)
-    const groups = [];
-
-    // Config de Agenda
-    const tablesAvailable = tournament.tables_available || 4;
-    const blockDuration = tournament.block_duration || 180; // Default 3h
-    const startDate = new Date(tournament.start_date);
-
-    for (let i = 0; i < groupCount; i++) {
-        // Calculate Schedule
-        const turnIndex = Math.floor(i / tablesAvailable);
-        const tableNum = (i % tablesAvailable) + 1;
-        const startTime = new Date(startDate.getTime() + (turnIndex * blockDuration * 60000));
-
-        const gRes = await query(`
-        INSERT INTO tournament_groups (phase_id, name, start_time, table_assignment)
-        VALUES ($1, $2, $3, $4)
+        // 1. Crear Fase de Grupos
+        const phaseRes = await query(`
+        INSERT INTO tournament_phases (tournament_id, name, type, sequence_order)
+        VALUES ($1, 'Fase de Grupos', 'group', 1)
         RETURNING id
-    `, [phaseId, (i + 1).toString(), startTime, tableNum]);
-        groups.push(gRes.rows[0].id);
-    }
+    `, [tournamentId]);
+        const phaseId = phaseRes.rows[0].id;
 
-    // 4. Asignar jugadores a grupos (Snake System)
-    // 0, 1, 2, 3, 3, 2, 1, 0, 0, 1...
-    const groupAssignments = {};
-    groups.forEach(g => groupAssignments[g] = []);
+        // 2. Obtener jugadores CONFIRMADOS (active o null status)
+        const allPlayers = await getTournamentPlayers(tournamentId);
+        const players = allPlayers.filter(p => p.status === 'active' || !p.status);
 
-    seededPlayers.forEach((p, idx) => {
-        const cycle = Math.floor(idx / groupCount);
-        const isZigZag = cycle % 2 === 1; // 0=ida, 1=vuelta
-
-        let targetGroupIdx;
-        if (isZigZag) {
-            // Vuelta (Reverse)
-            targetGroupIdx = (groupCount - 1) - (idx % groupCount);
-        } else {
-            // Ida (Forward)
-            targetGroupIdx = idx % groupCount;
+        if (players.length === 0) {
+            throw new Error('No hay jugadores activos para generar grupos.');
         }
 
-        groupAssignments[groups[targetGroupIdx]].push(p.id);
-    });
+        // Calcular cantidad de grupos necesaria
+        const groupCount = Math.ceil(players.length / groupSize);
 
-    // Generar partidos por grupo
-    for (const groupId of groups) {
-        const pIds = groupAssignments[groupId];
+        // Ordenar por Ranking ASC (Posición)
+        const seededPlayers = players.sort((a, b) => {
+            let rankA = a.ranking;
+            let rankB = b.ranking;
 
-        // Special Case: 2 Players -> Double Match (Ida y Vuelta)
-        if (pIds.length === 2) {
-            // Match 1: P1 vs P2
-            await query(`
-                INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
-                VALUES ($1, $2, $3, $4, $5, 'scheduled', 1)
-             `, [tournamentId, phaseId, groupId, pIds[0], pIds[1]]);
+            // Treat 0 or null as "No Ranking" (Infinity)
+            if (!rankA) rankA = 9999999;
+            if (!rankB) rankB = 9999999;
 
-            // Match 2: P2 vs P1 (Vuelta)
-            await query(`
-                INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
-                VALUES ($1, $2, $3, $4, $5, 'scheduled', 2)
-             `, [tournamentId, phaseId, groupId, pIds[1], pIds[0]]);
+            if (rankA !== rankB) return rankA - rankB; // Ascending: 1st is Best
+            return a.id - b.id; // Desempate por registro
+        });
 
-            continue;
+        // 3. Crear Grupos con Horarios y Mesas (Numerados 1, 2, 3...)
+        const groups = [];
+
+        // Config de Agenda
+        const tablesAvailable = tournament.tables_available || 4;
+        const blockDuration = tournament.block_duration || 180; // Default 3h
+        const startDate = new Date(tournament.start_date);
+
+        for (let i = 0; i < groupCount; i++) {
+            // Calculate Schedule
+            const turnIndex = Math.floor(i / tablesAvailable);
+            const tableNum = (i % tablesAvailable) + 1;
+            const startTime = new Date(startDate.getTime() + (turnIndex * blockDuration * 60000));
+
+            const gRes = await query(`
+            INSERT INTO tournament_groups (phase_id, name, start_time, table_assignment)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id
+        `, [phaseId, (i + 1).toString(), startTime, tableNum]);
+            groups.push(gRes.rows[0].id);
         }
 
-        // GSL Format (Double Elimination) - Only for 4 Players
-        if (tournament.group_format === 'gsl' && pIds.length === 4) {
-            // Match 1: Seed 1 vs Seed 4
-            await query(`
-                INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
-                VALUES ($1, $2, $3, $4, $5, 'scheduled', 1)
-            `, [tournamentId, phaseId, groupId, pIds[0], pIds[3]]);
+        // 4. Asignar jugadores a grupos (Snake System)
+        // 0, 1, 2, 3, 3, 2, 1, 0, 0, 1...
+        const groupAssignments = {};
+        groups.forEach(g => groupAssignments[g] = []);
 
-            // Match 2: Seed 2 vs Seed 3
-            await query(`
-                INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
-                VALUES ($1, $2, $3, $4, $5, 'scheduled', 1)
-            `, [tournamentId, phaseId, groupId, pIds[1], pIds[2]]);
+        seededPlayers.forEach((p, idx) => {
+            const cycle = Math.floor(idx / groupCount);
+            const isZigZag = cycle % 2 === 1; // 0=ida, 1=vuelta
 
-            continue;
-        }
+            let targetGroupIdx;
+            if (isZigZag) {
+                // Vuelta (Reverse)
+                targetGroupIdx = (groupCount - 1) - (idx % groupCount);
+            } else {
+                // Ida (Forward)
+                targetGroupIdx = idx % groupCount;
+            }
 
-        // Standard Round robin: todos contra todos
-        for (let i = 0; i < pIds.length; i++) {
-            for (let j = i + 1; j < pIds.length; j++) {
+            groupAssignments[groups[targetGroupIdx]].push(p.id);
+        });
+
+        // Generar partidos por grupo
+        for (const groupId of groups) {
+            const pIds = groupAssignments[groupId];
+            const pCount = pIds.length;
+
+            if (pCount < 2) continue; // Skip groups with 0 or 1 player (shouldn't happen ideally)
+
+            // Special Case: 2 Players -> Double Match (Ida y Vuelta)
+            if (pCount === 2) {
+                // Match 1: P1 vs P2
                 await query(`
-            INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
-            VALUES ($1, $2, $3, $4, $5, 'scheduled', 1)
-        `, [tournamentId, phaseId, groupId, pIds[i], pIds[j]]);
+                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
+                    VALUES ($1, $2, $3, $4, $5, 'scheduled', 1)
+                 `, [tournamentId, phaseId, groupId, pIds[0], pIds[1]]);
+
+                // Match 2: P2 vs P1 (Vuelta)
+                await query(`
+                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
+                    VALUES ($1, $2, $3, $4, $5, 'scheduled', 2)
+                 `, [tournamentId, phaseId, groupId, pIds[1], pIds[0]]);
+
+                continue;
+            }
+
+            // GSL Format (Double Elimination) - Only for 4 Players
+            if (tournament.group_format === 'gsl' && pCount === 4) {
+                // Match 1: Seed 1 vs Seed 4
+                await query(`
+                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
+                    VALUES ($1, $2, $3, $4, $5, 'scheduled', 1)
+                `, [tournamentId, phaseId, groupId, pIds[0], pIds[3]]);
+
+                // Match 2: Seed 2 vs Seed 3
+                await query(`
+                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
+                    VALUES ($1, $2, $3, $4, $5, 'scheduled', 1)
+                `, [tournamentId, phaseId, groupId, pIds[1], pIds[2]]);
+
+                continue;
+            }
+
+            // Standard Round robin: todos contra todos
+            for (let i = 0; i < pCount; i++) {
+                for (let j = i + 1; j < pCount; j++) {
+                    await query(`
+                INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
+                VALUES ($1, $2, $3, $4, $5, 'scheduled', 1)
+            `, [tournamentId, phaseId, groupId, pIds[i], pIds[j]]);
+                }
             }
         }
-    }
 
-    revalidatePath(`/admin/tournaments/${tournamentId}`);
-    return { success: true };
+        revalidatePath(`/admin/tournaments/${tournamentId}`);
+        return { success: true };
+    } catch (e) {
+        console.error('Error generating groups:', e);
+        // Ensure we return a plain object failure, not rethrowing Error which gets masked by Next.js in production
+        return { success: false, message: e.message };
+    }
 }
 
 export async function previewGroups(tournamentId) {

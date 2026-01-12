@@ -524,8 +524,11 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                                         if (!confirm('¿Generar Cruces de Playoffs? Asegúrate de que todos los partidos de grupo estén terminados.')) return;
                                         setLoading(true);
                                         try {
-                                            await generatePlayoffs(tournament.id);
-                                            alert('Llaves generadas');
+                                            const res = await generatePlayoffs(tournament.id);
+                                            if (!res.success) {
+                                                throw new Error(res.message);
+                                            }
+                                            alert('Llaves generadas exitosamente');
                                             router.refresh();
                                         } catch (e) { alert(e.message); }
                                         setLoading(false);
