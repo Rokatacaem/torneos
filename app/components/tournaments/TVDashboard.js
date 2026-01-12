@@ -130,14 +130,14 @@ export default function TVDashboard({ tournament, matches, players }) {
             <div className="h-[78%] w-full flex py-2 gap-2 relative z-10 transition-opacity duration-1000 ease-in-out">
                 {viewMode === 'playoffs' ? (
                     <>
-                        {/* LEFT: BRACKET (65%) */}
-                        <div className="w-[65%] h-full rounded-lg border-2 border-cyan-900/40 overflow-hidden shadow-2xl bg-[#0a192f] flex flex-col animate-in fade-in slide-in-from-right-4 duration-500">
-                            <BracketModule matches={matches} phases={phases} />
+                        {/* LEFT: TABLE (25%) */}
+                        <div className="w-[25%] h-full rounded-lg border-2 border-cyan-900/40 overflow-hidden shadow-2xl bg-[#0a192f] flex flex-col animate-in fade-in slide-in-from-left-4 duration-500">
+                            <GeneralTableModule standings={globalStandings} />
                         </div>
 
-                        {/* RIGHT: TABLE (35%) */}
-                        <div className="w-[35%] h-full rounded-lg border-2 border-cyan-900/40 overflow-hidden shadow-2xl bg-[#0a192f] flex flex-col animate-in fade-in slide-in-from-right-8 duration-700">
-                            <GeneralTableModule standings={globalStandings} />
+                        {/* RIGHT: BRACKET (75%) */}
+                        <div className="w-[75%] h-full rounded-lg border-2 border-cyan-900/40 overflow-hidden shadow-2xl bg-[#0a192f] flex flex-col animate-in fade-in slide-in-from-right-8 duration-700">
+                            <BracketModule matches={matches} phases={phases} />
                         </div>
                     </>
                 ) : (
