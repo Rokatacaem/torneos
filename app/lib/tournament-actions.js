@@ -1107,10 +1107,16 @@ export async function previewGroups(tournamentId) {
     const groupCount = Math.ceil(activePlayers.length / groupSize);
 
     // Sort by Ranking (Seeding)
+    // Modified: User expects Priority to Position (Lower is Better)
     const seededPlayers = [...activePlayers].sort((a, b) => {
-        const rankA = a.ranking || 0;
-        const rankB = b.ranking || 0;
-        if (rankA !== rankB) return rankB - rankA;
+        let rankA = a.ranking;
+        let rankB = b.ranking;
+
+        // Treat 0 or null as "No Ranking" (Infinity)
+        if (!rankA) rankA = 9999999;
+        if (!rankB) rankB = 9999999;
+
+        if (rankA !== rankB) return rankA - rankB; // Ascending: 1st is Best
         return a.id - b.id;
     });
 
