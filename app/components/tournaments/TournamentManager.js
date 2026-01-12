@@ -723,7 +723,9 @@ function PreviewModal({ groups, onClose, onConfirm, loading }) {
                                             <span className="text-slate-500 font-mono w-4">{idx + 1}.</span>
                                             <div>
                                                 <div className="text-slate-200 font-medium">{p.player_name}</div>
-                                                <div className="text-slate-500 text-xs">Rk: {p.ranking || 0} • {p.team_name}</div>
+                                                <div className="text-slate-500 text-xs">
+                                                    Rk: {p.ranking || 0} • HCP: {p.handicap || 0} • {p.team_name}
+                                                </div>
                                             </div>
                                         </div>
                                     ))}

@@ -51,13 +51,15 @@ export async function POST(request, { params }) {
 
         for (const row of jsonData) {
             try {
-                // Expected columns: Ranking, Nombre, Club, Promedio, ID
+                // Expected columns: Ranking, Nombre, Club, Promedio, ID, Handicap
                 let name = row['Nombre'];
                 if (!name) continue; // Skip empty names
                 name = name.trim();
 
                 const clubName = row['Club'] ? row['Club'].trim() : null;
                 const average = parseFloat(row['Promedio']) || 0;
+                const ranking = parseInt(row['Ranking']) || 0;
+                const handicap = parseInt(row['Handicap']) || 0;
                 const externalId = row['ID']; // Optional global ID
 
                 // 1. Resolve Global Player ID
@@ -85,17 +87,16 @@ export async function POST(request, { params }) {
                 // C. Create if not found
                 if (!playerId) {
                     const newP = await query(`
-                        INSERT INTO players (name, club_id, average)
-                        VALUES ($1, $2, $3)
+                        INSERT INTO players (name, club_id, average, ranking)
+                        VALUES ($1, $2, $3, $4)
                         RETURNING id
-                    `, [name, clubId, average]);
+                    `, [name, clubId, average, ranking]);
                     playerId = newP.rows[0].id;
                 } else {
-                    // Start updates (Updating average or club if provided in import?)
-                    // For now, let's respect current DB data unless we want to force update.
-                    // Implementation plan said "create new global player", implied reusing existing.
-                    // Let's minimally ensure club_id is set if we found one and player didn't have one? 
-                    // Keeping it simple: Just link.
+                    // Update Global Ranking if provided in import?
+                    if (ranking > 0) {
+                        await query('UPDATE players SET ranking = $1 WHERE id = $2', [ranking, playerId]);
+                    }
                 }
 
                 // 2. Register in Tournament
@@ -121,9 +122,9 @@ export async function POST(request, { params }) {
                 }
 
                 await query(`
-                    INSERT INTO tournament_players (tournament_id, player_id, player_name, team_name, average, status)
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                `, [tournamentId, playerId, name, clubName, average, status]);
+                    INSERT INTO tournament_players (tournament_id, player_id, player_name, team_name, average, handicap, ranking, status)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                `, [tournamentId, playerId, name, clubName, average, handicap, ranking, status]);
 
             } catch (err) {
                 console.error('Row Import Error:', err, row);
