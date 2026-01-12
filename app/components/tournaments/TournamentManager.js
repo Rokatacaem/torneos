@@ -957,3 +957,55 @@ function MatchGrid({ matches, onSelect }) {
         </div>
     );
 }
+
+function LiveStandings({ matches, players }) {
+    // Calculate stats
+    const stats = {};
+    players.forEach(p => {
+        stats[p.id] = { ...p, played: 0, won: 0, score: 0, points: 0 };
+    });
+
+    matches.filter(m => m.status === 'completed').forEach(m => {
+        if (!stats[m.player1_id]) stats[m.player1_id] = { id: m.player1_id, name: m.player1_name || '?', played: 0, won: 0, score: 0, points: 0 };
+        if (!stats[m.player2_id]) stats[m.player2_id] = { id: m.player2_id, name: m.player2_name || '?', played: 0, won: 0, score: 0, points: 0 };
+
+        const p1 = stats[m.player1_id];
+        const p2 = stats[m.player2_id];
+
+        p1.played++;
+        p2.played++;
+        p1.score += (m.score_p1 || 0);
+        p2.score += (m.score_p2 || 0);
+
+        if (m.winner_id === m.player1_id) { p1.won++; p1.points += 2; p2.points += 1; }
+        else if (m.winner_id === m.player2_id) { p2.won++; p2.points += 2; p1.points += 1; }
+    });
+
+    const sorted = Object.values(stats).filter(p => p.played > 0 || p.ranking > 0).sort((a, b) => b.points - a.points || b.score - a.score);
+
+    return (
+        <div className="bg-[#0B1120] rounded-lg border border-white/10 overflow-hidden">
+            <div className="bg-white/5 p-3 text-sm font-bold text-center border-b border-white/10">Clasificación / Rendimiento</div>
+            <table className="w-full text-xs text-left">
+                <thead className="text-slate-500 uppercase">
+                    <tr>
+                        <th className="p-2">Jugador</th>
+                        <th className="p-2 text-center">PJ</th>
+                        <th className="p-2 text-center">Pts</th>
+                        <th className="p-2 text-center">Avg</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                    {sorted.map(p => (
+                        <tr key={p.id} className="hover:bg-white/5">
+                            <td className="p-2 font-medium text-slate-300 truncate max-w-[100px]">{p.name || p.team_name}</td>
+                            <td className="p-2 text-center text-slate-400">{p.played}</td>
+                            <td className="p-2 text-center font-bold text-green-400">{p.points}</td>
+                            <td className="p-2 text-center text-slate-400">{(p.score / (p.played || 1)).toFixed(2)}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+}
