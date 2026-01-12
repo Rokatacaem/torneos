@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { registerPlayer, generateGroups, updatePlayer, searchPlayers, generatePlayoffs, previewGroups, removePlayer, disqualifyPlayer } from '@/app/lib/tournament-actions';
+import { registerPlayer, generateGroups, updatePlayer, searchPlayers, generatePlayoffs, previewGroups, removePlayer, removePlayers, disqualifyPlayer } from '@/app/lib/tournament-actions';
 import ManualResultModal from '@/app/components/admin/ManualResultModal';
 import FinalizeTournamentButton from './FinalizeTournamentButton';
 import { useRouter } from 'next/navigation';
@@ -26,6 +26,42 @@ export default function TournamentManager({ tournament, players, matches, clubs 
 
     // Preview State
     const [previewData, setPreviewData] = useState(null);
+
+    // Selection State
+    const [selectedPlayers, setSelectedPlayers] = useState(new Set());
+
+    const toggleSelectAll = () => {
+        if (selectedPlayers.size === players.length) {
+            setSelectedPlayers(new Set());
+        } else {
+            setSelectedPlayers(new Set(players.map(p => p.id)));
+        }
+    };
+
+    const toggleSelectPlayer = (id) => {
+        const newSet = new Set(selectedPlayers);
+        if (newSet.has(id)) {
+            newSet.delete(id);
+        } else {
+            newSet.add(id);
+        }
+        setSelectedPlayers(newSet);
+    };
+
+    const handleBulkDelete = async () => {
+        if (!confirm(`¿Estás seguro de ELIMINAR ${selectedPlayers.size} jugadores seleccionados?`)) return;
+        setLoading(true);
+        try {
+            await removePlayers(tournament.id, Array.from(selectedPlayers));
+            setSelectedPlayers(new Set());
+            alert('Jugadores eliminados');
+            router.refresh();
+        } catch (e) {
+            alert(e.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSearch = async (term) => {
         setPlayerName(term);
@@ -243,7 +279,16 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                     <div>
                         <div className="flex justify-between items-center mb-4 gap-2">
                             <h3 className="font-semibold">Lista de Inscritos</h3>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 items-center">
+                                {selectedPlayers.size > 0 && (
+                                    <button
+                                        onClick={handleBulkDelete}
+                                        disabled={loading}
+                                        className="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded text-xs animate-in fade-in zoom-in duration-200"
+                                    >
+                                        Eliminar ({selectedPlayers.size})
+                                    </button>
+                                )}
                                 <div className="relative">
                                     <input
                                         type="file"
@@ -274,10 +319,25 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                                 )}
                             </div>
                         </div>
+                        <div className="flex items-center gap-2 mb-2 px-3 text-xs text-muted-foreground">
+                            <input
+                                type="checkbox"
+                                checked={players.length > 0 && selectedPlayers.size === players.length}
+                                onChange={toggleSelectAll}
+                                className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-primary focus:ring-offset-0 focus:ring-1 focus:ring-primary"
+                            />
+                            <span>Seleccionar Todos</span>
+                        </div>
                         <div className="border rounded-md divide-y max-h-[600px] overflow-y-auto">
                             {players.map(p => (
                                 <div key={p.id} className="p-3 flex justify-between items-center group hover:bg-muted/50 transition-colors">
                                     <div className="flex items-center gap-3">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedPlayers.has(p.id)}
+                                            onChange={() => toggleSelectPlayer(p.id)}
+                                            className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-primary focus:ring-offset-0 focus:ring-1 focus:ring-primary"
+                                        />
                                         {/* Avatar */}
                                         <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden border border-slate-300">
                                             {p.photo_url ? (

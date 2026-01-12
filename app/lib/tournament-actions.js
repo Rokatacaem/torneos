@@ -618,6 +618,54 @@ export async function removePlayer(tournamentId, playerId) {
     }
 }
 
+export async function removePlayers(tournamentId, playerIds) {
+    if (!playerIds || playerIds.length === 0) return { success: true };
+
+    await query('BEGIN');
+    try {
+        // 1. Delete all selected players
+        // We use ANY to pass the array
+        await query(`
+            DELETE FROM tournament_players 
+            WHERE tournament_id = $1 AND id = ANY($2)
+        `, [tournamentId, playerIds]);
+
+        // 2. Waitlist Promotion Logic
+        // Calculate how many spots opened up
+        const tour = await getTournament(tournamentId);
+        if (tour.max_players) {
+            const remainingRes = await query(`
+                SELECT COUNT(*) as count FROM tournament_players 
+                WHERE tournament_id = $1 AND (status = 'active' OR status IS NULL)
+            `, [tournamentId]);
+            const activeCount = parseInt(remainingRes.rows[0].count);
+
+            const spotsAvailable = tour.max_players - activeCount;
+
+            if (spotsAvailable > 0) {
+                const waitlistRes = await query(`
+                    SELECT id FROM tournament_players 
+                    WHERE tournament_id = $1 AND status = 'waitlist'
+                    ORDER BY id ASC 
+                    LIMIT $2
+                `, [tournamentId, spotsAvailable]);
+
+                for (const row of waitlistRes.rows) {
+                    await query(`UPDATE tournament_players SET status = 'active' WHERE id = $1`, [row.id]);
+                }
+            }
+        }
+
+        await query('COMMIT');
+        revalidatePath(`/admin/tournaments/${tournamentId}`);
+        return { success: true };
+    } catch (e) {
+        await query('ROLLBACK');
+        console.error("Error bulk removing players:", e);
+        throw new Error('Error eliminando jugadores seleccionados');
+    }
+}
+
 export async function searchPlayers(term) {
     if (!term || term.length < 2) return [];
     const result = await query(`
