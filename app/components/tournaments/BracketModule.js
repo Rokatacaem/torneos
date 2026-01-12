@@ -75,9 +75,9 @@ export default function BracketModule({ matches }) {
                         </div>
                         {/* Matches */}
                         <div className="flex-1 flex flex-col justify-around px-1 py-1">
-                            {matchesByRound.left[r]?.map(m => (
-                                <div key={m.id} className="w-full flex justify-center">
-                                    <BracketNode match={m} align="left" />
+                            {matchesByRound.left[r]?.map((m, idx) => (
+                                <div key={m.id} className="w-full flex justify-center relative">
+                                    <BracketNode match={m} align="left" index={idx} />
                                 </div>
                             )) || <div className="text-white/20 text-xs text-center">-</div>}
                         </div>
@@ -86,7 +86,7 @@ export default function BracketModule({ matches }) {
             </div>
 
             {/* --- CENTER FINAL --- */}
-            <div className="min-w-[140px] lg:min-w-[180px] flex flex-col bg-[#050b16] border-x-4 border-yellow-600/20 relative z-10 shadow-2xl">
+            <div className="min-w-[160px] lg:min-w-[220px] flex flex-col bg-[#050b16] border-x-4 border-yellow-600/20 relative z-10 shadow-2xl">
                 <div className="text-center py-2 text-yellow-500 font-black uppercase text-xs lg:text-sm tracking-[0.2em] shrink-0 bg-black/40">
                     GRAN FINAL
                 </div>
@@ -107,9 +107,9 @@ export default function BracketModule({ matches }) {
                         </div>
                         {/* Matches */}
                         <div className="flex-1 flex flex-col justify-around px-1 py-1">
-                            {matchesByRound.right[r]?.map(m => (
-                                <div key={m.id} className="w-full flex justify-center">
-                                    <BracketNode match={m} align="right" />
+                            {matchesByRound.right[r]?.map((m, idx) => (
+                                <div key={m.id} className="w-full flex justify-center relative">
+                                    <BracketNode match={m} align="right" index={idx} />
                                 </div>
                             )) || <div className="text-white/20 text-xs text-center">-</div>}
                         </div>
@@ -121,7 +121,7 @@ export default function BracketModule({ matches }) {
     );
 }
 
-function BracketNode({ match, align = 'left', isFinal = false }) {
+function BracketNode({ match, align = 'left', isFinal = false, index }) {
     const isCompleted = match.status === 'completed';
     // Name truncation logic
     const getName = (n) => n ? n.split(' ').slice(-1)[0].substring(0, 10) : '...';
@@ -132,9 +132,16 @@ function BracketNode({ match, align = 'left', isFinal = false }) {
     const p1Win = isCompleted && match.winner_id === match.player1_id;
     const p2Win = isCompleted && match.winner_id === match.player2_id;
 
+    // Connector Lines logic
+    // We strictly use index parity to draw brackets: Even=Top, Odd=Bottom of the pair.
+    // Left Wing: Lines go Right.
+    // Right Wing: Lines go Left.
+    const isTop = index !== undefined && index % 2 === 0;
+    const isBottom = index !== undefined && index % 2 !== 0;
+
     if (isFinal) {
         return (
-            <div className="w-full bg-[#08101c] border-2 border-yellow-500/50 rounded-lg p-3 shadow-[0_0_15px_rgba(234,179,8,0.2)] flex flex-col gap-2">
+            <div className="w-full bg-[#08101c] border-2 border-yellow-500/50 rounded-lg p-3 shadow-[0_0_15px_rgba(234,179,8,0.2)] flex flex-col gap-2 relative z-20">
                 <div className={`flex justify-between items-center p-2 rounded ${p1Win ? 'bg-yellow-500 text-black font-black' : 'bg-white/5 text-white'}`}>
                     <span className="text-sm lg:text-lg">{p1Name}</span>
                     <span className="text-lg lg:text-2xl font-mono font-bold">{isCompleted ? match.score_p1 : '-'}</span>
@@ -155,35 +162,44 @@ function BracketNode({ match, align = 'left', isFinal = false }) {
 
     // Standard Node
     return (
-        <div className={`w-full max-w-[95%] border-y border-${align === 'left' ? 'l' : 'r'}-4 border-cyan-900/40 rounded bg-[#0f1f3a] overflow-hidden shadow-md relative flex flex-col my-0.5`}>
+        <div className={`w-full max-w-[95%] rounded bg-[#3b82f6]/20 border border-[#3b82f6]/50 overflow-hidden shadow-md relative flex flex-col my-0.5 z-10`}>
+            {/* Connector Lines (Pseudo-like absolute divs) */}
+            {/* Horizontal Out Line */}
+            <div className={`absolute top-1/2 w-4 h-[2px] bg-yellow-600/50 ${align === 'left' ? '-right-4' : '-left-4'}`}></div>
+
+            {/* Vertical Bracket Line (Only roughly accurate if spacing is consistent) */}
+            {/* We only draw a small tick up or down to hint closely */}
+            <div className={`absolute w-[2px] bg-yellow-600/50 h-[150%] ${isTop ? 'top-1/2' : 'bottom-1/2'} ${align === 'left' ? '-right-4' : '-left-4'}`}></div>
+
+
             {/* Player 1 */}
-            <div className={`flex justify-between items-center px-1.5 py-0.5 lg:py-1 ${p1Win ? 'bg-yellow-500/20 text-yellow-400 font-bold' : 'text-slate-400'}`}>
+            <div className={`flex justify-between items-center px-2 py-1 ${p1Win ? 'bg-yellow-500 text-black font-bold' : 'text-slate-300'}`}>
                 {align === 'left' ? (
                     <>
-                        <span className="truncate text-[9px] lg:text-[10px] leading-none uppercase">{p1Name}</span>
-                        <span className={`ml-1 font-mono text-[9px] lg:text-xs ${p1Win ? 'text-white' : 'opacity-50'}`}>{isCompleted ? match.score_p1 : '-'}</span>
+                        <span className="truncate text-xs font-bold uppercase tracking-tight">{p1Name}</span>
+                        <span className={`ml-1 font-mono text-sm ${p1Win ? 'text-black' : 'text-white'}`}>{isCompleted ? match.score_p1 : '-'}</span>
                     </>
                 ) : (
                     <>
-                        <span className={`mr-1 font-mono text-[9px] lg:text-xs ${p1Win ? 'text-white' : 'opacity-50'}`}>{isCompleted ? match.score_p1 : '-'}</span>
-                        <span className="truncate text-[9px] lg:text-[10px] leading-none uppercase text-right">{p1Name}</span>
+                        <span className={`mr-1 font-mono text-sm ${p1Win ? 'text-black' : 'text-white'}`}>{isCompleted ? match.score_p1 : '-'}</span>
+                        <span className="truncate text-xs font-bold uppercase tracking-tight text-right">{p1Name}</span>
                     </>
                 )}
             </div>
 
-            <div className="h-[1px] bg-white/5 w-full" />
+            <div className="h-[1px] bg-blue-500/30 w-full" />
 
             {/* Player 2 */}
-            <div className={`flex justify-between items-center px-1.5 py-0.5 lg:py-1 ${p2Win ? 'bg-yellow-500/20 text-yellow-400 font-bold' : 'text-slate-400'}`}>
+            <div className={`flex justify-between items-center px-2 py-1 ${p2Win ? 'bg-yellow-500 text-black font-bold' : 'text-slate-300'}`}>
                 {align === 'left' ? (
                     <>
-                        <span className="truncate text-[9px] lg:text-[10px] leading-none uppercase">{p2Name}</span>
-                        <span className={`ml-1 font-mono text-[9px] lg:text-xs ${p2Win ? 'text-white' : 'opacity-50'}`}>{isCompleted ? match.score_p2 : '-'}</span>
+                        <span className="truncate text-xs font-bold uppercase tracking-tight">{p2Name}</span>
+                        <span className={`ml-1 font-mono text-sm ${p2Win ? 'text-black' : 'text-white'}`}>{isCompleted ? match.score_p2 : '-'}</span>
                     </>
                 ) : (
                     <>
-                        <span className={`mr-1 font-mono text-[9px] lg:text-xs ${p2Win ? 'text-white' : 'opacity-50'}`}>{isCompleted ? match.score_p2 : '-'}</span>
-                        <span className="truncate text-[9px] lg:text-[10px] leading-none uppercase text-right">{p2Name}</span>
+                        <span className={`mr-1 font-mono text-sm ${p2Win ? 'text-black' : 'text-white'}`}>{isCompleted ? match.score_p2 : '-'}</span>
+                        <span className="truncate text-xs font-bold uppercase tracking-tight text-right">{p2Name}</span>
                     </>
                 )}
             </div>
