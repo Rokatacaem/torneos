@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { registerPlayer, generateGroups, updatePlayer, searchPlayers, generatePlayoffs, previewGroups, removePlayer, removePlayers, disqualifyPlayer, purgeTournament, generateNextRound } from '@/app/lib/tournament-actions';
 import ManualResultModal from '@/app/components/admin/ManualResultModal';
 import FinalizeTournamentButton from './FinalizeTournamentButton';
+import BracketView from './BracketView';
 import { useRouter } from 'next/navigation';
 
 export default function TournamentManager({ tournament, players, matches, clubs = [] }) {
@@ -850,10 +851,10 @@ function MatchTabs({ matches, loading, setLoading, onRefresh, tournamentId, onSe
                         onClick={() => !tab.isFuture && setActiveTab(tab.id)}
                         disabled={tab.isFuture}
                         className={`px-4 py-2 rounded-t-lg text-sm font-bold transition-colors whitespace-nowrap ${activeTab === tab.id
-                                ? 'bg-blue-600/20 text-blue-400 border-b-2 border-blue-500'
-                                : tab.isFuture
-                                    ? 'text-slate-600 cursor-not-allowed bg-white/5'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                            ? 'bg-blue-600/20 text-blue-400 border-b-2 border-blue-500'
+                            : tab.isFuture
+                                ? 'text-slate-600 cursor-not-allowed bg-white/5'
+                                : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
                     >
                         {tab.label}
