@@ -566,8 +566,25 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                     </div>
 
                     {matches.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
-                            No hay partidas generadas aún.
+                        <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg flex flex-col items-center gap-4">
+                            <p>No hay partidas generadas aún.</p>
+                            <button
+                                onClick={async () => {
+                                    if (!confirm('¿ESTÁS SEGURO? Esto eliminará cualquier fase o grupo corrupto que impida la generación.')) return;
+                                    setLoading(true);
+                                    try {
+                                        const res = await purgeTournament(tournament.id);
+                                        if (!res.success) throw new Error(res.message);
+                                        alert('Datos de fixture limpiados.');
+                                        router.refresh();
+                                    } catch (e) { alert(e.message); }
+                                    setLoading(false);
+                                }}
+                                disabled={loading}
+                                className="text-xs text-red-400 hover:text-red-300 underline"
+                            >
+                                (Debug) Resetear Fases/Fixture
+                            </button>
                         </div>
                     ) : (
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
