@@ -122,21 +122,21 @@ export default function TVDashboard({ tournament, matches, players }) {
             <footer className="h-[10%] shrink-0 bg-[#061020] border-t-4 border-yellow-600 flex relative z-20 rounded-b-lg overflow-hidden">
 
                 {/* Panel Records */}
-                <div className="w-[25%] bg-[#0a192f] border-r border-white/10 p-2 flex items-center justify-between gap-2 text-right">
-                    <div className="flex-1 flex flex-col justify-center items-end border-r border-white/10 pr-4">
-                        <span className="text-[10px] text-cyan-400 font-bold uppercase leading-none mb-1">Mejor Promedio</span>
-                        <span className="text-yellow-400 font-bold text-2xl lg:text-3xl leading-none block">{bestPlayer?.generalAvg || '0.000'}</span>
-                        <span className="text-[10px] text-white uppercase truncate max-w-full">{bestPlayer?.name?.split(' ').pop()}</span>
+                <div className="w-[25%] bg-[#0a192f] border-r border-white/10 p-1 flex items-center justify-between gap-1 text-right">
+                    <div className="flex-1 flex flex-col justify-center items-end border-r border-white/10 pr-2 h-full">
+                        <span className="text-[9px] text-cyan-400 font-bold uppercase leading-none mb-0.5">Mejor Promedio</span>
+                        <span className="text-yellow-400 font-bold text-xl lg:text-2xl leading-none block">{bestPlayer?.generalAvg || '0.000'}</span>
+                        <span className="text-[8px] text-white uppercase truncate max-w-full">{bestPlayer?.name?.split(' ').pop()}</span>
                     </div>
-                    <div className="flex-1 flex flex-col justify-center items-end pl-2">
-                        <span className="text-[10px] text-cyan-400 font-bold uppercase leading-none mb-1">Mayor Serie</span>
-                        <span className="text-white font-bold text-2xl lg:text-3xl leading-none block">{recordRun}</span>
-                        <span className="text-[9px] text-slate-400 uppercase">Récord</span>
+                    <div className="flex-1 flex flex-col justify-center items-end pl-1 h-full">
+                        <span className="text-[9px] text-cyan-400 font-bold uppercase leading-none mb-0.5">Mayor Serie</span>
+                        <span className="text-white font-bold text-xl lg:text-2xl leading-none block">{recordRun}</span>
+                        <span className="text-[8px] text-slate-400 uppercase">Récord</span>
                     </div>
                 </div>
 
                 {/* Promo */}
-                <div className="flex-1 flex flex-col items-center justify-center bg-black relative overflow-hidden px-4">
+                <div className="flex-1 flex flex-col items-center justify-center bg-black relative overflow-hidden px-2">
                     <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
                     {champion && champion.photo_url && (
                         <div className="absolute inset-0 z-0 opacity-40">
@@ -145,33 +145,33 @@ export default function TVDashboard({ tournament, matches, players }) {
                         </div>
                     )}
                     <div className="text-center z-10 w-full">
-                        <h3 className="text-yellow-500 font-black text-3xl lg:text-4xl uppercase tracking-[0.1em] animate-pulse truncate drop-shadow-lg leading-none">
+                        <h3 className="text-yellow-500 font-black text-2xl lg:text-3xl uppercase tracking-[0.1em] animate-pulse truncate drop-shadow-lg leading-none">
                             {champion ? `¡CAMPEÓN: ${champion.player_name.toUpperCase()}!` : 'GRAN FINAL'}
                         </h3>
-                        <p className="text-white text-sm lg:text-lg font-bold uppercase tracking-[0.3em] mt-1 text-shadow-sm leading-none relative">
+                        <p className="text-white text-xs lg:text-base font-bold uppercase tracking-[0.3em] mt-1 text-shadow-sm leading-none relative">
                             ENTRADA LIBERADA • SALON PRINCIPAL
                         </p>
                     </div>
                 </div>
 
                 {/* Branding */}
-                <div className="w-[20%] bg-white flex flex-col items-center justify-center p-1 relative">
-                    <div className="text-[#061020] font-black text-xs uppercase text-center mb-1 leading-tight">
+                <div className="w-[20%] bg-white flex flex-col items-center justify-center p-0.5 relative">
+                    <div className="text-[#061020] font-black text-[10px] uppercase text-center mb-0.5 leading-tight">
                         Copa Hermandad<br />Chile - Argentina
                     </div>
                     {/* Simplified Horizontal Flag/Logo for height efficiency */}
-                    <div className="flex items-center gap-2 scale-90">
-                        <div className="w-8 h-5 bg-red-600 relative border border-slate-300 shadow-sm">
+                    <div className="flex items-center gap-1 scale-90">
+                        <div className="w-6 h-4 bg-red-600 relative border border-slate-300 shadow-sm">
                             <div className="absolute top-0 left-0 w-full h-1/2 bg-white"></div>
-                            <div className="absolute top-0.5 left-0.5 w-2 h-2 bg-blue-800 rounded-sm"></div>
+                            <div className="absolute top-0.5 left-0.5 w-1.5 h-1.5 bg-blue-800 rounded-sm"></div>
                         </div>
-                        <div className="text-slate-900 font-black text-sm">X</div>
-                        <div className="w-8 h-5 bg-cyan-200 relative border border-slate-300 shadow-sm">
+                        <div className="text-slate-900 font-black text-xs">X</div>
+                        <div className="w-6 h-4 bg-cyan-200 relative border border-slate-300 shadow-sm">
                             <div className="absolute top-0 bottom-0 left-[33%] right-[33%] bg-white"></div>
                         </div>
                     </div>
-                    <div className="absolute bottom-1 right-2 w-full text-right pr-1">
-                        <div className="text-[8px] text-slate-400 font-bold leading-none">Dev by Rodrigo Zúñiga</div>
+                    <div className="absolute bottom-0.5 right-1 w-full text-right pr-1">
+                        <div className="text-[7px] text-slate-500 font-bold leading-none">Dev by Rodrigo Zúñiga</div>
                     </div>
                 </div>
             </footer >
