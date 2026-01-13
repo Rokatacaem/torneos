@@ -7,11 +7,12 @@ export function calculateGroupStandings(matches) {
         if (!groups[group]) groups[group] = {};
 
         // Helper to init player
-        const initPlayer = (id, name) => {
+        const initPlayer = (id, name, handicap) => {
             if (!groups[group][id]) {
                 groups[group][id] = {
                     id,
                     name,
+                    handicap: handicap || 0,
                     played: 0,
                     won: 0,
                     lost: 0,
@@ -23,8 +24,8 @@ export function calculateGroupStandings(matches) {
             }
         };
 
-        if (match.player1_id) initPlayer(match.player1_id, match.player1_name);
-        if (match.player2_id) initPlayer(match.player2_id, match.player2_name);
+        if (match.player1_id) initPlayer(match.player1_id, match.player1_name, match.player1_handicap);
+        if (match.player2_id) initPlayer(match.player2_id, match.player2_name, match.player2_handicap);
     });
 
     // 2. Process results
@@ -81,6 +82,10 @@ export function calculateGroupStandings(matches) {
 
             if ((b.scoreFor - b.scoreAgainst) !== (a.scoreFor - a.scoreAgainst))
                 return (b.scoreFor - b.scoreAgainst) - (a.scoreFor - a.scoreAgainst);
+
+            // Final Tie-Breaker (Initial Seeding): Sort by Handicap Descending
+            if (b.handicap !== a.handicap) return b.handicap - a.handicap;
+
             return b.scoreFor - a.scoreFor;
         });
     });
