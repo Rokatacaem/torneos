@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import { registerPlayer, generateGroups, updatePlayer, searchPlayers, generatePlayoffs, previewGroups, removePlayer, removePlayers, disqualifyPlayer, purgeTournament, generateNextRound } from '@/app/lib/tournament-actions';
+import { generateWhatsAppReport } from '@/app/lib/report-actions';
 import ManualResultModal from '@/app/components/admin/ManualResultModal';
 import FinalizeTournamentButton from './FinalizeTournamentButton';
 import BracketView from './BracketView';
 import { useRouter } from 'next/navigation';
+import { Copy, MessageSquare, X } from 'lucide-react';
 
 export default function TournamentManager({ tournament, players, matches, clubs = [] }) {
     const router = useRouter();
@@ -27,6 +29,23 @@ export default function TournamentManager({ tournament, players, matches, clubs 
 
     // Preview State
     const [previewData, setPreviewData] = useState(null);
+
+    // Report State
+    const [reportText, setReportText] = useState('');
+    const [isReportOpen, setIsReportOpen] = useState(false);
+
+    const generateReport = async (type) => {
+        setLoading(true);
+        const text = await generateWhatsAppReport(tournament.id, type);
+        setReportText(text);
+        setIsReportOpen(true);
+        setLoading(false);
+    };
+
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(reportText);
+        alert('Reporte copiado al portapapeles');
+    };
 
     // Selection State
     const [selectedPlayers, setSelectedPlayers] = useState(new Set());
@@ -274,10 +293,41 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                 >
                     Partidas ({matches.length})
                 </button>
-                <div className="ml-auto flex items-center">
+                <div className="ml-auto flex items-center gap-2">
+                    <button onClick={() => generateReport('start')} className="px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-xs rounded flex items-center gap-1">
+                        <MessageSquare size={14} /> Inicio
+                    </button>
+                    <button onClick={() => generateReport('pending')} className="px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-xs rounded flex items-center gap-1">
+                        <MessageSquare size={14} /> Pendientes
+                    </button>
                     <FinalizeTournamentButton tournament={tournament} />
                 </div>
             </div>
+
+            {/* WhatsApp Report Modal */}
+            {isReportOpen && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-[#0f172a] border border-white/10 rounded-lg p-6 max-w-md w-full shadow-2xl relative">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-white">Reporte WhatsApp</h3>
+                            <button onClick={() => setIsReportOpen(false)} className="text-slate-400 hover:text-white">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <textarea
+                            className="w-full h-64 bg-black/40 border border-white/10 rounded-md p-3 text-sm font-mono text-slate-300 resize-none focus:outline-none focus:border-blue-500 mb-4"
+                            readOnly
+                            value={reportText}
+                        />
+                        <div className="flex justify-end gap-2">
+                            <button className="px-4 py-2 text-slate-300 hover:bg-white/5 rounded" onClick={() => setIsReportOpen(false)}>Cerrar</button>
+                            <button onClick={copyToClipboard} className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded flex items-center gap-2">
+                                <Copy size={16} /> Copiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {activeTab === 'players' && (
                 <div className="grid md:grid-cols-2 gap-8">
