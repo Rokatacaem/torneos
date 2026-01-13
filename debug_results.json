@@ -2,72 +2,156 @@
   "tournament": {
     "id": 36,
     "name": "ALHUALID RUMIE 2",
-    "format": "groups_elimination",
+    "format": "groups_ko",
     "group_format": "gsl"
   },
   "groups": {
     "1": [
       {
-        "id": 608,
+        "id": 624,
         "round": 1,
         "status": "completed",
         "p1": 927,
         "p2": 924
       },
       {
-        "id": 609,
+        "id": 625,
         "round": 1,
         "status": "completed",
         "p1": 923,
         "p2": 920
+      },
+      {
+        "id": 626,
+        "round": 2,
+        "status": "scheduled",
+        "p1": null,
+        "p2": null
+      },
+      {
+        "id": 627,
+        "round": 2,
+        "status": "scheduled",
+        "p1": null,
+        "p2": null
+      },
+      {
+        "id": 628,
+        "round": 3,
+        "status": "scheduled",
+        "p1": null,
+        "p2": null
       }
     ],
     "2": [
       {
-        "id": 610,
+        "id": 629,
         "round": 1,
         "status": "completed",
         "p1": 925,
         "p2": 929
       },
       {
-        "id": 611,
+        "id": 630,
         "round": 1,
         "status": "completed",
         "p1": 934,
         "p2": 928
+      },
+      {
+        "id": 631,
+        "round": 2,
+        "status": "scheduled",
+        "p1": null,
+        "p2": null
+      },
+      {
+        "id": 632,
+        "round": 2,
+        "status": "scheduled",
+        "p1": null,
+        "p2": null
+      },
+      {
+        "id": 633,
+        "round": 3,
+        "status": "scheduled",
+        "p1": null,
+        "p2": null
       }
     ],
     "3": [
       {
-        "id": 612,
+        "id": 634,
         "round": 1,
         "status": "completed",
         "p1": 930,
         "p2": 926
       },
       {
-        "id": 613,
+        "id": 635,
         "round": 1,
         "status": "completed",
         "p1": 931,
         "p2": 921
+      },
+      {
+        "id": 636,
+        "round": 2,
+        "status": "scheduled",
+        "p1": null,
+        "p2": null
+      },
+      {
+        "id": 637,
+        "round": 2,
+        "status": "scheduled",
+        "p1": null,
+        "p2": null
+      },
+      {
+        "id": 638,
+        "round": 3,
+        "status": "scheduled",
+        "p1": null,
+        "p2": null
       }
     ],
     "4": [
       {
-        "id": 614,
+        "id": 639,
         "round": 1,
         "status": "completed",
         "p1": 933,
         "p2": 922
       },
       {
-        "id": 615,
+        "id": 640,
         "round": 1,
         "status": "completed",
         "p1": 935,
         "p2": 932
+      },
+      {
+        "id": 641,
+        "round": 2,
+        "status": "scheduled",
+        "p1": null,
+        "p2": null
+      },
+      {
+        "id": 642,
+        "round": 2,
+        "status": "scheduled",
+        "p1": null,
+        "p2": null
+      },
+      {
+        "id": 643,
+        "round": 3,
+        "status": "scheduled",
+        "p1": null,
+        "p2": null
       }
     ]
   }
