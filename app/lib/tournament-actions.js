@@ -965,6 +965,16 @@ export async function updateMatchResult(matchId, data) {
     revalidatePath(`/tournaments/${match.tournament_id}`);
     revalidatePath(`/admin/tournaments/${match.tournament_id}`);
 
+    // Check for GSL Advancement (if match completed)
+    if (match.status === 'completed') {
+        try {
+            const { checkGSLAdvancement } = await import('./gsl-logic');
+            await checkGSLAdvancement(matchId);
+        } catch (e) {
+            console.error("Error in GSL Check:", e);
+        }
+    }
+
     return match;
 }
 
@@ -1090,6 +1100,24 @@ export async function generateGroups(tournamentId) {
                     INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
                     VALUES ($1, $2, $3, $4, $5, 'scheduled', 1)
                 `, [tournamentId, phaseId, groupId, pIds[1], pIds[2]]);
+
+                // Match 3: Winners (TBD vs TBD) - Round 2
+                await query(`
+                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
+                    VALUES ($1, $2, $3, NULL, NULL, 'scheduled', 2)
+                `, [tournamentId, phaseId, groupId]);
+
+                // Match 4: Losers (TBD vs TBD) - Round 2
+                await query(`
+                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
+                    VALUES ($1, $2, $3, NULL, NULL, 'scheduled', 2)
+                `, [tournamentId, phaseId, groupId]);
+
+                // Match 5: Decider (TBD vs TBD) - Round 3
+                await query(`
+                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
+                    VALUES ($1, $2, $3, NULL, NULL, 'scheduled', 3)
+                `, [tournamentId, phaseId, groupId]);
 
                 continue;
             }
