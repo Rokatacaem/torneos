@@ -33,7 +33,7 @@ async function main() {
 
     // 2. Get Matches
     const mRes = await query(`
-        SELECT m.id, m.group_id, m.round_number, m.status, m.player1_id, m.player2_id, g.name as group_name
+        SELECT m.id, m.group_id, m.round_number, m.status, m.player1_id, m.player2_id, m.phase_id, m.winner_id, g.name as group_name
         FROM tournament_matches m
         LEFT JOIN tournament_groups g ON m.group_id = g.id
         WHERE m.tournament_id = $1
@@ -65,6 +65,8 @@ async function main() {
             id: m.id,
             round: m.round_number,
             status: m.status,
+            phase_id: m.phase_id,
+            winner_id: m.winner_id,
             p1: m.player1_id,
             p2: m.player2_id
         }));

@@ -1,0 +1,58 @@
+--- REPAIRING ALL GSL GROUPS ---
+Tournament: 36 - ALHUALID RUMIE 2
+Found 4 groups with completed matches.
+
+Processing Group 181 (Trigger Match: 624)...
+Checking GSL Advancement for Match 624...
+Match Query Result Rows: 1
+Match Found: Phase Type=group, Group Format=gsl
+Group Matches Found: 5
+Case B: 5 matches found.
+M1 Status: completed, Winner: 927
+M2 Status: completed, Winner: 923
+R1: Winner=927, Loser=924
+R2: Winner=923, Loser=920
+Match 3 already has players: 927 vs 923
+Match 4 already has players: 924 vs 920
+
+Processing Group 182 (Trigger Match: 629)...
+Checking GSL Advancement for Match 629...
+Match Query Result Rows: 1
+Match Found: Phase Type=group, Group Format=gsl
+Group Matches Found: 5
+Case B: 5 matches found.
+M1 Status: completed, Winner: 925
+M2 Status: completed, Winner: 934
+R1: Winner=925, Loser=929
+R2: Winner=934, Loser=928
+Updating Match 3 (ID: 631)...
+Update Params: [object Object]
+Updating Match 4 (ID: 632)...
+
+Processing Group 183 (Trigger Match: 634)...
+Checking GSL Advancement for Match 634...
+Match Query Result Rows: 1
+Match Found: Phase Type=group, Group Format=gsl
+Group Matches Found: 5
+Case B: 5 matches found.
+M1 Status: completed, Winner: 930
+M2 Status: completed, Winner: 921
+R1: Winner=930, Loser=926
+R2: Winner=921, Loser=931
+Updating Match 3 (ID: 636)...
+Update Params: [object Object]
+Updating Match 4 (ID: 637)...
+
+Processing Group 184 (Trigger Match: 640)...
+Checking GSL Advancement for Match 640...
+Match Query Result Rows: 1
+Match Found: Phase Type=group, Group Format=gsl
+Group Matches Found: 5
+Case B: 5 matches found.
+M1 Status: completed, Winner: 922
+M2 Status: completed, Winner: 935
+R1: Winner=922, Loser=933
+R2: Winner=935, Loser=932
+Updating Match 3 (ID: 641)...
+Update Params: [object Object]
+Updating Match 4 (ID: 642)...

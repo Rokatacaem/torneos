@@ -6,8 +6,8 @@ import { revalidatePath } from 'next/cache';
 
 export async function updateMatchResult(matchId, formData) {
     const session = await getSession();
-    if (!session || !['admin', 'delegate'].includes(session.role)) {
-        return { success: false, message: 'No autorizado. Debe ser Admin o Delegado.' };
+    if (!session || !['admin', 'delegate', 'superadmin'].includes(session.role)) {
+        return { success: false, message: 'No autorizado. Debe ser Admin, Superadmin o Delegado.' };
     }
 
     const scoreP1 = parseInt(formData.get('scoreP1'));

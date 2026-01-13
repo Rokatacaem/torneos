@@ -8,7 +8,7 @@ import { revalidatePath } from 'next/cache';
 
 export async function getUsers() {
     const session = await getSession();
-    if (!session || session.role !== 'admin') {
+    if (!session || !['admin', 'superadmin'].includes(session.role)) {
         throw new Error('Unauthorized');
     }
 
@@ -24,7 +24,7 @@ export async function getUsers() {
 
 export async function getClubsList() {
     const session = await getSession();
-    if (!session || session.role !== 'admin') {
+    if (!session || !['admin', 'superadmin'].includes(session.role)) {
         throw new Error('Unauthorized');
     }
     const res = await query('SELECT id, name FROM clubs ORDER BY name ASC');
@@ -33,7 +33,7 @@ export async function getClubsList() {
 
 export async function createUser(formData) {
     const session = await getSession();
-    if (!session || session.role !== 'admin') {
+    if (!session || !['admin', 'superadmin'].includes(session.role)) {
         throw new Error('Unauthorized');
     }
 
@@ -65,7 +65,7 @@ export async function createUser(formData) {
 
 export async function updateUserRole(userId, formData) {
     const session = await getSession();
-    if (!session || session.role !== 'admin') {
+    if (!session || !['admin', 'superadmin'].includes(session.role)) {
         throw new Error('Unauthorized');
     }
 
@@ -83,7 +83,7 @@ export async function updateUserRole(userId, formData) {
 
 export async function resetUserPassword(userId, formData) {
     const session = await getSession();
-    if (!session || session.role !== 'admin') {
+    if (!session || !['admin', 'superadmin'].includes(session.role)) {
         throw new Error('Unauthorized');
     }
 
@@ -101,7 +101,7 @@ export async function resetUserPassword(userId, formData) {
 
 export async function deleteUser(userId) {
     const session = await getSession();
-    if (!session || session.role !== 'admin') {
+    if (!session || !['admin', 'superadmin'].includes(session.role)) {
         throw new Error('Unauthorized');
     }
 
