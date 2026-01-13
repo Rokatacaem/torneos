@@ -134,6 +134,32 @@ async function checkGSLAdvancement(matchId) {
         } else {
             console.log('M1 and M2 not both completed.');
         }
+
+        // Logic for Match 5 (Decider)
+        if (m3.status === 'completed' && m4.status === 'completed') {
+            console.log('Checking Match 5 (Decider)...');
+            const m5 = matches[4];
+            if (!m5.player1_id || !m5.player2_id) {
+                const loserM3 = m3.winner_id === m3.player1_id ? m3.player2_id : m3.player1_id;
+                const winnerM4 = m4.winner_id;
+
+                console.log(`Updating Match 5 (ID: ${m5.id})...`);
+                console.log(`Data: LoserM3=${loserM3}, WinnerM4=${winnerM4}`);
+
+                if (loserM3 && winnerM4) {
+                    await query(`
+                        UPDATE tournament_matches 
+                        SET player1_id = $1, player2_id = $2 
+                        WHERE id = $3
+                    `, [loserM3, winnerM4, m5.id]);
+                    console.log(`GSL Group ${group_id}: Updated Match 5 (Decider).`);
+                }
+            } else {
+                console.log(`Match 5 already has players: ${m5.player1_id} vs ${m5.player2_id}`);
+            }
+        } else {
+            console.log(`M3/M4 not complete for M5 generation. M3:${m3.status}, M4:${m4.status}`);
+        }
     } else {
         console.log(`Case A or other: matches length is ${matches.length}`);
     }

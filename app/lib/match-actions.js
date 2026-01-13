@@ -67,6 +67,10 @@ export async function updateMatchResult(matchId, formData) {
         revalidatePath(`/admin/tournaments/${tournamentId}`);
         revalidatePath(`/admin/tournaments/${tournamentId}/manage`); // Where the modal likely is
 
+        // TRIGGER GSL ADVANCEMENT
+        const { checkGSLAdvancement } = await import('./gsl-logic');
+        await checkGSLAdvancement(matchId);
+
         return { success: true };
     } catch (e) {
         console.error("Error updating match:", e);

@@ -28,18 +28,18 @@
       {
         "id": 626,
         "round": 2,
-        "status": "scheduled",
+        "status": "completed",
         "phase_id": 49,
-        "winner_id": null,
+        "winner_id": 927,
         "p1": 927,
         "p2": 923
       },
       {
         "id": 627,
         "round": 2,
-        "status": "scheduled",
+        "status": "completed",
         "phase_id": 49,
-        "winner_id": null,
+        "winner_id": 924,
         "p1": 924,
         "p2": 920
       },
@@ -49,8 +49,8 @@
         "status": "scheduled",
         "phase_id": 49,
         "winner_id": null,
-        "p1": null,
-        "p2": null
+        "p1": 923,
+        "p2": 924
       }
     ],
     "2": [
@@ -75,18 +75,18 @@
       {
         "id": 631,
         "round": 2,
-        "status": "scheduled",
+        "status": "completed",
         "phase_id": 49,
-        "winner_id": null,
+        "winner_id": 934,
         "p1": 925,
         "p2": 934
       },
       {
         "id": 632,
         "round": 2,
-        "status": "scheduled",
+        "status": "completed",
         "phase_id": 49,
-        "winner_id": null,
+        "winner_id": 929,
         "p1": 929,
         "p2": 928
       },
@@ -96,8 +96,8 @@
         "status": "scheduled",
         "phase_id": 49,
         "winner_id": null,
-        "p1": null,
-        "p2": null
+        "p1": 925,
+        "p2": 929
       }
     ],
     "3": [
@@ -122,18 +122,18 @@
       {
         "id": 636,
         "round": 2,
-        "status": "scheduled",
+        "status": "completed",
         "phase_id": 49,
-        "winner_id": null,
+        "winner_id": 930,
         "p1": 930,
         "p2": 921
       },
       {
         "id": 637,
         "round": 2,
-        "status": "scheduled",
+        "status": "completed",
         "phase_id": 49,
-        "winner_id": null,
+        "winner_id": 926,
         "p1": 926,
         "p2": 931
       },
@@ -143,8 +143,8 @@
         "status": "scheduled",
         "phase_id": 49,
         "winner_id": null,
-        "p1": null,
-        "p2": null
+        "p1": 921,
+        "p2": 926
       }
     ],
     "4": [
@@ -169,18 +169,18 @@
       {
         "id": 641,
         "round": 2,
-        "status": "scheduled",
+        "status": "completed",
         "phase_id": 49,
-        "winner_id": null,
+        "winner_id": 922,
         "p1": 922,
         "p2": 935
       },
       {
         "id": 642,
         "round": 2,
-        "status": "scheduled",
+        "status": "completed",
         "phase_id": 49,
-        "winner_id": null,
+        "winner_id": 933,
         "p1": 933,
         "p2": 932
       },
@@ -190,8 +190,8 @@
         "status": "scheduled",
         "phase_id": 49,
         "winner_id": null,
-        "p1": null,
-        "p2": null
+        "p1": 935,
+        "p2": 933
       }
     ]
   }
