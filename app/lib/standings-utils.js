@@ -74,6 +74,11 @@ export function calculateGroupStandings(matches) {
             return p;
         }).sort((a, b) => {
             if (b.points !== a.points) return b.points - a.points;
+
+            // Prioritize Undefeated (Fewer matches played for same points = better efficiency)
+            // E.g. in GSL: 2-0 (Played 2) > 2-1 (Played 3)
+            if (a.played !== b.played) return a.played - b.played;
+
             if ((b.scoreFor - b.scoreAgainst) !== (a.scoreFor - a.scoreAgainst))
                 return (b.scoreFor - b.scoreAgainst) - (a.scoreFor - a.scoreAgainst);
             return b.scoreFor - a.scoreFor;
