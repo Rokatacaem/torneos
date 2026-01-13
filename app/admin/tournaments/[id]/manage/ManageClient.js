@@ -6,7 +6,10 @@ import { ArrowLeft, Users, RefreshCw, UserMinus } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { swapPlayers, replaceWithWaitlist } from '@/app/lib/tournament-actions';
+import { generateWhatsAppReport } from '@/app/lib/report-actions';
 import { useRouter } from 'next/navigation';
+import { Copy, MessageSquare, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/app/components/ui/dialog'; // Ensure these exist, or use simple overlay
 
 export default function ManageClient({ tournament, groups, waitlist }) {
     const router = useRouter();
@@ -38,6 +41,22 @@ export default function ManageClient({ tournament, groups, waitlist }) {
         if (res.success) router.refresh();
     };
 
+    const [reportText, setReportText] = useState('');
+    const [isReportOpen, setIsReportOpen] = useState(false);
+
+    const generateReport = async (type) => {
+        setLoading(true);
+        const text = await generateWhatsAppReport(tournament.id, type);
+        setReportText(text);
+        setIsReportOpen(true);
+        setLoading(false);
+    };
+
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(reportText);
+        alert('Reporte copiado al portapapeles');
+    };
+
     const handleReplace = async (player) => {
         if (!confirm(`¿Estás seguro de reemplazar a ${player.player_name} con el siguiente de la lista de espera?`)) return;
 
@@ -56,7 +75,40 @@ export default function ManageClient({ tournament, groups, waitlist }) {
                     <ArrowLeft size={20} />
                 </Link>
                 <h1 className="text-3xl font-bold tracking-tight">Gestión de Grupos y Jugadores</h1>
+                <div className="ml-auto flex gap-2">
+                    <Button onClick={() => generateReport('start')} variant="outline" size="sm" className="gap-2">
+                        <MessageSquare size={16} /> Reporte Inicio
+                    </Button>
+                    <Button onClick={() => generateReport('pending')} variant="outline" size="sm" className="gap-2">
+                        <MessageSquare size={16} /> Reporte Pendientes
+                    </Button>
+                </div>
             </div>
+
+            {/* Simple Report Modal Overlay */}
+            {isReportOpen && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-[#0f172a] border border-white/10 rounded-lg p-6 max-w-md w-full shadow-2xl">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-white">Reporte WhatsApp</h3>
+                            <button onClick={() => setIsReportOpen(false)} className="text-slate-400 hover:text-white">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <textarea
+                            className="w-full h-64 bg-black/40 border border-white/10 rounded-md p-3 text-sm font-mono text-slate-300 resize-none focus:outline-none focus:border-blue-500 mb-4"
+                            readOnly
+                            value={reportText}
+                        />
+                        <div className="flex justify-end gap-2">
+                            <Button variant="ghost" onClick={() => setIsReportOpen(false)}>Cerrar</Button>
+                            <Button onClick={copyToClipboard} className="gap-2 bg-green-600 hover:bg-green-700">
+                                <Copy size={16} /> Copiar Texto
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {message && (
                 <div className={`p-4 rounded-md ${message.includes('Error') ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
