@@ -3,6 +3,7 @@
 import { query } from '@/app/lib/db';
 import { getSession } from '@/app/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { checkGSLAdvancement } from './gsl-logic';
 
 export async function updateMatchResult(matchId, formData) {
     const session = await getSession();
@@ -68,7 +69,6 @@ export async function updateMatchResult(matchId, formData) {
         revalidatePath(`/admin/tournaments/${tournamentId}/manage`); // Where the modal likely is
 
         // TRIGGER GSL ADVANCEMENT
-        const { checkGSLAdvancement } = await import('./gsl-logic');
         await checkGSLAdvancement(matchId);
 
         return { success: true };
