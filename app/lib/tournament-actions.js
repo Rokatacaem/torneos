@@ -1509,6 +1509,33 @@ export async function purgeTournament(tournamentId) {
     }
 }
 
+// --- REPARACIÓN GSL ---
+
+export async function repairGSL(tournamentId) {
+    try {
+        const matches = await getMatches(tournamentId);
+        // Filter completed group matches
+        const completedGroupMatches = matches.filter(m => m.phase_type === 'group' && m.status === 'completed');
+
+        // Group by group_id (only need one trigger match per group)
+        const groupMap = new Map();
+        completedGroupMatches.forEach(m => groupMap.set(m.group_id, m.id));
+
+        const { checkGSLAdvancement } = await import('./gsl-logic');
+        let count = 0;
+        for (const [gid, mid] of groupMap) {
+            await checkGSLAdvancement(mid);
+            count++;
+        }
+
+        revalidatePath(`/admin/tournaments/${tournamentId}`);
+        return { success: true, message: `Reparación completada. Grupos revisados: ${count}` };
+    } catch (e) {
+        console.error("Error repairing GSL:", e);
+        return { success: false, message: e.message };
+    }
+}
+
 // --- GENERAR SIGUIENTE RONDA (PLAYOFFS) ---
 
 export async function generateNextRound(tournamentId) {

@@ -530,6 +530,22 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                             >
                                 (Debug) Resetear Fases/Fixture
                             </button>
+                            <button
+                                onClick={async () => {
+                                    setLoading(true);
+                                    try {
+                                        const { repairGSL } = await import('@/app/lib/tournament-actions');
+                                        const res = await repairGSL(tournament.id);
+                                        alert(res.message);
+                                        router.refresh();
+                                    } catch (e) { alert(e.message); }
+                                    setLoading(false);
+                                }}
+                                disabled={loading}
+                                className="text-xs text-yellow-400 hover:text-yellow-300 underline"
+                            >
+                                (Debug) Reparar GSL (Matches Faltantes)
+                            </button>
                             {players.length >= 2 && (
                                 <button
                                     onClick={handlePreview}
