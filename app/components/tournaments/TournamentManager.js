@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { registerPlayer, generateGroups, updatePlayer, searchPlayers, generatePlayoffs, previewGroups, removePlayer, removePlayers, disqualifyPlayer, purgeTournament, generateNextRound } from '@/app/lib/tournament-actions';
+import { registerPlayer, generateGroups, updatePlayer, searchPlayers, generatePlayoffs, previewGroups, removePlayer, removePlayers, disqualifyPlayer, purgeTournament, generateNextRound, registerBatchPlayers } from '@/app/lib/tournament-actions';
+import { searchGlobalPlayers } from '@/app/lib/player-actions';
 import { generateWhatsAppReport } from '@/app/lib/report-actions';
 import ManualResultModal from '@/app/components/admin/ManualResultModal';
 import FinalizeTournamentButton from './FinalizeTournamentButton';
@@ -15,6 +16,10 @@ export default function TournamentManager({ tournament, players, matches, clubs 
     const [loading, setLoading] = useState(false);
 
     // Estados para formulario de jugador
+    const [regMode, setRegMode] = useState('new'); // 'new' | 'existing'
+    const [globalSearchResults, setGlobalSearchResults] = useState([]);
+    const [selectedGlobalPlayers, setSelectedGlobalPlayers] = useState(new Set());
+
     const [playerName, setPlayerName] = useState('');
     const [teamName, setTeamName] = useState('');
     const [clubId, setClubId] = useState('');
@@ -455,105 +460,208 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                     </div>
 
                     <div className="bg-muted/30 p-6 rounded-lg h-fit">
-                        <h3 className="font-semibold mb-4">Registrar Jugador</h3>
-                        <form onSubmit={handleAddPlayer} className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end bg-card p-4 rounded-lg border border-white/5">
-                                <div>
-                                    <label className="text-xs text-slate-400 mb-1 block">Nombre Jugador</label>
-                                    <div className="relative">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-semibold">Registrar Jugador</h3>
+                            <div className="flex bg-slate-800 p-0.5 rounded-lg">
+                                <button
+                                    onClick={() => setRegMode('new')}
+                                    className={`px-3 py-1 text-xs rounded-md transition-all ${regMode === 'new' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                                >
+                                    Nuevo
+                                </button>
+                                <button
+                                    onClick={() => setRegMode('existing')}
+                                    className={`px-3 py-1 text-xs rounded-md transition-all ${regMode === 'existing' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                                >
+                                    Buscar Existente
+                                </button>
+                            </div>
+                        </div>
+
+                        {regMode === 'new' ? (
+                            <form onSubmit={handleAddPlayer} className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end bg-card p-4 rounded-lg border border-white/5">
+                                    <div>
+                                        <label className="text-xs text-slate-400 mb-1 block">Nombre Jugador</label>
+                                        <div className="relative">
+                                            <input
+                                                name="player_name"
+                                                value={playerName}
+                                                onChange={e => {
+                                                    setPlayerName(e.target.value);
+                                                    if (regMode === 'new') handleSearch(e.target.value); // Keep autocomplete for new creation too? Maybe just simple input
+                                                }}
+                                                className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
+                                                placeholder="Nombre..."
+                                                required
+                                                autoComplete="off"
+                                            />
+                                            {/* Reuse logic for local duplicate warning if needed, but simplified for now */}
+                                        </div>
+                                    </div>
+                                    <div className="z-0">
+                                        <label className="text-xs text-slate-400 mb-1 block">RUT / Pasaporte (Opcional)</label>
                                         <input
-                                            name="player_name"
-                                            value={playerName}
-                                            onChange={e => handleSearch(e.target.value)}
+                                            name="identification"
+                                            id="identification_input"
+                                            value={identification}
+                                            onChange={e => setIdentification(e.target.value)}
                                             className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
-                                            placeholder="Nombre..."
-                                            required
-                                            autoComplete="off"
+                                            placeholder="Ej: 12.345.678-9"
                                         />
-                                        {showSuggestions && searchResults.length > 0 && (
-                                            <ul className="absolute z-10 w-full bg-slate-800 border border-white/10 rounded-md mt-1 shadow-lg max-h-48 overflow-y-auto">
-                                                {searchResults.map(p => (
-                                                    <li
-                                                        key={p.id}
-                                                        onClick={() => selectPlayer(p)}
-                                                        className="px-3 py-2 hover:bg-white/10 cursor-pointer text-sm text-slate-200"
-                                                    >
-                                                        <span className="font-bold">{p.name}</span>
-                                                        {p.club_name && <span className="text-muted-foreground ml-2 text-xs">({p.club_name})</span>}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        )}
+                                    </div>
+                                    <div className="z-0">
+                                        <label className="text-xs text-slate-400 mb-1 block">Club / Equipo</label>
+                                        <select
+                                            name="team_name"
+                                            value={teamName}
+                                            onChange={e => setTeamName(e.target.value)}
+                                            className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
+                                        >
+                                            <option value="">-- Seleccionar Club --</option>
+                                            {clubs.map(club => (
+                                                <option key={club.id} value={club.name}>{club.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400 mb-1 block">Promedio</label>
+                                        <input
+                                            name="average"
+                                            type="number"
+                                            step="0.001"
+                                            value={average}
+                                            onChange={e => setAverage(e.target.value)}
+                                            className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
+                                            placeholder="0.000"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400 mb-1 block">Handicap {tournament.use_handicap && '(Auto)'}</label>
+                                        <input
+                                            name="handicap"
+                                            type="number"
+                                            value={handicap}
+                                            onChange={e => setHandicap(e.target.value)}
+                                            className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
+                                            placeholder="0"
+                                            disabled={tournament.use_handicap} // Disable if auto-calc
+                                        />
+                                    </div>
+                                    <div className="z-0">
+                                        <label className="text-xs text-slate-400 mb-1 block">Ranking</label>
+                                        <input
+                                            type="number"
+                                            value={ranking}
+                                            onChange={e => setRanking(e.target.value)}
+                                            className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
+                                            placeholder="Ej: 1500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400 mb-1 block">Foto (Opcional)</label>
+                                        <input
+                                            id="player_photo"
+                                            name="photo"
+                                            type="file"
+                                            accept="image/*"
+                                            className="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500"
+                                        />
                                     </div>
                                 </div>
-                                <div className="z-0">
-                                    <label className="text-xs text-slate-400 mb-1 block">RUT / Pasaporte (Opcional)</label>
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full bg-blue-600 text-white h-9 rounded-md font-medium text-sm disabled:opacity-50 hover:bg-blue-500 transition-colors"
+                                >
+                                    {loading ? 'Registrando...' : 'Agregar Nuevo Jugador'}
+                                </button>
+                            </form>
+                        ) : (
+                            <div className="space-y-4 animate-in fade-in zoom-in duration-200">
+                                {/* Search Logic */}
+                                <div className="space-y-2">
                                     <input
-                                        name="identification"
-                                        id="identification_input"
-                                        value={identification}
-                                        onChange={e => setIdentification(e.target.value)}
+                                        autoFocus
+                                        placeholder="Buscar por nombre..."
                                         className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
-                                        placeholder="Ej: 12.345.678-9"
+                                        onChange={async (e) => {
+                                            const term = e.target.value;
+                                            if (term.length > 0) {
+                                                try {
+                                                    const res = await searchGlobalPlayers(term);
+                                                    // Filter out already in tournament
+                                                    const currentIds = new Set(players.map(p => p.player_id));
+
+                                                    const filtered = res.filter(p => !currentIds.has(p.id));
+                                                    setGlobalSearchResults(filtered);
+                                                } catch (err) {
+                                                    console.error(err);
+                                                }
+                                            } else {
+                                                setGlobalSearchResults([]);
+                                            }
+                                        }}
                                     />
                                 </div>
-                                <div className="z-0">
-                                    <label className="text-xs text-slate-400 mb-1 block">Club / Equipo</label>
-                                    <select
-                                        name="team_name"
-                                        value={teamName}
-                                        onChange={e => setTeamName(e.target.value)}
-                                        className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
+
+                                {/* Results List */}
+                                <div className="border border-white/10 rounded-md bg-[#0B1120] max-h-60 overflow-y-auto divide-y divide-white/5">
+                                    {globalSearchResults.length === 0 ? (
+                                        <div className="p-4 text-center text-xs text-slate-500">
+                                            Escribe para buscar jugadores en la base de datos global.
+                                        </div>
+                                    ) : (
+                                        globalSearchResults.map(p => (
+                                            <div key={p.id} className="flex items-center p-2 hover:bg-white/5 gap-3">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedGlobalPlayers.has(p.id)}
+                                                    onChange={() => {
+                                                        const newSet = new Set(selectedGlobalPlayers);
+                                                        if (newSet.has(p.id)) newSet.delete(p.id);
+                                                        else newSet.add(p.id);
+                                                        setSelectedGlobalPlayers(newSet);
+                                                    }}
+                                                    className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-primary"
+                                                />
+                                                <div className="w-8 h-8 rounded-full bg-slate-700 overflow-hidden flex-shrink-0">
+                                                    {p.photo_url ? <img src={p.photo_url} className="w-full h-full object-cover" /> : <span className="flex items-center justify-center h-full text-[10px]">{p.name.substring(0, 2)}</span>}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-medium text-slate-200">{p.name}</div>
+                                                    <div className="text-xs text-slate-500">{p.club_name || 'Sin Club'} • Avg: {p.average || 0}</div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+
+                                <div className="flex justify-between items-center bg-card p-2 rounded-md border border-white/5">
+                                    <span className="text-xs text-slate-400">Seleccionados: {selectedGlobalPlayers.size}</span>
+                                    <button
+                                        onClick={async () => {
+                                            if (selectedGlobalPlayers.size === 0) return;
+                                            setLoading(true);
+                                            try {
+                                                const { registerBatchPlayers } = await import('@/app/lib/tournament-actions');
+                                                const res = await registerBatchPlayers(tournament.id, Array.from(selectedGlobalPlayers));
+                                                alert(res.message);
+                                                setSelectedGlobalPlayers(new Set());
+                                                setGlobalSearchResults([]);
+                                                setRegMode('new'); // switch back or stay? stay is better to add more
+                                                router.refresh();
+                                            } catch (e) { alert(e.message); }
+                                            setLoading(false);
+                                        }}
+                                        disabled={loading || selectedGlobalPlayers.size === 0}
+                                        className="bg-green-600 hover:bg-green-500 text-white px-4 py-1.5 rounded text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        <option value="">-- Seleccionar Club --</option>
-                                        {clubs.map(club => (
-                                            <option key={club.id} value={club.name}>{club.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="text-xs text-slate-400 mb-1 block">Promedio</label>
-                                    <input
-                                        name="average"
-                                        type="number"
-                                        step="0.001"
-                                        value={average}
-                                        onChange={e => setAverage(e.target.value)}
-                                        className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
-                                        placeholder="0.000"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-xs text-slate-400 mb-1 block">Handicap {tournament.use_handicap && '(Auto)'}</label>
-                                    <input
-                                        name="handicap"
-                                        type="number"
-                                        value={handicap}
-                                        onChange={e => setHandicap(e.target.value)}
-                                        className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
-                                        placeholder="0"
-                                        disabled={tournament.use_handicap} // Disable if auto-calc
-                                    />
-                                </div>
-                                <div className="z-0">
-                                    <label className="text-xs text-slate-400 mb-1 block">Ranking</label>
-                                    <input
-                                        type="number"
-                                        value={ranking}
-                                        onChange={e => setRanking(e.target.value)}
-                                        className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
-                                        placeholder="Ej: 1500"
-                                    />
+                                        Agregar Seleccionados
+                                    </button>
                                 </div>
                             </div>
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full bg-primary text-primary-foreground h-9 rounded-md font-medium text-sm disabled:opacity-50"
-                            >
-                                {loading ? 'Registrando...' : 'Agregar Jugador'}
-                            </button>
-                        </form>
+                        )}
                     </div>
                 </div>
             )}

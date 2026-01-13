@@ -61,12 +61,14 @@ export async function createTournament(formData) {
         // File Uploads
         let banner_image_url = formData.get('banner_image_url') || null;
         let logo_image_url = formData.get('logo_image_url') || null;
+        let branding_image_url = formData.get('branding_image_url') || null;
 
         const bannerFile = formData.get('banner_image');
         const logoFile = formData.get('logo_image');
+        const brandingFile = formData.get('branding_image');
 
         // Verify Token if files are present (Legacy/Fallback Server-Side Upload)
-        if ((bannerFile && bannerFile.size > 0) || (logoFile && logoFile.size > 0)) {
+        if ((bannerFile && bannerFile.size > 0) || (logoFile && logoFile.size > 0) || (brandingFile && brandingFile.size > 0)) {
             if (!process.env.BLOB_READ_WRITE_TOKEN) {
                 // Return a clear error instead of failing silently or crashing
                 return { success: false, message: 'Error de Configuración: Falta BLOB_READ_WRITE_TOKEN para subir imágenes.' };
@@ -81,6 +83,10 @@ export async function createTournament(formData) {
             logo_image_url = await saveFile(logoFile, 'tournaments');
         }
 
+        if (!branding_image_url && brandingFile && brandingFile.size > 0) {
+            branding_image_url = await saveFile(brandingFile, 'tournaments');
+        }
+
         const result = await query(`
             INSERT INTO tournaments 
             (
@@ -89,9 +95,9 @@ export async function createTournament(formData) {
                 use_handicap, banner_image_url, logo_image_url,
                 semifinal_points_limit, semifinal_innings_limit, final_points_limit, final_innings_limit,
                 block_duration, playoff_target_size, qualifiers_per_group, host_club_id, tables_available, discipline,
-                group_format
+                group_format, branding_image_url
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
             RETURNING *
         `, [
             name, start_date, end_date, max_players, format, group_size || 4,
@@ -99,7 +105,7 @@ export async function createTournament(formData) {
             use_handicap || false, banner_image_url, logo_image_url,
             semifinal_points_limit, semifinal_innings_limit, final_points_limit, final_innings_limit,
             block_duration, playoff_target_size, qualifiers_per_group, host_club_id, tables_available, discipline,
-            group_format
+            group_format, branding_image_url
         ]);
 
         revalidatePath('/tournaments');
@@ -149,6 +155,7 @@ export async function updateTournament(id, formData) {
         // File Uploads (Update only if new file provided)
         let banner_image_url = formData.get('banner_image_url') || null;
         let logo_image_url = formData.get('logo_image_url') || null;
+        let branding_image_url = formData.get('branding_image_url') || null;
 
         const bannerFile = formData.get('banner_image');
         if (!banner_image_url && bannerFile && bannerFile.size > 0) {
@@ -158,6 +165,11 @@ export async function updateTournament(id, formData) {
         const logoFile = formData.get('logo_image');
         if (!logo_image_url && logoFile && logoFile.size > 0) {
             logo_image_url = await saveFile(logoFile, 'tournaments');
+        }
+
+        const brandingFile = formData.get('branding_image');
+        if (!branding_image_url && brandingFile && brandingFile.size > 0) {
+            branding_image_url = await saveFile(brandingFile, 'tournaments');
         }
 
         // --- Dynamic SQL Construction ---
@@ -194,6 +206,12 @@ export async function updateTournament(id, formData) {
         if (logo_image_url) {
             queryStr += `, logo_image_url = $${paramIndex}`;
             params.push(logo_image_url);
+            paramIndex++;
+        }
+
+        if (branding_image_url) {
+            queryStr += `, branding_image_url = $${paramIndex}`;
+            params.push(branding_image_url);
             paramIndex++;
         }
 
@@ -411,6 +429,71 @@ export async function registerPlayer(tournamentId, formData) {
 
     revalidatePath(`/admin/tournaments/${tournamentId}`);
     return { ...result.rows[0], warning: warningMessage };
+}
+
+export async function registerBatchPlayers(tournamentId, playerIds) {
+    try {
+        if (!playerIds || playerIds.length === 0) return { success: false, message: 'No se seleccionaron jugadores.' };
+
+        const tournament = await getTournament(tournamentId);
+        const useHandicap = tournament.use_handicap;
+
+        // 1. Get Details for selected players
+        // We use ANY($1) for array param
+        const playersRes = await query(`
+            SELECT p.*, c.name as club_name 
+            FROM players p
+            LEFT JOIN clubs c ON p.club_id = c.id
+            WHERE p.id = ANY($1)
+        `, [playerIds]);
+
+        const selectedPlayers = playersRes.rows;
+        let count = 0;
+        let errors = 0;
+
+        // 2. Iterate and Insert
+        for (const p of selectedPlayers) {
+            try {
+                // Check if already in tournament
+                const check = await query(`
+                    SELECT id FROM tournament_players WHERE tournament_id = $1 AND player_id = $2
+                `, [tournamentId, p.id]);
+
+                if (check.rows.length > 0) continue; // Skip duplicate
+
+                // Calc handicap
+                let handicap = 0;
+                if (useHandicap) {
+                    handicap = calculateFechillarHandicap(p.average || 0);
+                }
+
+                // Insert
+                await query(`
+                    INSERT INTO tournament_players (tournament_id, player_name, team_name, handicap, player_id, status, average)
+                    VALUES ($1, $2, $3, $4, $5, 'active', $6)
+                `, [
+                    tournamentId,
+                    p.name,
+                    p.club_name || 'Sin Club',
+                    handicap,
+                    p.id,
+                    p.average || 0
+                ]);
+
+                count++;
+            } catch (err) {
+                console.error(`Error adding player ${p.name}:`, err);
+                errors++;
+            }
+        }
+
+        revalidatePath(`/admin/tournaments/${tournamentId}`);
+        return { success: true, count, message: `Agregados ${count} jugadores.` + (errors > 0 ? ` (${errors} errores)` : '') };
+
+    } catch (e) {
+        console.error("Batch Register Error:", e);
+        return { success: false, message: e.message };
+    }
 }
 
 // Actions for Group Management

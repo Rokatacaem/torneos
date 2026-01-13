@@ -155,24 +155,30 @@ export default function TVDashboard({ tournament, matches, players }) {
                 </div>
 
                 {/* Branding */}
-                <div className="w-[20%] bg-white flex flex-col items-center justify-center p-0.5 relative">
-                    <div className="text-[#061020] font-black text-[10px] uppercase text-center mb-0.5 leading-tight">
-                        Copa Hermandad<br />Chile - Argentina
-                    </div>
-                    {/* Simplified Horizontal Flag/Logo for height efficiency */}
-                    <div className="flex items-center gap-1 scale-90">
-                        <div className="w-6 h-4 bg-red-600 relative border border-slate-300 shadow-sm">
-                            <div className="absolute top-0 left-0 w-full h-1/2 bg-white"></div>
-                            <div className="absolute top-0.5 left-0.5 w-1.5 h-1.5 bg-blue-800 rounded-sm"></div>
-                        </div>
-                        <div className="text-slate-900 font-black text-xs">X</div>
-                        <div className="w-6 h-4 bg-cyan-200 relative border border-slate-300 shadow-sm">
-                            <div className="absolute top-0 bottom-0 left-[33%] right-[33%] bg-white"></div>
-                        </div>
-                    </div>
-                    <div className="absolute bottom-0.5 right-1 w-full text-right pr-1">
-                        <div className="text-[7px] text-slate-500 font-bold leading-none">Dev by Rodrigo Zúñiga</div>
-                    </div>
+                <div className="w-[20%] bg-white flex flex-col items-center justify-center p-0.5 relative overflow-hidden">
+                    {tournament.branding_image_url ? (
+                        <img src={tournament.branding_image_url} alt="Branding" className="w-full h-full object-contain" />
+                    ) : (
+                        <>
+                            <div className="text-[#061020] font-black text-[10px] uppercase text-center mb-0.5 leading-tight">
+                                Copa Hermandad<br />Chile - Argentina
+                            </div>
+                            {/* Simplified Horizontal Flag/Logo for height efficiency */}
+                            <div className="flex items-center gap-1 scale-90">
+                                <div className="w-6 h-4 bg-red-600 relative border border-slate-300 shadow-sm">
+                                    <div className="absolute top-0 left-0 w-full h-1/2 bg-white"></div>
+                                    <div className="absolute top-0.5 left-0.5 w-1.5 h-1.5 bg-blue-800 rounded-sm"></div>
+                                </div>
+                                <div className="text-slate-900 font-black text-xs">X</div>
+                                <div className="w-6 h-4 bg-cyan-200 relative border border-slate-300 shadow-sm">
+                                    <div className="absolute top-0 bottom-0 left-[33%] right-[33%] bg-white"></div>
+                                </div>
+                            </div>
+                            <div className="absolute bottom-0.5 right-1 w-full text-right pr-1">
+                                <div className="text-[7px] text-slate-500 font-bold leading-none">Dev by Rodrigo Zúñiga</div>
+                            </div>
+                        </>
+                    )}
                 </div>
             </footer >
         </div >

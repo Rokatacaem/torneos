@@ -32,6 +32,7 @@ export default function EditTournamentForm({ tournament }) {
 
         const logoFile = formData.get('logo_image');
         const bannerFile = formData.get('banner_image');
+        const brandingFile = formData.get('branding_image');
 
         if (logoFile && logoFile.size > MAX_BYTES) {
             setError(`El logo es muy pesado (${(logoFile.size / 1024 / 1024).toFixed(2)} MB). Máximo permitido: ${MAX_SIZE_MB}MB.`);
@@ -41,6 +42,12 @@ export default function EditTournamentForm({ tournament }) {
 
         if (bannerFile && bannerFile.size > MAX_BYTES) {
             setError(`El banner es muy pesado (${(bannerFile.size / 1024 / 1024).toFixed(2)} MB). Máximo permitido: ${MAX_SIZE_MB}MB.`);
+            setSaving(false);
+            return;
+        }
+
+        if (brandingFile && brandingFile.size > MAX_BYTES) {
+            setError(`La imagen branding es muy pesada (${(brandingFile.size / 1024 / 1024).toFixed(2)} MB). Máximo permitido: ${MAX_SIZE_MB}MB.`);
             setSaving(false);
             return;
         }
@@ -63,9 +70,19 @@ export default function EditTournamentForm({ tournament }) {
                 formData.set('banner_image_url', blob.url);
             }
 
+            if (brandingFile && brandingFile.size > 0) {
+                const blob = await upload(brandingFile.name, brandingFile, {
+                    access: 'public',
+                    handleUploadUrl: '/api/upload',
+                });
+                formData.set('branding_image_url', blob.url);
+            }
+
+            // Clean up raw files
             // Clean up raw files
             formData.delete('logo_image');
             formData.delete('banner_image');
+            formData.delete('branding_image');
 
             const result = await updateTournament(tournament.id, formData);
 
@@ -369,6 +386,23 @@ export default function EditTournamentForm({ tournament }) {
                                         <p className="text-xs text-green-500">Banner actual cargado.</p>
                                     )}
                                     <p className="text-xs text-muted-foreground">Opcional. Fondo para TV Dashboard.</p>
+                                </div>
+                                <div className="space-y-2 col-span-2">
+                                    <label htmlFor="branding_image" className="text-sm font-medium">Branding / Footer (Patrocinador)</label>
+                                    <input
+                                        id="branding_image"
+                                        name="branding_image"
+                                        type="file"
+                                        accept="image/*"
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                    {tournament.branding_image_url && (
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <p className="text-xs text-green-500">Imagen actual cargada.</p>
+                                            <img src={tournament.branding_image_url} alt="Current Branding" className="h-6 w-auto object-contain border border-white/10" />
+                                        </div>
+                                    )}
+                                    <p className="text-xs text-muted-foreground">Opcional. Aparece en la esquina inferior derecha del TV Dashboard (Replaza "Copa Hermandad").</p>
                                 </div>
                             </div>
                         </div>
