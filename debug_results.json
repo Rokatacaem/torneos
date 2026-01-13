@@ -1,0 +1,74 @@
+{
+  "tournament": {
+    "id": 36,
+    "name": "ALHUALID RUMIE 2",
+    "format": "groups_elimination",
+    "group_format": "gsl"
+  },
+  "groups": {
+    "1": [
+      {
+        "id": 608,
+        "round": 1,
+        "status": "completed",
+        "p1": 927,
+        "p2": 924
+      },
+      {
+        "id": 609,
+        "round": 1,
+        "status": "completed",
+        "p1": 923,
+        "p2": 920
+      }
+    ],
+    "2": [
+      {
+        "id": 610,
+        "round": 1,
+        "status": "completed",
+        "p1": 925,
+        "p2": 929
+      },
+      {
+        "id": 611,
+        "round": 1,
+        "status": "completed",
+        "p1": 934,
+        "p2": 928
+      }
+    ],
+    "3": [
+      {
+        "id": 612,
+        "round": 1,
+        "status": "completed",
+        "p1": 930,
+        "p2": 926
+      },
+      {
+        "id": 613,
+        "round": 1,
+        "status": "completed",
+        "p1": 931,
+        "p2": 921
+      }
+    ],
+    "4": [
+      {
+        "id": 614,
+        "round": 1,
+        "status": "completed",
+        "p1": 933,
+        "p2": 922
+      },
+      {
+        "id": 615,
+        "round": 1,
+        "status": "completed",
+        "p1": 935,
+        "p2": 932
+      }
+    ]
+  }
+}

@@ -3,9 +3,10 @@ import { query } from './db';
 export async function checkGSLAdvancement(matchId) {
     // 1. Get Match Info & Group Context
     const matchRes = await query(`
-        SELECT m.*, t.group_format 
+        SELECT m.*, t.group_format, ph.type as phase_type
         FROM tournament_matches m
         JOIN tournaments t ON m.tournament_id = t.id
+        JOIN tournament_phases ph ON m.phase_id = ph.id
         WHERE m.id = $1
     `, [matchId]);
 
