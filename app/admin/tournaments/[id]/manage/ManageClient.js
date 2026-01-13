@@ -9,7 +9,7 @@ import { swapPlayers, replaceWithWaitlist } from '@/app/lib/tournament-actions';
 import { generateWhatsAppReport } from '@/app/lib/report-actions';
 import { useRouter } from 'next/navigation';
 import { Copy, MessageSquare, X } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/app/components/ui/dialog'; // Ensure these exist, or use simple overlay
+// Dialog components removed as we use a custom overlay
 
 export default function ManageClient({ tournament, groups, waitlist }) {
     const router = useRouter();
