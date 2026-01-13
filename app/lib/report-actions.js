@@ -10,7 +10,9 @@ export async function generateWhatsAppReport(tournamentId, type) {
 
         // Sort matches: Group, then Round, then ID
         matches.sort((a, b) => {
-            if (a.group_name !== b.group_name) return a.group_name.localeCompare(b.group_name, undefined, { numeric: true });
+            const gA = a.group_name || '';
+            const gB = b.group_name || '';
+            if (gA !== gB) return gA.localeCompare(gB, undefined, { numeric: true });
             if (a.round_number !== b.round_number) return a.round_number - b.round_number;
             return a.id - b.id;
         });
