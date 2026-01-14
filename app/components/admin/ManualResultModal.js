@@ -39,6 +39,19 @@ export default function ManualResultModal({ match, onClose }) {
                         </div>
                     </div>
 
+                    {/* Table Number */}
+                    <div className="bg-white/5 p-3 rounded-lg border border-white/10">
+                        <label className="block text-xs font-semibold text-purple-400 uppercase tracking-wider mb-2 text-center">Mesa Asignada</label>
+                        <input
+                            name="tableNumber"
+                            type="number"
+                            min="1"
+                            defaultValue={match.table_number || ''}
+                            placeholder="Sin Mesa"
+                            className="w-full bg-[#131B2D] border border-white/10 rounded-lg h-10 px-3 text-white text-center focus:border-purple-500 outline-none"
+                        />
+                    </div>
+
                     {/* Scores */}
                     <div className="grid grid-cols-2 gap-8">
                         <div>

@@ -16,6 +16,7 @@ export async function updateMatchResult(matchId, formData) {
     const innings = parseInt(formData.get('innings'));
     const highRunP1 = parseInt(formData.get('highRunP1') || '0');
     const highRunP2 = parseInt(formData.get('highRunP2') || '0');
+    const tableNumber = parseInt(formData.get('tableNumber')) || null;
 
     if (isNaN(scoreP1) || isNaN(scoreP2) || isNaN(innings)) {
         return { success: false, message: 'Los puntajes y entradas deben ser numéricos.' };
@@ -58,10 +59,11 @@ export async function updateMatchResult(matchId, formData) {
                 high_run_p2 = $4,
                 innings = $5,
                 winner_id = $6, 
+                table_number = $8,
                 status = 'completed',
                 updated_at = NOW()
             WHERE id = $7
-        `, [scoreP1, scoreP2, highRunP1, highRunP2, innings, winnerId, matchId]);
+        `, [scoreP1, scoreP2, highRunP1, highRunP2, innings, winnerId, matchId, tableNumber]);
 
         // Revalidate Admin and Public views
         revalidatePath(`/tournaments/${tournamentId}`);
