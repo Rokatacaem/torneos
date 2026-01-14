@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { registerPlayer, generateGroups, updatePlayer, searchPlayers, generatePlayoffs, previewGroups, removePlayer, removePlayers, disqualifyPlayer, purgeTournament, generateNextRound, registerBatchPlayers } from '@/app/lib/tournament-actions';
+import { registerPlayer, generateGroups, updatePlayer, searchPlayers, generatePlayoffs, previewGroups, removePlayer, removePlayers, disqualifyPlayer, purgeTournament, generateNextRound, registerBatchPlayers, assignTablesRandomly, updateMatchTable } from '@/app/lib/tournament-actions';
 import { searchGlobalPlayers } from '@/app/lib/player-actions';
 import { generateWhatsAppReport } from '@/app/lib/report-actions';
 import ManualResultModal from '@/app/components/admin/ManualResultModal';
@@ -1015,6 +1015,33 @@ function MatchTabs({ matches, loading, setLoading, onRefresh, tournamentId, onSe
         setLoading(false);
     };
 
+    const handleSorteoAction = async () => {
+        const input = prompt('¿Cuántas mesas hay disponibles para el sorteo?', '12');
+        if (!input) return;
+        const count = parseInt(input);
+        if (isNaN(count) || count < 1) return alert('Número inválido');
+
+        setLoading(true);
+        try {
+            const res = await assignTablesRandomly(tournamentId, count);
+            if (!res.success) throw new Error(res.message);
+            alert(res.message);
+            onRefresh();
+        } catch (e) { alert(e.message); }
+        setLoading(false);
+    };
+
+    const handleEditTableCallback = async (match, newTable) => {
+        if (!newTable) return;
+        setLoading(true);
+        try {
+            const res = await updateMatchTable(match.id, parseInt(newTable));
+            if (!res.success) throw new Error(res.message);
+            onRefresh();
+        } catch (e) { alert(e.message); }
+        setLoading(false);
+    };
+
     return (
         <div className="space-y-6">
             {/* Tabs Header */}
@@ -1064,8 +1091,15 @@ function MatchTabs({ matches, loading, setLoading, onRefresh, tournamentId, onSe
                                     Generar Llaves Finales
                                 </button>
                             )}
+                            <button
+                                onClick={handleSorteoAction}
+                                disabled={loading}
+                                className="bg-purple-600 text-white px-4 py-2 rounded-md text-sm font-bold hover:bg-purple-500 shadow-sm ml-2"
+                            >
+                                Sorteo de Mesas
+                            </button>
                         </div>
-                        <MatchGrid matches={groupMatches} onSelect={onSelectMatch} />
+                        <MatchGrid matches={groupMatches} onSelect={onSelectMatch} onEditTable={handleEditTableCallback} />
                     </div>
                 )}
 
@@ -1073,18 +1107,27 @@ function MatchTabs({ matches, loading, setLoading, onRefresh, tournamentId, onSe
                     <div className="space-y-4">
                         <div className="flex justify-between items-center">
                             <h3 className="font-bold text-lg text-white">{currentTab.label}</h3>
-                            {/* Show Next Round button ONLY if this is the latest round and not Final */}
-                            {currentTab.roundNumber === maxRound && currentTab.matches.length > 1 && (
+                            <div className="flex gap-2">
                                 <button
-                                    onClick={generateNextRoundAction}
+                                    onClick={handleSorteoAction}
                                     disabled={loading}
-                                    className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-bold hover:bg-blue-500 shadow-sm"
+                                    className="bg-purple-600 text-white px-4 py-2 rounded-md text-sm font-bold hover:bg-purple-500 shadow-sm"
                                 >
-                                    Generar Siguiente Ronda
+                                    Sorteo Mesas
                                 </button>
-                            )}
+                                {/* Show Next Round button ONLY if this is the latest round and not Final */}
+                                {currentTab.roundNumber === maxRound && currentTab.matches.length > 1 && (
+                                    <button
+                                        onClick={generateNextRoundAction}
+                                        disabled={loading}
+                                        className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-bold hover:bg-blue-500 shadow-sm"
+                                    >
+                                        Generar Siguiente Ronda
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                        <MatchGrid matches={currentTab.matches} onSelect={onSelectMatch} />
+                        <MatchGrid matches={currentTab.matches} onSelect={onSelectMatch} onEditTable={handleEditTableCallback} />
                     </div>
                 )}
             </div>
@@ -1092,7 +1135,7 @@ function MatchTabs({ matches, loading, setLoading, onRefresh, tournamentId, onSe
     );
 }
 
-function MatchGrid({ matches, onSelect }) {
+function MatchGrid({ matches, onSelect, onEditTable }) {
     if (matches.length === 0) return <div className="text-muted-foreground italic">No hay partidos en esta fase.</div>;
 
     return (
@@ -1105,7 +1148,17 @@ function MatchGrid({ matches, onSelect }) {
                 >
                     <div className="flex justify-between text-xs text-slate-500 mb-2">
                         <span className="font-mono">#{m.id} • {m.group_name ? `G.${m.group_name}` : 'Playoff'}</span>
-                        <span className="bg-slate-800 px-1.5 rounded text-[10px]">Mesa {m.table_number || '?'}</span>
+                        <span
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const val = prompt('Asignar Mesa #:', m.table_number || '');
+                                if (val) onEditTable(m, val);
+                            }}
+                            className="bg-slate-800 px-1.5 rounded text-[10px] hover:bg-slate-700 cursor-pointer text-blue-300"
+                            title="Click para asignar mesa manualmente"
+                        >
+                            Mesa {m.table_number || '?'}
+                        </span>
                     </div>
 
                     <div className="space-y-2">

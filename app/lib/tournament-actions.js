@@ -1687,3 +1687,69 @@ export async function generateNextRound(tournamentId) {
     }
 }
 
+
+export async function assignTablesRandomly(tournamentId, tableCount) {
+    try {
+        const tournament = await getTournament(tournamentId);
+        // Get active groups
+        const groupsRes = await query(`
+            SELECT g.id, g.name 
+            FROM tournament_groups g
+            JOIN tournament_phases p ON g.phase_id = p.id
+            WHERE p.tournament_id = $1 AND p.type = 'group'
+        `, [tournamentId]);
+
+        const groups = groupsRes.rows;
+        if (groups.length === 0) throw new Error('No hay grupos para asignar mesas.');
+
+        // Logic: 
+        // 1. Shuffle tables (1 to tableCount)
+        // 2. Assign to groups. If groups > tables, rotate or error?
+        // Usually rotate.
+
+        const tables = Array.from({ length: tableCount }, (_, i) => i + 1);
+
+        // Fisher-Yates Shuffle
+        for (let i = tables.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [tables[i], tables[j]] = [tables[j], tables[i]];
+        }
+
+        // Assign to groups
+        for (let i = 0; i < groups.length; i++) {
+            const tableNum = tables[i % tables.length];
+            await query(`UPDATE tournament_groups SET table_assignment = $1 WHERE id = $2`, [tableNum, groups[i].id]);
+
+            // Also update matches for this group that are still pending/scheduled?
+            // User requested lottery, usually meaning the group plays on that table.
+            await query(`
+                UPDATE tournament_matches 
+                SET table_number = $1 
+                WHERE group_id = $2 AND (status = 'scheduled' OR status = 'pending')
+            `, [tableNum, groups[i].id]);
+        }
+
+        revalidatePath(`/admin/tournaments/${tournamentId}`);
+        return { success: true, message: `Mesas asignadas aleatoriamente a ${groups.length} grupos.` };
+
+    } catch (e) {
+        console.error(e);
+        return { success: false, message: e.message };
+    }
+}
+
+export async function updateMatchTable(matchId, tableNumber) {
+    try {
+        await query(`UPDATE tournament_matches SET table_number = $1 WHERE id = $2`, [tableNumber, matchId]);
+
+        // Revalidate
+        // finding tournament id first?
+        const res = await query('SELECT tournament_id FROM tournament_matches WHERE id = $1', [matchId]);
+        if (res.rows.length > 0) {
+            revalidatePath(`/admin/tournaments/${res.rows[0].tournament_id}`);
+        }
+        return { success: true };
+    } catch (e) {
+        return { success: false, message: e.message };
+    }
+}
