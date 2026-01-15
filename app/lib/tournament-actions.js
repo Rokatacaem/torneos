@@ -511,52 +511,7 @@ export async function registerBatchPlayers(tournamentId, playerIds) {
 }
 
 // Actions for Group Management
-export async function swapPlayers(player1Id, player2Id, tournamentId) {
-    try {
-        console.log(`Swapping players: ${player1Id} <-> ${player2Id}`);
 
-        // 1. Get all scheduled matches for both players
-        const matchesP1 = await query(`
-            SELECT id, player1_id, player2_id FROM tournament_matches 
-            WHERE tournament_id = $1 AND status = 'scheduled' AND (player1_id = $2 OR player2_id = $2)
-        `, [tournamentId, player1Id]);
-
-        const matchesP2 = await query(`
-            SELECT id, player1_id, player2_id FROM tournament_matches 
-            WHERE tournament_id = $1 AND status = 'scheduled' AND (player1_id = $2 OR player2_id = $2)
-        `, [tournamentId, player2Id]);
-
-        // 2. Perform Swap
-        // This is tricky because we need to be careful not to create conflicts if they play each other.
-        // But for group stage swaps, we effectively just want to replace P1 with P2 in all their matches.
-
-        // Transaction-like approach (simplified)
-        await query('BEGIN');
-
-        // Update matches where P1 is player1 -> Set temp placeholder
-        await query(`UPDATE tournament_matches SET player1_id = -1 WHERE tournament_id = $1 AND player1_id = $2 AND status = 'scheduled'`, [tournamentId, player1Id]);
-        // Update matches where P1 is player2 -> Set temp placeholder
-        await query(`UPDATE tournament_matches SET player2_id = -1 WHERE tournament_id = $1 AND player2_id = $2 AND status = 'scheduled'`, [tournamentId, player1Id]);
-
-        // Update matches where P2 is player1 -> Set to P1
-        await query(`UPDATE tournament_matches SET player1_id = $2 WHERE tournament_id = $1 AND player1_id = $3 AND status = 'scheduled'`, [tournamentId, player1Id, player2Id]);
-        // Update matches where P2 is player2 -> Set to P1
-        await query(`UPDATE tournament_matches SET player2_id = $2 WHERE tournament_id = $1 AND player2_id = $3 AND status = 'scheduled'`, [tournamentId, player1Id, player2Id]);
-
-        // Update placeholders (-1) -> Set to P2
-        await query(`UPDATE tournament_matches SET player1_id = $3 WHERE tournament_id = $1 AND player1_id = -1`, [tournamentId, player1Id, player2Id]);
-        await query(`UPDATE tournament_matches SET player2_id = $3 WHERE tournament_id = $1 AND player2_id = -1`, [tournamentId, player1Id, player2Id]);
-
-        await query('COMMIT');
-
-        revalidatePath(`/admin/tournaments/${tournamentId}`);
-        return { success: true, message: 'Jugadores intercambiados correctamente' }; // Mensaje en español
-    } catch (e) {
-        await query('ROLLBACK');
-        console.error(e);
-        return { success: false, message: 'Error al intercambiar jugadores' };
-    }
-}
 
 export async function replaceWithWaitlist(originalPlayerId, tournamentId) {
     try {
