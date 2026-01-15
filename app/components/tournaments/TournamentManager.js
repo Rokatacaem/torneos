@@ -413,7 +413,7 @@ export default function TournamentManager({ tournament, players, matches, clubs 
             <div className="grid md:grid-cols-2 gap-8">
                 <div>
                     <div className="flex justify-between items-center mb-4 gap-2">
-                        <h3 className="font-semibold">Lista de Inscritos</h3>
+                        <h3 className="font-semibold">Lista de Inscritos (v2)</h3>
                         <div className="flex gap-2 items-center">
                             {selectedPlayers.size > 0 && (
                                 <button
