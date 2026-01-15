@@ -521,11 +521,11 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                                     </button>
                                     <button
                                         onClick={() => setSwappingSource(p)}
-                                        className="text-xs bg-yellow-600 hover:bg-yellow-500 text-white px-2 py-1 rounded flex items-center gap-1 shadow-sm transition-colors"
+                                        className="text-xs bg-orange-600 hover:bg-orange-500 text-white px-2 py-1 rounded flex items-center gap-1 shadow-sm transition-colors font-bold uppercase tracking-wider"
                                         title="Sustituir por otro jugador"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z" /><path d="m13 13 6 6" /></svg>
-                                        Sustituir
+                                        INTERCAMBIAR
                                     </button>
                                     <button
                                         onClick={() => handleDeletePlayer(p)}

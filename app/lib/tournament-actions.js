@@ -451,6 +451,11 @@ export async function registerBatchPlayers(tournamentId, playerIds) {
         let count = 0;
         let errors = 0;
 
+        // Count current active players first
+        let currentActiveCountRes = await query('SELECT count(*) as c FROM tournament_players WHERE tournament_id = $1 AND (status = \'active\' OR status IS NULL)', [tournamentId]);
+        let currentActiveCount = parseInt(currentActiveCountRes.rows[0].c);
+        const maxPlayers = tournament.max_players || 9999;
+
         // 2. Iterate and Insert
         for (const p of selectedPlayers) {
             try {
@@ -461,6 +466,14 @@ export async function registerBatchPlayers(tournamentId, playerIds) {
 
                 if (check.rows.length > 0) continue; // Skip duplicate
 
+                // Determine status based on capacity
+                let status = 'active';
+                if (currentActiveCount >= maxPlayers) {
+                    status = 'waitlist';
+                } else {
+                    currentActiveCount++; // Consume a spot
+                }
+
                 // Calc handicap
                 let handicap = 0;
                 if (useHandicap) {
@@ -470,13 +483,14 @@ export async function registerBatchPlayers(tournamentId, playerIds) {
                 // Insert
                 await query(`
                     INSERT INTO tournament_players (tournament_id, player_name, team_name, handicap, player_id, status, average)
-                    VALUES ($1, $2, $3, $4, $5, 'active', $6)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7)
                 `, [
                     tournamentId,
                     p.name,
                     p.club_name || 'Sin Club',
                     handicap,
                     p.id,
+                    status,
                     p.average || 0
                 ]);
 
@@ -1751,5 +1765,37 @@ export async function updateMatchTable(matchId, tableNumber) {
         return { success: true };
     } catch (e) {
         return { success: false, message: e.message };
+    }
+}
+
+export async function swapPlayers(player1Id, player2Id, tournamentId) {
+    try {
+        console.log(`Swapping players: ${player1Id} <-> ${player2Id} in tournament ${tournamentId}`);
+        await query('BEGIN');
+
+        await query(`
+            UPDATE tournament_matches
+            SET 
+                player1_id = CASE 
+                    WHEN player1_id = $1 THEN $2 
+                    WHEN player1_id = $2 THEN $1 
+                    ELSE player1_id 
+                END,
+                player2_id = CASE 
+                    WHEN player2_id = $1 THEN $2 
+                    WHEN player2_id = $2 THEN $1 
+                    ELSE player2_id 
+                END
+            WHERE tournament_id = $3 AND (player1_id IN ($1, $2) OR player2_id IN ($1, $2))
+        `, [player1Id, player2Id, tournamentId]);
+
+        await query('COMMIT');
+        revalidatePath(`/admin/tournaments/${tournamentId}`);
+        return { success: true, message: 'Jugadores intercambiados con éxito.' };
+
+    } catch (e) {
+        await query('ROLLBACK');
+        console.error(e);
+        return { success: false, message: 'Error al intercambiar: ' + e.message };
     }
 }
