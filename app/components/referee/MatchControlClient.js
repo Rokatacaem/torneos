@@ -60,7 +60,7 @@ function MatchControlClientContent({ initialMatch }) {
     };
 
     useEffect(() => {
-        console.log("MatchControlClient Loaded - VERSION: 2025-12-21 21:00 FIXES (NoBtn, Innings+1, Copyright)");
+        console.log("MatchControlClient Loaded - VERSION: 2026-01-16 19:10 FIX maxInningsRaw");
     }, []);
 
     // Timer State
