@@ -119,6 +119,7 @@ function MatchControlClientContent({ initialMatch }) {
         p2Target = limit;
     }
 
+    let maxInningsRaw;
     // Use calculated limit from server if available (checking for nullish to allow 0)
     if (match.calculated_innings_limit !== null && match.calculated_innings_limit !== undefined) {
         maxInningsRaw = match.calculated_innings_limit;
