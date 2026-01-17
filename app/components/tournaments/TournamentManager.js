@@ -309,620 +309,622 @@ export default function TournamentManager({ tournament, players, matches, clubs 
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex gap-4 border-b">
-                <button
-                    onClick={() => setActiveTab('players')}
-                    className={`px-4 py-2 border-b-2 font-medium ${activeTab === 'players' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'}`}
-                >
-                    Jugadores ({players.length}/{tournament.max_players || '∞'})
-                </button>
-                <button
-                    onClick={() => setActiveTab('matches')}
-                    className={`px-4 py-2 border-b-2 font-medium ${activeTab === 'matches' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'}`}
-                >
-                    Partidas ({matches.length})
-                </button>
-                <div className="ml-auto flex items-center gap-2">
-                    <button onClick={() => generateReport('start')} className="px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-xs rounded flex items-center gap-1">
-                        <MessageSquare size={14} /> Inicio
-                    </button>
-                    <button onClick={() => generateReport('pending')} className="px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-xs rounded flex items-center gap-1">
-                        <MessageSquare size={14} /> Pendientes
-                    </button>
-                    <FinalizeTournamentButton tournament={tournament} />
-                </div>
-            </div>
-        </div>
-            {/* Swap Modal */ }
-    {
-        swappingSource && (
-            <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-                <div className="bg-[#0f172a] border border-white/10 rounded-lg p-6 max-w-sm w-full shadow-2xl">
-                    <h3 className="text-lg font-bold text-white mb-4">Sustituir Jugador</h3>
-                    <p className="text-sm text-slate-400 mb-4">
-                        Sustituir a <span className="text-white font-bold">{swappingSource.player_name}</span> con:
-                    </p>
-
-                    <select
-                        className="w-full bg-slate-900 border border-white/10 rounded p-2 text-white mb-4"
-                        value={swapTargetId}
-                        onChange={(e) => setSwapTargetId(e.target.value)}
+        <>
+            <div className="space-y-6">
+                <div className="flex gap-4 border-b">
+                    <button
+                        onClick={() => setActiveTab('players')}
+                        className={`px-4 py-2 border-b-2 font-medium ${activeTab === 'players' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'}`}
                     >
-                        <option value="">-- Seleccionar Jugador --</option>
-                        {players
-                            .filter(p => p.id !== swappingSource.id)
-                            .sort((a, b) => a.player_name.localeCompare(b.player_name))
-                            .map(p => (
-                                <option key={p.id} value={p.id}>
-                                    {p.player_name} {p.team_name ? `(${p.team_name})` : ''}
-                                </option>
-                            ))
-                        }
-                    </select>
-
-                    <div className="flex justify-end gap-2">
-                        <button
-                            onClick={() => { setSwappingSource(null); setSwapTargetId(''); }}
-                            className="px-3 py-1 text-slate-400 hover:text-white"
-                        >
-                            Cancelar
+                        Jugadores ({players.length}/{tournament.max_players || '∞'})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('matches')}
+                        className={`px-4 py-2 border-b-2 font-medium ${activeTab === 'matches' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'}`}
+                    >
+                        Partidas ({matches.length})
+                    </button>
+                    <div className="ml-auto flex items-center gap-2">
+                        <button onClick={() => generateReport('start')} className="px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-xs rounded flex items-center gap-1">
+                            <MessageSquare size={14} /> Inicio
                         </button>
-                        <button
-                            onClick={handleSwapExecute}
-                            disabled={!swapTargetId || loading}
-                            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded font-bold"
-                        >
-                            {loading ? '...' : 'Intercambiar'}
+                        <button onClick={() => generateReport('pending')} className="px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-xs rounded flex items-center gap-1">
+                            <MessageSquare size={14} /> Pendientes
                         </button>
+                        <FinalizeTournamentButton tournament={tournament} />
                     </div>
                 </div>
             </div>
-        )
-    }
+            {/* Swap Modal */}
+            {
+                swappingSource && (
+                    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+                        <div className="bg-[#0f172a] border border-white/10 rounded-lg p-6 max-w-sm w-full shadow-2xl">
+                            <h3 className="text-lg font-bold text-white mb-4">Sustituir Jugador</h3>
+                            <p className="text-sm text-slate-400 mb-4">
+                                Sustituir a <span className="text-white font-bold">{swappingSource.player_name}</span> con:
+                            </p>
 
-    {/* WhatsApp Report Modal */ }
-    {
-        isReportOpen && (
-            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                <div className="bg-[#0f172a] border border-white/10 rounded-lg p-6 max-w-md w-full shadow-2xl relative">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-bold text-white">Reporte WhatsApp</h3>
-                        <button onClick={() => setIsReportOpen(false)} className="text-slate-400 hover:text-white">
-                            <X size={20} />
-                        </button>
-                    </div>
-                    <textarea
-                        className="w-full h-64 bg-black/40 border border-white/10 rounded-md p-3 text-sm font-mono text-slate-300 resize-none focus:outline-none focus:border-blue-500 mb-4"
-                        readOnly
-                        value={reportText}
-                    />
-                    <div className="flex justify-end gap-2">
-                        <button className="px-4 py-2 text-slate-300 hover:bg-white/5 rounded" onClick={() => setIsReportOpen(false)}>Cerrar</button>
-                        <button onClick={copyToClipboard} className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded flex items-center gap-2">
-                            <Copy size={16} /> Copiar
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )
-    }
+                            <select
+                                className="w-full bg-slate-900 border border-white/10 rounded p-2 text-white mb-4"
+                                value={swapTargetId}
+                                onChange={(e) => setSwapTargetId(e.target.value)}
+                            >
+                                <option value="">-- Seleccionar Jugador --</option>
+                                {players
+                                    .filter(p => p.id !== swappingSource.id)
+                                    .sort((a, b) => a.player_name.localeCompare(b.player_name))
+                                    .map(p => (
+                                        <option key={p.id} value={p.id}>
+                                            {p.player_name} {p.team_name ? `(${p.team_name})` : ''}
+                                        </option>
+                                    ))
+                                }
+                            </select>
 
-    {
-        activeTab === 'players' && (
-            <div className="grid md:grid-cols-2 gap-8">
-                <div>
-                    <div className="flex justify-between items-center mb-4 gap-2">
-                        <h3 className="font-semibold">Lista de Inscritos (v2)</h3>
-                        <div className="flex gap-2 items-center">
-                            {selectedPlayers.size > 0 && (
+                            <div className="flex justify-end gap-2">
                                 <button
-                                    onClick={handleBulkDelete}
-                                    disabled={loading}
-                                    className="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded text-xs animate-in fade-in zoom-in duration-200"
+                                    onClick={() => { setSwappingSource(null); setSwapTargetId(''); }}
+                                    className="px-3 py-1 text-slate-400 hover:text-white"
                                 >
-                                    Eliminar ({selectedPlayers.size})
+                                    Cancelar
                                 </button>
-                            )}
-                            <div className="relative">
-                                <input
-                                    type="file"
-                                    accept=".xlsx, .xls"
-                                    onChange={handleImportRanking}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                    disabled={loading}
-                                    title="Importar Excel exportado del Ranking"
-                                />
                                 <button
-                                    className="text-xs bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded flex items-center gap-1 shadow-sm transition-colors"
-                                    disabled={loading}
+                                    onClick={handleSwapExecute}
+                                    disabled={!swapTargetId || loading}
+                                    className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded font-bold"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></svg>
-                                    Importar
+                                    {loading ? '...' : 'Intercambiar'}
                                 </button>
                             </div>
-                            {matches.length === 0 && players.length >= 2 && (
-                                <button
-                                    onClick={handlePreview}
-                                    disabled={loading}
-                                    className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded flex items-center gap-1 shadow-sm transition-colors"
-                                    title="Ver proyección de grupos antes de confirmar"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3" /></svg>
-                                    Vista Previa
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* WhatsApp Report Modal */}
+            {
+                isReportOpen && (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                        <div className="bg-[#0f172a] border border-white/10 rounded-lg p-6 max-w-md w-full shadow-2xl relative">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-bold text-white">Reporte WhatsApp</h3>
+                                <button onClick={() => setIsReportOpen(false)} className="text-slate-400 hover:text-white">
+                                    <X size={20} />
                                 </button>
-                            )}
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2 mb-2 px-3 text-xs text-muted-foreground">
-                        <input
-                            type="checkbox"
-                            checked={players.length > 0 && selectedPlayers.size === players.length}
-                            onChange={toggleSelectAll}
-                            className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-primary focus:ring-offset-0 focus:ring-1 focus:ring-primary"
-                        />
-                        <span>Seleccionar Todos</span>
-                    </div>
-                    <div className="border rounded-md divide-y max-h-[600px] overflow-y-auto">
-                        {players.map(p => (
-                            <div key={p.id} className="p-3 flex justify-between items-center group hover:bg-muted/50 transition-colors">
-                                <div className="flex items-center gap-3">
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedPlayers.has(p.id)}
-                                        onChange={() => toggleSelectPlayer(p.id)}
-                                        className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-primary focus:ring-offset-0 focus:ring-1 focus:ring-primary"
-                                    />
-                                    {/* Avatar */}
-                                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden border border-slate-300">
-                                        {p.photo_url ? (
-                                            <img src={p.photo_url} alt={p.player_name} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <span className="text-slate-500 font-bold text-xs">{p.player_name.substring(0, 2).toUpperCase()}</span>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <div className="font-medium">{p.player_name}</div>
-                                        {(p.team_name || p.status) && (
-                                            <div className="text-xs text-muted-foreground">
-                                                {p.team_name}
-                                                {p.status === 'waitlist' && <span className="text-orange-500 font-bold ml-1">(Espera)</span>}
-                                                {p.status === 'disqualified' && <span className="text-red-500 font-bold ml-1">(DESCALIFICADO)</span>}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="text-xs text-slate-400 bg-secondary/50 px-2 py-1 rounded">Avg: {p.average || '-'}</div>
-                                    <div className="text-sm bg-secondary px-2 py-1 rounded">HCP: {p.handicap}</div>
-                                    <button
-                                        onClick={() => {
-                                            setEditingPlayer(p);
-                                            setPlayerName(p.player_name);
-                                            setTeamName(p.team_name || ''); // Try to match by name if not ID? Ideally we need club_id in p
-                                            // We need club_id in p to edit correctly if using select.
-                                            // Assuming p comes from tournament_players which doesn't have club_id directly unless updated query.
-                                            setHandicap(p.handicap);
-                                            setRanking(p.ranking || '');
-                                            setAverage(p.average || '');
-                                            // ID?
-                                        }}
-                                        className="text-slate-400 hover:text-blue-400 transition-colors opacity-0 group-hover:opacity-100"
-                                        title="Editar"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
-                                    </button>
-                                    <button
-                                        onClick={() => handleDisqualify(p)}
-                                        className="text-slate-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
-                                        title="Expulsar / Descalificar"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="m4.9 4.9 14.2 14.2" /></svg>
-                                    </button>
-                                    <button
-                                        onClick={() => setSwappingSource(p)}
-                                        className="text-xs bg-orange-600 hover:bg-orange-500 text-white px-2 py-1 rounded flex items-center gap-1 shadow-sm transition-colors font-bold uppercase tracking-wider"
-                                        title="Sustituir por otro jugador"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z" /><path d="m13 13 6 6" /></svg>
-                                        INTERCAMBIAR
-                                    </button>
-                                    <button
-                                        onClick={() => handleDeletePlayer(p)}
-                                        className="text-slate-400 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-                                        title="Eliminar"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
-                                    </button>
-                                </div>
                             </div>
-
-                        ))}
-                        {players.length === 0 && <div className="p-4 text-center text-muted-foreground">Sin jugadores</div>}
-                    </div>
-                </div>
-
-                <div className="bg-muted/30 p-6 rounded-lg h-fit">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-semibold">Registrar Jugador</h3>
-                        <div className="flex bg-slate-800 p-0.5 rounded-lg">
-                            <button
-                                onClick={() => setRegMode('new')}
-                                className={`px-3 py-1 text-xs rounded-md transition-all ${regMode === 'new' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
-                            >
-                                Nuevo
-                            </button>
-                            <button
-                                onClick={() => setRegMode('existing')}
-                                className={`px-3 py-1 text-xs rounded-md transition-all ${regMode === 'existing' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
-                            >
-                                Buscar Existente
-                            </button>
+                            <textarea
+                                className="w-full h-64 bg-black/40 border border-white/10 rounded-md p-3 text-sm font-mono text-slate-300 resize-none focus:outline-none focus:border-blue-500 mb-4"
+                                readOnly
+                                value={reportText}
+                            />
+                            <div className="flex justify-end gap-2">
+                                <button className="px-4 py-2 text-slate-300 hover:bg-white/5 rounded" onClick={() => setIsReportOpen(false)}>Cerrar</button>
+                                <button onClick={copyToClipboard} className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded flex items-center gap-2">
+                                    <Copy size={16} /> Copiar
+                                </button>
+                            </div>
                         </div>
                     </div>
+                )
+            }
 
-                    {regMode === 'new' ? (
-                        <form onSubmit={handleAddPlayer} className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end bg-card p-4 rounded-lg border border-white/5">
-                                <div>
-                                    <label className="text-xs text-slate-400 mb-1 block">Nombre Jugador</label>
+            {
+                activeTab === 'players' && (
+                    <div className="grid md:grid-cols-2 gap-8">
+                        <div>
+                            <div className="flex justify-between items-center mb-4 gap-2">
+                                <h3 className="font-semibold">Lista de Inscritos (v2)</h3>
+                                <div className="flex gap-2 items-center">
+                                    {selectedPlayers.size > 0 && (
+                                        <button
+                                            onClick={handleBulkDelete}
+                                            disabled={loading}
+                                            className="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded text-xs animate-in fade-in zoom-in duration-200"
+                                        >
+                                            Eliminar ({selectedPlayers.size})
+                                        </button>
+                                    )}
                                     <div className="relative">
                                         <input
-                                            name="player_name"
-                                            value={playerName}
-                                            onChange={e => {
-                                                setPlayerName(e.target.value);
-                                                if (regMode === 'new') handleSearch(e.target.value); // Keep autocomplete for new creation too? Maybe just simple input
-                                            }}
-                                            className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
-                                            placeholder="Nombre..."
-                                            required
-                                            autoComplete="off"
+                                            type="file"
+                                            accept=".xlsx, .xls"
+                                            onChange={handleImportRanking}
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                            disabled={loading}
+                                            title="Importar Excel exportado del Ranking"
                                         />
-                                        {/* Reuse logic for local duplicate warning if needed, but simplified for now */}
+                                        <button
+                                            className="text-xs bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded flex items-center gap-1 shadow-sm transition-colors"
+                                            disabled={loading}
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></svg>
+                                            Importar
+                                        </button>
                                     </div>
-                                </div>
-                                <div className="z-0">
-                                    <label className="text-xs text-slate-400 mb-1 block">RUT / Pasaporte (Opcional)</label>
-                                    <input
-                                        name="identification"
-                                        id="identification_input"
-                                        value={identification}
-                                        onChange={e => setIdentification(e.target.value)}
-                                        className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
-                                        placeholder="Ej: 12.345.678-9"
-                                    />
-                                </div>
-                                <div className="z-0">
-                                    <label className="text-xs text-slate-400 mb-1 block">Club / Equipo</label>
-                                    <select
-                                        name="team_name"
-                                        value={teamName}
-                                        onChange={e => setTeamName(e.target.value)}
-                                        className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
-                                    >
-                                        <option value="">-- Seleccionar Club --</option>
-                                        {clubs.map(club => (
-                                            <option key={club.id} value={club.name}>{club.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="text-xs text-slate-400 mb-1 block">Promedio</label>
-                                    <input
-                                        name="average"
-                                        type="number"
-                                        step="0.001"
-                                        value={average}
-                                        onChange={e => setAverage(e.target.value)}
-                                        className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
-                                        placeholder="0.000"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-xs text-slate-400 mb-1 block">Handicap {tournament.use_handicap && '(Auto)'}</label>
-                                    <input
-                                        name="handicap"
-                                        type="number"
-                                        value={handicap}
-                                        onChange={e => setHandicap(e.target.value)}
-                                        className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
-                                        placeholder="0"
-                                        disabled={tournament.use_handicap} // Disable if auto-calc
-                                    />
-                                </div>
-                                <div className="z-0">
-                                    <label className="text-xs text-slate-400 mb-1 block">Ranking</label>
-                                    <input
-                                        type="number"
-                                        value={ranking}
-                                        onChange={e => setRanking(e.target.value)}
-                                        className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
-                                        placeholder="Ej: 1500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-xs text-slate-400 mb-1 block">Foto (Opcional)</label>
-                                    <input
-                                        id="player_photo"
-                                        name="photo"
-                                        type="file"
-                                        accept="image/*"
-                                        className="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500"
-                                    />
+                                    {matches.length === 0 && players.length >= 2 && (
+                                        <button
+                                            onClick={handlePreview}
+                                            disabled={loading}
+                                            className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded flex items-center gap-1 shadow-sm transition-colors"
+                                            title="Ver proyección de grupos antes de confirmar"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3" /></svg>
+                                            Vista Previa
+                                        </button>
+                                    )}
                                 </div>
                             </div>
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full bg-blue-600 text-white h-9 rounded-md font-medium text-sm disabled:opacity-50 hover:bg-blue-500 transition-colors"
-                            >
-                                {loading ? 'Registrando...' : 'Agregar Nuevo Jugador'}
-                            </button>
-                        </form>
-                    ) : (
-                        <div className="space-y-4 animate-in fade-in zoom-in duration-200">
-                            {/* Search Logic */}
-                            <div className="space-y-2">
+                            <div className="flex items-center gap-2 mb-2 px-3 text-xs text-muted-foreground">
                                 <input
-                                    autoFocus
-                                    placeholder="Buscar por nombre..."
-                                    className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
-                                    onChange={async (e) => {
-                                        const term = e.target.value;
-                                        if (term.length > 0) {
-                                            try {
-                                                const res = await searchGlobalPlayers(term);
-                                                // Filter out already in tournament
-                                                const currentIds = new Set(players.map(p => p.player_id));
-
-                                                const filtered = res.filter(p => !currentIds.has(p.id));
-                                                setGlobalSearchResults(filtered);
-                                            } catch (err) {
-                                                console.error(err);
-                                            }
-                                        } else {
-                                            setGlobalSearchResults([]);
-                                        }
-                                    }}
+                                    type="checkbox"
+                                    checked={players.length > 0 && selectedPlayers.size === players.length}
+                                    onChange={toggleSelectAll}
+                                    className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-primary focus:ring-offset-0 focus:ring-1 focus:ring-primary"
                                 />
+                                <span>Seleccionar Todos</span>
                             </div>
-
-                            {/* Results List */}
-                            <div className="border border-white/10 rounded-md bg-[#0B1120] max-h-60 overflow-y-auto divide-y divide-white/5">
-                                {globalSearchResults.length === 0 ? (
-                                    <div className="p-4 text-center text-xs text-slate-500">
-                                        Escribe para buscar jugadores en la base de datos global.
-                                    </div>
-                                ) : (
-                                    globalSearchResults.map(p => (
-                                        <div key={p.id} className="flex items-center p-2 hover:bg-white/5 gap-3">
+                            <div className="border rounded-md divide-y max-h-[600px] overflow-y-auto">
+                                {players.map(p => (
+                                    <div key={p.id} className="p-3 flex justify-between items-center group hover:bg-muted/50 transition-colors">
+                                        <div className="flex items-center gap-3">
                                             <input
                                                 type="checkbox"
-                                                checked={selectedGlobalPlayers.has(p.id)}
-                                                onChange={() => {
-                                                    const newSet = new Set(selectedGlobalPlayers);
-                                                    if (newSet.has(p.id)) newSet.delete(p.id);
-                                                    else newSet.add(p.id);
-                                                    setSelectedGlobalPlayers(newSet);
-                                                }}
-                                                className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-primary"
+                                                checked={selectedPlayers.has(p.id)}
+                                                onChange={() => toggleSelectPlayer(p.id)}
+                                                className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-primary focus:ring-offset-0 focus:ring-1 focus:ring-primary"
                                             />
-                                            <div className="w-8 h-8 rounded-full bg-slate-700 overflow-hidden flex-shrink-0">
-                                                {p.photo_url ? <img src={p.photo_url} className="w-full h-full object-cover" /> : <span className="flex items-center justify-center h-full text-[10px]">{p.name.substring(0, 2)}</span>}
+                                            {/* Avatar */}
+                                            <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden border border-slate-300">
+                                                {p.photo_url ? (
+                                                    <img src={p.photo_url} alt={p.player_name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <span className="text-slate-500 font-bold text-xs">{p.player_name.substring(0, 2).toUpperCase()}</span>
+                                                )}
                                             </div>
-                                            <div className="flex-1">
-                                                <div className="text-sm font-medium text-slate-200">{p.name}</div>
-                                                <div className="text-xs text-slate-500">{p.club_name || 'Sin Club'} • Avg: {p.average || 0}</div>
+                                            <div>
+                                                <div className="font-medium">{p.player_name}</div>
+                                                {(p.team_name || p.status) && (
+                                                    <div className="text-xs text-muted-foreground">
+                                                        {p.team_name}
+                                                        {p.status === 'waitlist' && <span className="text-orange-500 font-bold ml-1">(Espera)</span>}
+                                                        {p.status === 'disqualified' && <span className="text-red-500 font-bold ml-1">(DESCALIFICADO)</span>}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
-                                    ))
-                                )}
+                                        <div className="flex items-center gap-2">
+                                            <div className="text-xs text-slate-400 bg-secondary/50 px-2 py-1 rounded">Avg: {p.average || '-'}</div>
+                                            <div className="text-sm bg-secondary px-2 py-1 rounded">HCP: {p.handicap}</div>
+                                            <button
+                                                onClick={() => {
+                                                    setEditingPlayer(p);
+                                                    setPlayerName(p.player_name);
+                                                    setTeamName(p.team_name || ''); // Try to match by name if not ID? Ideally we need club_id in p
+                                                    // We need club_id in p to edit correctly if using select.
+                                                    // Assuming p comes from tournament_players which doesn't have club_id directly unless updated query.
+                                                    setHandicap(p.handicap);
+                                                    setRanking(p.ranking || '');
+                                                    setAverage(p.average || '');
+                                                    // ID?
+                                                }}
+                                                className="text-slate-400 hover:text-blue-400 transition-colors opacity-0 group-hover:opacity-100"
+                                                title="Editar"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
+                                            </button>
+                                            <button
+                                                onClick={() => handleDisqualify(p)}
+                                                className="text-slate-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                                                title="Expulsar / Descalificar"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="m4.9 4.9 14.2 14.2" /></svg>
+                                            </button>
+                                            <button
+                                                onClick={() => setSwappingSource(p)}
+                                                className="text-xs bg-orange-600 hover:bg-orange-500 text-white px-2 py-1 rounded flex items-center gap-1 shadow-sm transition-colors font-bold uppercase tracking-wider"
+                                                title="Sustituir por otro jugador"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z" /><path d="m13 13 6 6" /></svg>
+                                                INTERCAMBIAR
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeletePlayer(p)}
+                                                className="text-slate-400 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                                                title="Eliminar"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                ))}
+                                {players.length === 0 && <div className="p-4 text-center text-muted-foreground">Sin jugadores</div>}
+                            </div>
+                        </div>
+
+                        <div className="bg-muted/30 p-6 rounded-lg h-fit">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="font-semibold">Registrar Jugador</h3>
+                                <div className="flex bg-slate-800 p-0.5 rounded-lg">
+                                    <button
+                                        onClick={() => setRegMode('new')}
+                                        className={`px-3 py-1 text-xs rounded-md transition-all ${regMode === 'new' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                                    >
+                                        Nuevo
+                                    </button>
+                                    <button
+                                        onClick={() => setRegMode('existing')}
+                                        className={`px-3 py-1 text-xs rounded-md transition-all ${regMode === 'existing' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                                    >
+                                        Buscar Existente
+                                    </button>
+                                </div>
                             </div>
 
-                            <div className="flex justify-between items-center bg-card p-2 rounded-md border border-white/5">
-                                <span className="text-xs text-slate-400">Seleccionados: {selectedGlobalPlayers.size}</span>
+                            {regMode === 'new' ? (
+                                <form onSubmit={handleAddPlayer} className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end bg-card p-4 rounded-lg border border-white/5">
+                                        <div>
+                                            <label className="text-xs text-slate-400 mb-1 block">Nombre Jugador</label>
+                                            <div className="relative">
+                                                <input
+                                                    name="player_name"
+                                                    value={playerName}
+                                                    onChange={e => {
+                                                        setPlayerName(e.target.value);
+                                                        if (regMode === 'new') handleSearch(e.target.value); // Keep autocomplete for new creation too? Maybe just simple input
+                                                    }}
+                                                    className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
+                                                    placeholder="Nombre..."
+                                                    required
+                                                    autoComplete="off"
+                                                />
+                                                {/* Reuse logic for local duplicate warning if needed, but simplified for now */}
+                                            </div>
+                                        </div>
+                                        <div className="z-0">
+                                            <label className="text-xs text-slate-400 mb-1 block">RUT / Pasaporte (Opcional)</label>
+                                            <input
+                                                name="identification"
+                                                id="identification_input"
+                                                value={identification}
+                                                onChange={e => setIdentification(e.target.value)}
+                                                className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
+                                                placeholder="Ej: 12.345.678-9"
+                                            />
+                                        </div>
+                                        <div className="z-0">
+                                            <label className="text-xs text-slate-400 mb-1 block">Club / Equipo</label>
+                                            <select
+                                                name="team_name"
+                                                value={teamName}
+                                                onChange={e => setTeamName(e.target.value)}
+                                                className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
+                                            >
+                                                <option value="">-- Seleccionar Club --</option>
+                                                {clubs.map(club => (
+                                                    <option key={club.id} value={club.name}>{club.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-slate-400 mb-1 block">Promedio</label>
+                                            <input
+                                                name="average"
+                                                type="number"
+                                                step="0.001"
+                                                value={average}
+                                                onChange={e => setAverage(e.target.value)}
+                                                className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
+                                                placeholder="0.000"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-slate-400 mb-1 block">Handicap {tournament.use_handicap && '(Auto)'}</label>
+                                            <input
+                                                name="handicap"
+                                                type="number"
+                                                value={handicap}
+                                                onChange={e => setHandicap(e.target.value)}
+                                                className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
+                                                placeholder="0"
+                                                disabled={tournament.use_handicap} // Disable if auto-calc
+                                            />
+                                        </div>
+                                        <div className="z-0">
+                                            <label className="text-xs text-slate-400 mb-1 block">Ranking</label>
+                                            <input
+                                                type="number"
+                                                value={ranking}
+                                                onChange={e => setRanking(e.target.value)}
+                                                className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
+                                                placeholder="Ej: 1500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-slate-400 mb-1 block">Foto (Opcional)</label>
+                                            <input
+                                                id="player_photo"
+                                                name="photo"
+                                                type="file"
+                                                accept="image/*"
+                                                className="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500"
+                                            />
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="w-full bg-blue-600 text-white h-9 rounded-md font-medium text-sm disabled:opacity-50 hover:bg-blue-500 transition-colors"
+                                    >
+                                        {loading ? 'Registrando...' : 'Agregar Nuevo Jugador'}
+                                    </button>
+                                </form>
+                            ) : (
+                                <div className="space-y-4 animate-in fade-in zoom-in duration-200">
+                                    {/* Search Logic */}
+                                    <div className="space-y-2">
+                                        <input
+                                            autoFocus
+                                            placeholder="Buscar por nombre..."
+                                            className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
+                                            onChange={async (e) => {
+                                                const term = e.target.value;
+                                                if (term.length > 0) {
+                                                    try {
+                                                        const res = await searchGlobalPlayers(term);
+                                                        // Filter out already in tournament
+                                                        const currentIds = new Set(players.map(p => p.player_id));
+
+                                                        const filtered = res.filter(p => !currentIds.has(p.id));
+                                                        setGlobalSearchResults(filtered);
+                                                    } catch (err) {
+                                                        console.error(err);
+                                                    }
+                                                } else {
+                                                    setGlobalSearchResults([]);
+                                                }
+                                            }}
+                                        />
+                                    </div>
+
+                                    {/* Results List */}
+                                    <div className="border border-white/10 rounded-md bg-[#0B1120] max-h-60 overflow-y-auto divide-y divide-white/5">
+                                        {globalSearchResults.length === 0 ? (
+                                            <div className="p-4 text-center text-xs text-slate-500">
+                                                Escribe para buscar jugadores en la base de datos global.
+                                            </div>
+                                        ) : (
+                                            globalSearchResults.map(p => (
+                                                <div key={p.id} className="flex items-center p-2 hover:bg-white/5 gap-3">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedGlobalPlayers.has(p.id)}
+                                                        onChange={() => {
+                                                            const newSet = new Set(selectedGlobalPlayers);
+                                                            if (newSet.has(p.id)) newSet.delete(p.id);
+                                                            else newSet.add(p.id);
+                                                            setSelectedGlobalPlayers(newSet);
+                                                        }}
+                                                        className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-primary"
+                                                    />
+                                                    <div className="w-8 h-8 rounded-full bg-slate-700 overflow-hidden flex-shrink-0">
+                                                        {p.photo_url ? <img src={p.photo_url} className="w-full h-full object-cover" /> : <span className="flex items-center justify-center h-full text-[10px]">{p.name.substring(0, 2)}</span>}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <div className="text-sm font-medium text-slate-200">{p.name}</div>
+                                                        <div className="text-xs text-slate-500">{p.club_name || 'Sin Club'} • Avg: {p.average || 0}</div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+
+                                    <div className="flex justify-between items-center bg-card p-2 rounded-md border border-white/5">
+                                        <span className="text-xs text-slate-400">Seleccionados: {selectedGlobalPlayers.size}</span>
+                                        <button
+                                            onClick={async () => {
+                                                if (selectedGlobalPlayers.size === 0) return;
+                                                setLoading(true);
+                                                try {
+                                                    const { registerBatchPlayers } = await import('@/app/lib/tournament-actions');
+                                                    const res = await registerBatchPlayers(tournament.id, Array.from(selectedGlobalPlayers));
+                                                    alert(res.message);
+                                                    setSelectedGlobalPlayers(new Set());
+                                                    setGlobalSearchResults([]);
+                                                    setRegMode('new'); // switch back or stay? stay is better to add more
+                                                    router.refresh();
+                                                } catch (e) { alert(e.message); }
+                                                setLoading(false);
+                                            }}
+                                            disabled={loading || selectedGlobalPlayers.size === 0}
+                                            className="bg-green-600 hover:bg-green-500 text-white px-4 py-1.5 rounded text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            Agregar Seleccionados
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )
+            }
+
+            {
+                activeTab === 'matches' && (
+                    <div>
+                        {matches.length === 0 ? (
+                            <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg flex flex-col items-center gap-4">
+                                <p>No hay partidas generadas aún.</p>
                                 <button
                                     onClick={async () => {
-                                        if (selectedGlobalPlayers.size === 0) return;
+                                        if (!confirm('¿ESTÁS SEGURO? Esto eliminará cualquier fase o grupo corrupto que impida la generación.')) return;
                                         setLoading(true);
                                         try {
-                                            const { registerBatchPlayers } = await import('@/app/lib/tournament-actions');
-                                            const res = await registerBatchPlayers(tournament.id, Array.from(selectedGlobalPlayers));
-                                            alert(res.message);
-                                            setSelectedGlobalPlayers(new Set());
-                                            setGlobalSearchResults([]);
-                                            setRegMode('new'); // switch back or stay? stay is better to add more
+                                            const res = await purgeTournament(tournament.id);
+                                            if (!res.success) throw new Error(res.message);
+                                            alert('Datos de fixture limpiados.');
                                             router.refresh();
                                         } catch (e) { alert(e.message); }
                                         setLoading(false);
                                     }}
-                                    disabled={loading || selectedGlobalPlayers.size === 0}
-                                    className="bg-green-600 hover:bg-green-500 text-white px-4 py-1.5 rounded text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={loading}
+                                    className="text-xs text-red-400 hover:text-red-300 underline"
                                 >
-                                    Agregar Seleccionados
+                                    (Debug) Resetear Fases/Fixture
                                 </button>
+                                <button
+                                    onClick={async () => {
+                                        setLoading(true);
+                                        try {
+                                            const { repairGSL } = await import('@/app/lib/tournament-actions');
+                                            const res = await repairGSL(tournament.id);
+                                            alert(res.message);
+                                            router.refresh();
+                                        } catch (e) { alert(e.message); }
+                                        setLoading(false);
+                                    }}
+                                    disabled={loading}
+                                    className="text-xs text-yellow-400 hover:text-yellow-300 underline"
+                                >
+                                    (Debug) Reparar GSL (Matches Faltantes)
+                                </button>
+                                {players.length >= 2 && (
+                                    <button
+                                        onClick={handlePreview}
+                                        disabled={loading}
+                                        className="bg-accent text-accent-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-accent/90 flex items-center gap-2"
+                                    >
+                                        Generar Fase de Grupos
+                                    </button>
+                                )}
                             </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-        )
-    }
-
-    {
-        activeTab === 'matches' && (
-            <div>
-                {matches.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg flex flex-col items-center gap-4">
-                        <p>No hay partidas generadas aún.</p>
-                        <button
-                            onClick={async () => {
-                                if (!confirm('¿ESTÁS SEGURO? Esto eliminará cualquier fase o grupo corrupto que impida la generación.')) return;
-                                setLoading(true);
-                                try {
-                                    const res = await purgeTournament(tournament.id);
-                                    if (!res.success) throw new Error(res.message);
-                                    alert('Datos de fixture limpiados.');
-                                    router.refresh();
-                                } catch (e) { alert(e.message); }
-                                setLoading(false);
-                            }}
-                            disabled={loading}
-                            className="text-xs text-red-400 hover:text-red-300 underline"
-                        >
-                            (Debug) Resetear Fases/Fixture
-                        </button>
-                        <button
-                            onClick={async () => {
-                                setLoading(true);
-                                try {
-                                    const { repairGSL } = await import('@/app/lib/tournament-actions');
-                                    const res = await repairGSL(tournament.id);
-                                    alert(res.message);
-                                    router.refresh();
-                                } catch (e) { alert(e.message); }
-                                setLoading(false);
-                            }}
-                            disabled={loading}
-                            className="text-xs text-yellow-400 hover:text-yellow-300 underline"
-                        >
-                            (Debug) Reparar GSL (Matches Faltantes)
-                        </button>
-                        {players.length >= 2 && (
-                            <button
-                                onClick={handlePreview}
-                                disabled={loading}
-                                className="bg-accent text-accent-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-accent/90 flex items-center gap-2"
-                            >
-                                Generar Fase de Grupos
-                            </button>
+                        ) : (
+                            <MatchTabs
+                                matches={matches}
+                                loading={loading}
+                                setLoading={setLoading}
+                                onRefresh={() => router.refresh()}
+                                tournamentId={tournament.id}
+                                onSelectMatch={setSelectedMatch}
+                            />
                         )}
                     </div>
-                ) : (
-                    <MatchTabs
-                        matches={matches}
-                        loading={loading}
-                        setLoading={setLoading}
-                        onRefresh={() => router.refresh()}
-                        tournamentId={tournament.id}
-                        onSelectMatch={setSelectedMatch}
+                )
+            }
+
+            {
+                selectedMatch && (
+                    <ManualResultModal
+                        match={selectedMatch}
+                        onClose={(refreshed) => {
+                            setSelectedMatch(null);
+                            if (refreshed) router.refresh();
+                        }}
                     />
-                )}
-            </div>
-        )
-    }
+                )
+            }
 
-    {
-        selectedMatch && (
-            <ManualResultModal
-                match={selectedMatch}
-                onClose={(refreshed) => {
-                    setSelectedMatch(null);
-                    if (refreshed) router.refresh();
-                }}
-            />
-        )
-    }
+            {
+                editingPlayer && (
+                    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                        <div className="bg-[#0B1120] w-full max-w-md rounded-2xl shadow-2xl border border-white/10 p-6">
+                            <h3 className="text-xl font-bold text-white mb-4">Editar Jugador</h3>
+                            <form onSubmit={handleUpdatePlayer} className="space-y-4">
+                                <div>
+                                    <label className="text-sm font-medium text-slate-300">Nombre</label>
+                                    <input
+                                        value={editingPlayer.player_name}
+                                        onChange={e => setEditingPlayer({ ...editingPlayer, player_name: e.target.value })}
+                                        className="w-full h-10 rounded-md border border-white/10 bg-[#131B2D] px-3 text-white"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium text-slate-300">Equipo / Club</label>
+                                    <select
+                                        name="club_id"
+                                        defaultValue={editingPlayer.club_id || ''}
+                                        onChange={e => setEditingPlayer({ ...editingPlayer, club_id: e.target.value })}
+                                        className="w-full h-10 rounded-md border border-white/10 bg-[#131B2D] px-3 text-white"
+                                    >
+                                        <option value="">-- Manual / Sin Club --</option>
+                                        {clubs.map(c => (
+                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
 
-    {
-        editingPlayer && (
-            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-                <div className="bg-[#0B1120] w-full max-w-md rounded-2xl shadow-2xl border border-white/10 p-6">
-                    <h3 className="text-xl font-bold text-white mb-4">Editar Jugador</h3>
-                    <form onSubmit={handleUpdatePlayer} className="space-y-4">
-                        <div>
-                            <label className="text-sm font-medium text-slate-300">Nombre</label>
-                            <input
-                                value={editingPlayer.player_name}
-                                onChange={e => setEditingPlayer({ ...editingPlayer, player_name: e.target.value })}
-                                className="w-full h-10 rounded-md border border-white/10 bg-[#131B2D] px-3 text-white"
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="text-sm font-medium text-slate-300">Equipo / Club</label>
-                            <select
-                                name="club_id"
-                                defaultValue={editingPlayer.club_id || ''}
-                                onChange={e => setEditingPlayer({ ...editingPlayer, club_id: e.target.value })}
-                                className="w-full h-10 rounded-md border border-white/10 bg-[#131B2D] px-3 text-white"
-                            >
-                                <option value="">-- Manual / Sin Club --</option>
-                                {clubs.map(c => (
-                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                ))}
-                            </select>
-                        </div>
+                                {/* Photo Edit Input */}
+                                <div>
+                                    <label className="text-sm font-medium text-slate-300">Foto</label>
+                                    <input
+                                        name="edit_photo"
+                                        type="file"
+                                        accept="image/*"
+                                        className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500"
+                                    />
+                                    {editingPlayer.photo_url && (
+                                        <p className="text-xs text-slate-500 mt-1">Deja vacío para mantener la foto actual</p>
+                                    )}
+                                </div>
 
-                        {/* Photo Edit Input */}
-                        <div>
-                            <label className="text-sm font-medium text-slate-300">Foto</label>
-                            <input
-                                name="edit_photo"
-                                type="file"
-                                accept="image/*"
-                                className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500"
-                            />
-                            {editingPlayer.photo_url && (
-                                <p className="text-xs text-slate-500 mt-1">Deja vacío para mantener la foto actual</p>
-                            )}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-sm font-medium text-slate-300">Handicap</label>
+                                        <input
+                                            type="number"
+                                            value={editingPlayer.handicap || 0}
+                                            onChange={e => setEditingPlayer({ ...editingPlayer, handicap: e.target.value })}
+                                            className="w-full h-10 rounded-md border border-white/10 bg-[#131B2D] px-3 text-white"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium text-slate-300">Ranking</label>
+                                        <input
+                                            type="number"
+                                            value={editingPlayer.ranking || 0}
+                                            onChange={e => setEditingPlayer({ ...editingPlayer, ranking: e.target.value })}
+                                            className="w-full h-10 rounded-md border border-white/10 bg-[#131B2D] px-3 text-white"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex gap-4 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditingPlayer(null)}
+                                        className="flex-1 px-4 py-2 text-sm text-slate-400 hover:text-white"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500"
+                                    >
+                                        Guardar
+                                    </button>
+                                </div>
+                            </form>
                         </div>
+                    </div>
+                )
+            }
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-sm font-medium text-slate-300">Handicap</label>
-                                <input
-                                    type="number"
-                                    value={editingPlayer.handicap || 0}
-                                    onChange={e => setEditingPlayer({ ...editingPlayer, handicap: e.target.value })}
-                                    className="w-full h-10 rounded-md border border-white/10 bg-[#131B2D] px-3 text-white"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-sm font-medium text-slate-300">Ranking</label>
-                                <input
-                                    type="number"
-                                    value={editingPlayer.ranking || 0}
-                                    onChange={e => setEditingPlayer({ ...editingPlayer, ranking: e.target.value })}
-                                    className="w-full h-10 rounded-md border border-white/10 bg-[#131B2D] px-3 text-white"
-                                />
-                            </div>
-                        </div>
-                        <div className="flex gap-4 pt-4">
-                            <button
-                                type="button"
-                                onClick={() => setEditingPlayer(null)}
-                                className="flex-1 px-4 py-2 text-sm text-slate-400 hover:text-white"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500"
-                            >
-                                Guardar
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        )
-    }
-
-    {
-        previewData && (
-            <PreviewModal
-                groups={previewData}
-                onClose={() => setPreviewData(null)}
-                onConfirm={handleGenerateConfirm}
-                loading={loading}
-            />
-        )
-    }
+            {
+                previewData && (
+                    <PreviewModal
+                        groups={previewData}
+                        onClose={() => setPreviewData(null)}
+                        onConfirm={handleGenerateConfirm}
+                        loading={loading}
+                    />
+                )
+            }
 
         </div >
+        </>
     );
 }
 
