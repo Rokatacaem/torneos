@@ -7,22 +7,25 @@ export default function GroupsModule({ standings }) {
         .sort();
 
     // Dynamic Grid Layout based on group count
-    let gridClass = "grid-cols-4 grid-rows-4"; // Default for large tournaments (13-16 groups)
+    let desktopGridClass = "lg:grid-cols-4 lg:grid-rows-4"; // Default for large tournaments (13-16 groups)
 
     const count = groups.length;
     if (count <= 2) {
-        gridClass = "grid-cols-1 auto-rows-fr"; // Huge single column
+        desktopGridClass = "lg:grid-cols-1 lg:auto-rows-fr"; // Huge single column
     } else if (count <= 4) {
-        gridClass = "grid-cols-2 auto-rows-fr"; // 2x2 or 2xN
+        desktopGridClass = "lg:grid-cols-2 lg:auto-rows-fr"; // 2x2 or 2xN
     } else if (count <= 6) {
-        gridClass = "grid-cols-3 auto-rows-fr"; // 3x2
+        desktopGridClass = "lg:grid-cols-3 lg:auto-rows-fr"; // 3x2
     } else if (count <= 12) {
-        gridClass = "grid-cols-4 auto-rows-fr"; // 4x3 max
+        desktopGridClass = "lg:grid-cols-4 lg:auto-rows-fr"; // 4x3 max
     }
 
+    // Mobile: 1 col, Tablet/Landscape: 2 cols, Desktop: Adaptive
+    const gridClass = `grid-cols-1 md:grid-cols-2 ${desktopGridClass}`;
+
     return (
-        <div className="h-full w-full overflow-hidden p-1 bg-[#0a192f]">
-            <div className={`h-full w-full grid ${gridClass} gap-1.5 lg:gap-2`}>
+        <div className="h-full w-full overflow-y-auto lg:overflow-hidden p-1 bg-[#0a192f]">
+            <div className={`min-h-full lg:h-full w-full grid ${gridClass} gap-3 lg:gap-2 auto-rows-max lg:auto-rows-auto pb-8 lg:pb-0`}>
                 {groups.map(groupKey => (
                     <div key={groupKey} className="min-h-0 min-w-0 bg-[#061020] border border-cyan-900/30 rounded flex flex-col shadow-sm">
                         {/* Compact Header */}
@@ -34,7 +37,7 @@ export default function GroupsModule({ standings }) {
 
                         {/* Table */}
                         <div className="flex-1 flex flex-col w-full px-1 overflow-hidden">
-                            <table className="w-full text-[10px] lg:text-xs xl:text-sm text-left table-fixed font-medium h-full">
+                            <table className="w-full text-sm md:text-base lg:text-xs xl:text-sm text-left table-fixed font-medium h-full">
                                 <thead className="h-[15%]">
                                     <tr className="text-cyan-400 border-b border-white/5 bg-[#030810]/50 text-[9px] lg:text-[11px]">
                                         <th className="w-[40%] p-1 font-bold">JUGADOR</th>
