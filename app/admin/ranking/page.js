@@ -6,6 +6,8 @@ import { Trophy, TrendingUp } from 'lucide-react';
 import ExportRankingButton from '@/app/components/admin/ExportRankingButton';
 import RecalculateButton from '@/app/components/admin/RecalculateButton'; // New
 
+export const dynamic = 'force-dynamic';
+
 export default async function RankingPage() {
     const ranking = await getGlobalRanking();
 

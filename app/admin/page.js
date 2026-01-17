@@ -4,6 +4,8 @@ import { getTournaments, getRecentMatches } from '@/app/lib/tournament-actions';
 import { formatDate } from '@/app/lib/utils';
 import SimulationControls from '@/app/components/admin/SimulationControls';
 
+export const dynamic = 'force-dynamic';
+
 function StatCard({ title, value, icon: Icon, description }) {
     return (
         <Card className="bg-card border-white/5 shadow-lg">

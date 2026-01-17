@@ -4,6 +4,8 @@ import { formatDate } from '@/app/lib/utils';
 import { Plus, Eye } from 'lucide-react';
 import DeleteTournamentButton from '@/app/components/admin/DeleteTournamentButton';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminTournamentsPage() {
     const tournaments = await getTournaments();
 

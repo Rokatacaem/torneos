@@ -4,6 +4,8 @@ import ClubsSection from '@/app/components/landing/ClubsSection'; // Added
 import NewsSection from '@/app/components/landing/NewsSection';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-[#0B1120]">
