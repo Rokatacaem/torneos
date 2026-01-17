@@ -923,7 +923,6 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                 )
             }
 
-        </div >
         </>
     );
 }
