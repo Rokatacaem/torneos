@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Menu, X, LogOut } from 'lucide-react';
 import { AdminNav } from './AdminNav';
-import { logoutAction } from '@/app/lib/auth-actions';
+import { getSession } from '@/app/lib/session';
 
 export function AdminHeader({ userName, role }) {
     const [isOpen, setIsOpen] = useState(false);

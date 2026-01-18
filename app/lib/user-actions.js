@@ -1,7 +1,7 @@
 'use server';
 
 import { query } from '@/app/lib/db';
-import { getSession } from '@/app/lib/auth';
+import { getSession } from '@/app/lib/session';
 import { hashPassword, verifyPassword } from '@/app/lib/password';
 import { revalidatePath } from 'next/cache';
 

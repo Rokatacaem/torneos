@@ -1,6 +1,6 @@
 import ChangePasswordForm from '@/app/components/admin/ChangePasswordForm';
 import { cookies } from 'next/headers';
-import { decrypt } from '@/app/lib/auth';
+import { decrypt } from '@/app/lib/session';
 
 export default async function ProfilePage() {
     const sessionCookie = (await cookies()).get('session')?.value;

@@ -1,5 +1,5 @@
 import { AdminSidebar } from "@/app/components/admin/AdminSidebar";
-import { getSession } from "@/app/lib/auth";
+import { getSession } from '@/app/lib/session';
 
 import { AdminHeader } from "@/app/components/admin/AdminHeader";
 

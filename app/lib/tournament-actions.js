@@ -4,7 +4,7 @@ import { query } from './db';
 import { revalidatePath } from 'next/cache';
 import { saveFile } from './upload-utils';
 import { calculateFechillarHandicap } from '@/app/lib/utils';
-import { getSession } from '@/app/lib/auth';
+import { getSession } from '@/app/lib/session';
 
 
 // --- TORNEOS ---

@@ -1,4 +1,4 @@
-import { getSession } from '@/app/lib/auth';
+import { getSession } from '@/app/lib/session';
 import { query } from '@/app/lib/db';
 import { getClubs } from '@/app/lib/tournament-actions'; // Import getClubs
 import { redirect } from 'next/navigation';
@@ -41,7 +41,7 @@ export default async function ProfilePage() {
                     <Link href="/" className="hover:text-blue-400">Volver al Sitio</Link>
                     <form action={async () => {
                         'use server';
-                        const { logout } = await import('@/app/lib/auth');
+                        const { logout } = await import('@/app/lib/session');
                         await logout();
                         redirect('/login');
                     }}>

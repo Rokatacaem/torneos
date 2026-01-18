@@ -1,7 +1,7 @@
 'use server';
 
 import { query } from '@/app/lib/db';
-import { createSession } from '@/app/lib/auth';
+import { createSession } from '@/app/lib/session';
 import { verifyPassword } from '@/app/lib/password';
 import { redirect } from 'next/navigation';
 
@@ -123,6 +123,6 @@ export async function registerPlayer(prevState, formData) {
 }
 
 export async function logoutAction() {
-    await import('@/app/lib/auth').then(m => m.logout());
+    await import('@/app/lib/session').then(m => m.logout());
     redirect('/login');
 }

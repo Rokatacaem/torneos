@@ -1,6 +1,6 @@
 import { getGlobalPlayers, getClubs } from '@/app/lib/tournament-actions';
 import PlayerDirectory from '@/app/components/admin/PlayerDirectory';
-import { getSession } from '@/app/lib/auth';
+import { getSession } from '@/app/lib/session';
 
 export const dynamic = 'force-dynamic';
 
