@@ -1,5 +1,19 @@
 import { NextResponse } from 'next/server';
-import { decrypt } from '@/app/lib/session-utils';
+import { jwtVerify } from 'jose';
+
+const secretKey = process.env.JWT_SECRET || 'default-secret-key-change-it';
+const key = new TextEncoder().encode(secretKey);
+
+async function decrypt(input) {
+    try {
+        const { payload } = await jwtVerify(input, key, {
+            algorithms: ['HS256'],
+        });
+        return payload;
+    } catch (error) {
+        return null;
+    }
+}
 
 // 1. Specify protected and public routes
 const protectedRoutes = ['/admin', '/referee', '/mi-perfil'];
