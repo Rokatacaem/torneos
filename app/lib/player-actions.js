@@ -1,6 +1,6 @@
 'use server';
 
-import { getSession } from './auth';
+import { getSession } from './session';
 import { query } from './db';
 import { saveFile } from './upload-utils';
 import { revalidatePath } from 'next/cache';

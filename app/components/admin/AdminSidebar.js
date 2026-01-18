@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Trophy, Users, Settings, LogOut } from 'lucide-react';
 import { cn } from '@/app/lib/utils';
-import { getSession } from '@/app/lib/session';
+import { logoutAction } from '@/app/lib/auth-actions';
 import { AdminNav } from './AdminNav';
 
 export function AdminSidebar({ role }) {
