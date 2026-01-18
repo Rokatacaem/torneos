@@ -1,7 +1,8 @@
 'use server';
 
 import { query } from '@/app/lib/db';
-import { verifyPassword, createSession } from '@/app/lib/auth';
+import { createSession } from '@/app/lib/auth';
+import { verifyPassword } from '@/app/lib/password';
 import { redirect } from 'next/navigation';
 
 export async function login(prevState, formData) {
@@ -74,7 +75,7 @@ export async function registerPlayer(prevState, formData) {
 
     // Import hashPassword dynamically to avoid top-level issues if any? No, static import is fine usually.
     // actually imports are already at top.
-    const { hashPassword } = await import('@/app/lib/auth');
+    const { hashPassword } = await import('@/app/lib/password');
 
     try {
         // 1. Check if user exists

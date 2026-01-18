@@ -335,78 +335,76 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                     </div>
                 </div>
             </div>
-            {/* Swap Modal */}
-            {
-                swappingSource && (
-                    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-                        <div className="bg-[#0f172a] border border-white/10 rounded-lg p-6 max-w-sm w-full shadow-2xl">
-                            <h3 className="text-lg font-bold text-white mb-4">Sustituir Jugador</h3>
-                            <p className="text-sm text-slate-400 mb-4">
-                                Sustituir a <span className="text-white font-bold">{swappingSource.player_name}</span> con:
-                            </p>
 
-                            <select
-                                className="w-full bg-slate-900 border border-white/10 rounded p-2 text-white mb-4"
-                                value={swapTargetId}
-                                onChange={(e) => setSwapTargetId(e.target.value)}
+            {swappingSource && (
+                <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+                    <div className="bg-[#0f172a] border border-white/10 rounded-lg p-6 max-w-sm w-full shadow-2xl">
+                        <h3 className="text-lg font-bold text-white mb-4">Sustituir Jugador</h3>
+                        <p className="text-sm text-slate-400 mb-4">
+                            Sustituir a <span className="text-white font-bold">{swappingSource.player_name}</span> con:
+                        </p>
+
+                        <select
+                            className="w-full bg-slate-900 border border-white/10 rounded p-2 text-white mb-4"
+                            value={swapTargetId}
+                            onChange={(e) => setSwapTargetId(e.target.value)}
+                        >
+                            <option value="">-- Seleccionar Jugador --</option>
+                            {players
+                                .filter(p => p.id !== swappingSource.id)
+                                .sort((a, b) => a.player_name.localeCompare(b.player_name))
+                                .map(p => (
+                                    <option key={p.id} value={p.id}>
+                                        {p.player_name} {p.team_name ? `(${p.team_name})` : ''}
+                                    </option>
+                                ))
+                            }
+                        </select>
+
+                        <div className="flex justify-end gap-2">
+                            <button
+                                onClick={() => { setSwappingSource(null); setSwapTargetId(''); }}
+                                className="px-3 py-1 text-slate-400 hover:text-white"
                             >
-                                <option value="">-- Seleccionar Jugador --</option>
-                                {players
-                                    .filter(p => p.id !== swappingSource.id)
-                                    .sort((a, b) => a.player_name.localeCompare(b.player_name))
-                                    .map(p => (
-                                        <option key={p.id} value={p.id}>
-                                            {p.player_name} {p.team_name ? `(${p.team_name})` : ''}
-                                        </option>
-                                    ))
-                                }
-                            </select>
-
-                            <div className="flex justify-end gap-2">
-                                <button
-                                    onClick={() => { setSwappingSource(null); setSwapTargetId(''); }}
-                                    className="px-3 py-1 text-slate-400 hover:text-white"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    onClick={handleSwapExecute}
-                                    disabled={!swapTargetId || loading}
-                                    className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded font-bold"
-                                >
-                                    {loading ? '...' : 'Intercambiar'}
-                                </button>
-                            </div>
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleSwapExecute}
+                                disabled={!swapTargetId || loading}
+                                className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded font-bold"
+                            >
+                                {loading ? '...' : 'Intercambiar'}
+                            </button>
                         </div>
                     </div>
-                )
+                </div>
+            )
             }
 
-            {/* WhatsApp Report Modal */}
-            {
-                isReportOpen && (
-                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                        <div className="bg-[#0f172a] border border-white/10 rounded-lg p-6 max-w-md w-full shadow-2xl relative">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-lg font-bold text-white">Reporte WhatsApp</h3>
-                                <button onClick={() => setIsReportOpen(false)} className="text-slate-400 hover:text-white">
-                                    <X size={20} />
-                                </button>
-                            </div>
-                            <textarea
-                                className="w-full h-64 bg-black/40 border border-white/10 rounded-md p-3 text-sm font-mono text-slate-300 resize-none focus:outline-none focus:border-blue-500 mb-4"
-                                readOnly
-                                value={reportText}
-                            />
-                            <div className="flex justify-end gap-2">
-                                <button className="px-4 py-2 text-slate-300 hover:bg-white/5 rounded" onClick={() => setIsReportOpen(false)}>Cerrar</button>
-                                <button onClick={copyToClipboard} className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded flex items-center gap-2">
-                                    <Copy size={16} /> Copiar
-                                </button>
-                            </div>
+
+            {isReportOpen && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-[#0f172a] border border-white/10 rounded-lg p-6 max-w-md w-full shadow-2xl relative">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-white">Reporte WhatsApp</h3>
+                            <button onClick={() => setIsReportOpen(false)} className="text-slate-400 hover:text-white">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <textarea
+                            className="w-full h-64 bg-black/40 border border-white/10 rounded-md p-3 text-sm font-mono text-slate-300 resize-none focus:outline-none focus:border-blue-500 mb-4"
+                            readOnly
+                            value={reportText}
+                        />
+                        <div className="flex justify-end gap-2">
+                            <button className="px-4 py-2 text-slate-300 hover:bg-white/5 rounded" onClick={() => setIsReportOpen(false)}>Cerrar</button>
+                            <button onClick={copyToClipboard} className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded flex items-center gap-2">
+                                <Copy size={16} /> Copiar
+                            </button>
                         </div>
                     </div>
-                )
+                </div>
+            )
             }
 
             {
