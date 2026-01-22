@@ -499,7 +499,7 @@ export default function CreateTournamentPage() {
                                             name="group_points_limit"
                                             type="number"
                                             placeholder="Pts"
-                                            defaultValue="30"
+                                            defaultValue="25"
                                             className="w-full h-9 rounded-md border bg-background px-2 text-sm"
                                         />
                                     )}
@@ -507,7 +507,7 @@ export default function CreateTournamentPage() {
                                         name="group_innings_limit"
                                         type="number"
                                         placeholder="Ent"
-                                        defaultValue="20"
+                                        defaultValue="35"
                                         className="w-full h-9 rounded-md border bg-background px-2 text-sm"
                                     />
                                 </div>
@@ -522,7 +522,7 @@ export default function CreateTournamentPage() {
                                             name="playoff_points_limit"
                                             type="number"
                                             placeholder="Pts"
-                                            defaultValue="40"
+                                            defaultValue="30"
                                             className="w-full h-9 rounded-md border bg-background px-2 text-sm"
                                         />
                                     )}
@@ -530,7 +530,7 @@ export default function CreateTournamentPage() {
                                         name="playoff_innings_limit"
                                         type="number"
                                         placeholder="Ent"
-                                        defaultValue="30"
+                                        defaultValue="35"
                                         className="w-full h-9 rounded-md border bg-background px-2 text-sm"
                                     />
                                 </div>
