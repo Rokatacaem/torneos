@@ -29,11 +29,12 @@ export default function TournamentGraphicsGuide() {
                 {/* 4. Footer Placeholder (Hardcoded) */}
                 <div className="absolute bottom-0 w-full h-[12%] border-t border-yellow-600/30 flex">
                     <div className="w-[20%] border-r border-white/10 bg-[#0a192f]"></div>
-                    <div className="flex-1 bg-black/40 flex items-center justify-center">
-                        <span className="text-[8px] text-slate-500">Contenido Dinámico</span>
+                    <div className="flex-1 bg-black/40 flex flex-col items-center justify-center gap-0.5">
+                        <span className="text-[6px] text-yellow-500 font-bold uppercase">Título Central</span>
+                        <span className="text-[6px] text-slate-300 uppercase">Texto Informativo</span>
                     </div>
-                    <div className="w-[20%] bg-white flex items-center justify-center">
-                        <span className="text-[6px] text-black font-bold text-center leading-tight opacity-50">Copa<br />Hermandad</span>
+                    <div className="w-[20%] bg-white flex flex-col items-center justify-center">
+                        <span className="text-[6px] text-black font-bold text-center leading-tight">Título<br />Branding</span>
                     </div>
                 </div>
 
