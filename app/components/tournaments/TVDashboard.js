@@ -149,7 +149,7 @@ export default function TVDashboard({ tournament, matches, players }) {
                             {champion ? `¡CAMPEÓN: ${champion.player_name.toUpperCase()}!` : 'GRAN FINAL'}
                         </h3>
                         <p className="text-white text-xs lg:text-base font-bold uppercase tracking-[0.3em] mt-1 text-shadow-sm leading-none relative">
-                            ENTRADA LIBERADA • SALON PRINCIPAL
+                            {tournament.footer_info_text || 'ENTRADA LIBERADA • SALON PRINCIPAL'}
                         </p>
                     </div>
                 </div>
@@ -161,7 +161,8 @@ export default function TVDashboard({ tournament, matches, players }) {
                     ) : (
                         <>
                             <div className="text-[#061020] font-black text-[10px] uppercase text-center mb-0.5 leading-tight">
-                                Copa Hermandad<br />Chile - Argentina
+                                {tournament.footer_branding_title || 'Copa Branded'}<br />
+                                {tournament.footer_branding_subtitle || 'Torneo Oficial'}
                             </div>
                             {/* Simplified Horizontal Flag/Logo for height efficiency */}
                             <div className="flex items-center gap-1 scale-90">
