@@ -4,7 +4,6 @@ import { createTournament, getClubs } from '@/app/lib/tournament-actions';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/app/components/ui/card';
-import { Label } from '@/app/components/ui/label';
 import { Save, ArrowLeft, Loader2, Info } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/app/lib/utils';
@@ -462,7 +461,7 @@ export default function CreateTournamentPage() {
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <Label>Título Branding (Footer Izq)</Label>
+                                    <label className="text-sm font-medium">Título Branding (Footer Izq)</label>
                                     <input
                                         name="footer_branding_title"
                                         placeholder="Ej: Copa Hermandad"
@@ -471,7 +470,7 @@ export default function CreateTournamentPage() {
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <Label>Subtítulo Branding</Label>
+                                    <label className="text-sm font-medium">Subtítulo Branding</label>
                                     <input
                                         name="footer_branding_subtitle"
                                         placeholder="Ej: Chile - Argentina"
@@ -480,7 +479,7 @@ export default function CreateTournamentPage() {
                                     />
                                 </div>
                                 <div className="col-span-2 space-y-1">
-                                    <Label>Texto Informativo (Centro)</Label>
+                                    <label className="text-sm font-medium">Texto Informativo (Centro)</label>
                                     <input
                                         name="footer_info_text"
                                         placeholder="Ej: ENTRADA LIBERADA • SALON PRINCIPAL"
