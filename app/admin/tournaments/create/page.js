@@ -376,8 +376,54 @@ export default function CreateTournamentPage() {
 
                         {/* Límites de Fase */}
                         {/* Imágenes */}
+
+                        {/* Configuración TV Dashboard (Inputs de Texto) */}
                         <div className="space-y-4 border-t border-border pt-4">
-                            <h3 className="font-semibold text-lg flex items-center gap-2">Gráficas del Torneo</h3>
+                            <h3 className="font-semibold text-lg flex items-center gap-2">
+                                <span className="bg-yellow-500/10 text-yellow-500 p-1 rounded"><Info size={16} /></span>
+                                Personalización TV Dashboard
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium">Título Branding (Footer Izq)</label>
+                                    <input
+                                        name="footer_branding_title"
+                                        placeholder="Ej: Copa Hermandad"
+                                        defaultValue="Copa Hermandad"
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium">Subtítulo Branding</label>
+                                    <input
+                                        name="footer_branding_subtitle"
+                                        placeholder="Ej: Chile - Argentina"
+                                        defaultValue="Chile - Argentina"
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium">Título Central (Opcional)</label>
+                                    <input
+                                        name="footer_center_title"
+                                        placeholder="Ej: CLUB DE BILLAR SANTIAGO (Deja vacío para 'GRAN FINAL')"
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium">Texto Informativo (Centro)</label>
+                                    <input
+                                        name="footer_info_text"
+                                        placeholder="Ej: ENTRADA LIBERADA • SALON PRINCIPAL"
+                                        defaultValue="ENTRADA LIBERADA • SALON PRINCIPAL"
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4 border-t border-border pt-4">
+                            <h3 className="font-semibold text-lg flex items-center gap-2">Gráficas del Torneo (Imágenes)</h3>
 
                             <TournamentGraphicsGuide />
 
@@ -453,50 +499,7 @@ export default function CreateTournamentPage() {
                             </div>
                         </div>
 
-                        {/* Configuración TV Dashboard */}
-                        <div className="space-y-4 border-t border-border pt-4">
-                            <h3 className="font-semibold text-lg flex items-center gap-2">
-                                <span className="bg-yellow-500/10 text-yellow-500 p-1 rounded"><Info size={16} /></span>
-                                Personalización TV Dashboard
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <label className="text-sm font-medium">Título Branding (Footer Izq)</label>
-                                    <input
-                                        name="footer_branding_title"
-                                        placeholder="Ej: Copa Hermandad"
-                                        defaultValue="Copa Hermandad"
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-sm font-medium">Subtítulo Branding</label>
-                                    <input
-                                        name="footer_branding_subtitle"
-                                        placeholder="Ej: Chile - Argentina"
-                                        defaultValue="Chile - Argentina"
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-sm font-medium">Título Central (Opcional)</label>
-                                    <input
-                                        name="footer_center_title"
-                                        placeholder="Ej: CLUB DE BILLAR SANTIAGO (Deja vacío para 'GRAN FINAL')"
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-sm font-medium">Texto Informativo (Centro)</label>
-                                    <input
-                                        name="footer_info_text"
-                                        placeholder="Ej: ENTRADA LIBERADA • SALON PRINCIPAL"
-                                        defaultValue="ENTRADA LIBERADA • SALON PRINCIPAL"
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                    />
-                                </div>
-                            </div>
-                        </div>
+
 
                         <div className="space-y-4 border-t border-border pt-4">
                             <div className="space-y-2">
