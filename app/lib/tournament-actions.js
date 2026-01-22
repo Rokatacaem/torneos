@@ -57,6 +57,7 @@ export async function createTournament(formData) {
         const discipline = formData.get('discipline') || null;
         let tables_available = parseInt(formData.get('tables_available')) || 4;
         const group_format = formData.get('group_format') || 'round_robin';
+        const is_official = formData.get('is_official') === 'on';
 
         // File Uploads
         let banner_image_url = formData.get('banner_image_url') || null;
@@ -95,9 +96,9 @@ export async function createTournament(formData) {
                 use_handicap, banner_image_url, logo_image_url,
                 semifinal_points_limit, semifinal_innings_limit, final_points_limit, final_innings_limit,
                 block_duration, playoff_target_size, qualifiers_per_group, host_club_id, tables_available, discipline,
-                group_format, branding_image_url
+                group_format, branding_image_url, is_official
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)
             RETURNING *
         `, [
             name, start_date, end_date, max_players, format, group_size || 4,
@@ -105,7 +106,7 @@ export async function createTournament(formData) {
             use_handicap || false, banner_image_url, logo_image_url,
             semifinal_points_limit, semifinal_innings_limit, final_points_limit, final_innings_limit,
             block_duration, playoff_target_size, qualifiers_per_group, host_club_id, tables_available, discipline,
-            group_format, branding_image_url
+            group_format, branding_image_url, is_official
         ]);
 
         revalidatePath('/tournaments');
@@ -144,6 +145,7 @@ export async function updateTournament(id, formData) {
         const host_club_id = formData.get('host_club_id') || null;
         const discipline = formData.get('discipline') || null;
         const group_format = formData.get('group_format') || 'round_robin';
+        const is_official = formData.get('is_official') === 'on';
 
         const semifinal_points_limit = safeParseInt(formData.get('semifinal_points_limit'));
         const semifinal_innings_limit = safeParseInt(formData.get('semifinal_innings_limit'));
@@ -181,7 +183,7 @@ export async function updateTournament(id, formData) {
                 block_duration = $13, tables_available = $14,
                 semifinal_points_limit = $15, semifinal_innings_limit = $16, final_points_limit = $17, final_innings_limit = $18,
                 playoff_target_size = $19, qualifiers_per_group = $20, host_club_id = $21, discipline = $22,
-                group_format = $23
+                group_format = $23, is_official = $24
         `;
 
         // Initialize params array with the base 23 parameters
@@ -192,10 +194,10 @@ export async function updateTournament(id, formData) {
             block_duration, tables_available,
             semifinal_points_limit, semifinal_innings_limit, final_points_limit, final_innings_limit,
             playoff_target_size, qualifiers_per_group, host_club_id, discipline,
-            group_format
+            group_format, is_official
         ];
 
-        let paramIndex = 24; // Start index for subsequent parameters
+        let paramIndex = 25; // Start index for subsequent parameters
 
         if (banner_image_url) {
             queryStr += `, banner_image_url = $${paramIndex}`;

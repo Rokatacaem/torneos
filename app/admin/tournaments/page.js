@@ -19,7 +19,8 @@ export default async function AdminTournamentsPage() {
                 </Link>
             </div>
 
-            <div className="border rounded-lg bg-card overflow-hidden">
+            {/* Desktop Table */}
+            <div className="hidden md:block border rounded-lg bg-card overflow-hidden">
                 <table className="w-full text-sm">
                     <thead className="bg-muted text-left font-medium">
                         <tr>
@@ -66,6 +67,48 @@ export default async function AdminTournamentsPage() {
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="md:hidden space-y-4">
+                {tournaments.map((t) => (
+                    <div key={t.id} className="bg-card border rounded-lg p-4 space-y-3">
+                        <div className="flex justify-between items-start">
+                            <h3 className="font-bold text-lg">{t.name}</h3>
+                            <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide ${t.status === 'active' ? 'bg-primary/20 text-primary' :
+                                t.status === 'completed' ? 'bg-muted text-muted-foreground' : 'bg-yellow-500/20 text-yellow-600'
+                                }`}>
+                                {t.status}
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+                            <div>
+                                <span className="block text-xs uppercase opacity-70">Fecha</span>
+                                {formatDate(t.start_date)}
+                            </div>
+                            <div>
+                                <span className="block text-xs uppercase opacity-70">Formato</span>
+                                {t.format}
+                            </div>
+                        </div>
+                        <div className="pt-2 flex justify-end gap-2 border-t border-white/5">
+                            <Link
+                                href={`/admin/tournaments/${t.id}`}
+                                className="flex-1 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 flex items-center justify-center gap-2 py-2 rounded-md font-medium text-sm transition-colors"
+                            >
+                                <Eye size={16} /> Ver Detalle
+                            </Link>
+                            <div className="flex items-center">
+                                <DeleteTournamentButton id={t.id} name={t.name} />
+                            </div>
+                        </div>
+                    </div>
+                ))}
+                {tournaments.length === 0 && (
+                    <div className="p-8 text-center text-muted-foreground bg-card border rounded-lg">
+                        No se encontraron torneos.
+                    </div>
+                )}
             </div>
         </div>
     );

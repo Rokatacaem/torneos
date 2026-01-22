@@ -492,8 +492,13 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <div className="text-xs text-slate-400 bg-secondary/50 px-2 py-1 rounded">Avg: {p.average || '-'}</div>
-                                            <div className="text-sm bg-secondary px-2 py-1 rounded">HCP: {p.handicap}</div>
+                                            <div className="text-xs text-slate-400 bg-secondary/50 px-2 py-1 rounded hidden sm:block">Avg: {p.average || '-'}</div>
+                                            <div className="text-sm bg-secondary px-2 py-1 rounded hidden sm:block">HCP: {p.handicap}</div>
+                                            <div className="sm:hidden flex flex-col text-[10px] text-slate-500 mr-2">
+                                                <span>A: {p.average}</span>
+                                                <span>H: {p.handicap}</span>
+                                            </div>
+
                                             <button
                                                 onClick={() => {
                                                     setEditingPlayer(p);
@@ -506,29 +511,29 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                                                     setAverage(p.average || '');
                                                     // ID?
                                                 }}
-                                                className="text-slate-400 hover:text-blue-400 transition-colors opacity-0 group-hover:opacity-100"
+                                                className="text-slate-400 hover:text-blue-400 transition-colors md:opacity-0 md:group-hover:opacity-100"
                                                 title="Editar"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
                                             </button>
                                             <button
                                                 onClick={() => handleDisqualify(p)}
-                                                className="text-slate-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                                                className="text-slate-400 hover:text-red-600 transition-colors md:opacity-0 md:group-hover:opacity-100"
                                                 title="Expulsar / Descalificar"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="m4.9 4.9 14.2 14.2" /></svg>
                                             </button>
                                             <button
                                                 onClick={() => setSwappingSource(p)}
-                                                className="text-xs bg-orange-600 hover:bg-orange-500 text-white px-2 py-1 rounded flex items-center gap-1 shadow-sm transition-colors font-bold uppercase tracking-wider"
+                                                className="text-[10px] sm:text-xs bg-orange-600 hover:bg-orange-500 text-white px-1.5 py-1 sm:px-2 rounded flex items-center gap-1 shadow-sm transition-colors font-bold uppercase tracking-wider"
                                                 title="Sustituir por otro jugador"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z" /><path d="m13 13 6 6" /></svg>
-                                                INTERCAMBIAR
+                                                <span className="hidden sm:inline">INTERCAMBIAR</span>
                                             </button>
                                             <button
                                                 onClick={() => handleDeletePlayer(p)}
-                                                className="text-slate-400 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                                                className="text-slate-400 hover:text-red-400 transition-colors md:opacity-0 md:group-hover:opacity-100"
                                                 title="Eliminar"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>

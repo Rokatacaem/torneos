@@ -457,6 +457,20 @@ export default function CreateTournamentPage() {
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2">
                                     <input
+                                        name="is_official"
+                                        type="checkbox"
+                                        className="h-4 w-4 rounded border-gray-300"
+                                    />
+                                    <span className="text-sm font-medium">Torneo Oficial (Ranking)</span>
+                                </label>
+                                <p className="text-xs text-muted-foreground ml-6">
+                                    Si se activa, las estadísticas contarán para el promedio general y ranking.
+                                </p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2">
+                                    <input
                                         name="use_handicap"
                                         type="checkbox"
                                         checked={useHandicap}

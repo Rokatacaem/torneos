@@ -27,9 +27,9 @@ export default function BracketView({ matches }) {
     }
 
     return (
-        <div className="flex justify-around items-center overflow-x-auto py-10 gap-8 min-w-[800px]">
+        <div className="flex justify-start md:justify-around items-start md:items-center overflow-x-auto py-4 md:py-10 gap-4 md:gap-8 w-full px-4 scrollbar-hide">
             {/* 4tos */}
-            {rounds['4tos'].length > 0 && <RoundColumn title="Cuartos de Final" matches={rounds['4tos']} />}
+            {rounds['4tos'].length > 0 && <RoundColumn title="Cuartos" matches={rounds['4tos']} />}
 
             {/* Semis */}
             {(rounds['4tos'].length > 0 || rounds['Semis'].length > 0) && (
@@ -46,8 +46,8 @@ function RoundColumn({ title, matches, placeholderCount = 0 }) {
     // Rellenar con placeholders si no hay partidos creados aun
     // Por ahora solo mostramos lo que hay
     return (
-        <div className="flex flex-col justify-center gap-8 w-64">
-            <h3 className="text-center font-bold text-blue-400 uppercase tracking-widest mb-4">{title}</h3>
+        <div className="flex flex-col justify-center gap-4 md:gap-8 w-40 md:w-64 flex-shrink-0">
+            <h3 className="text-center font-bold text-blue-400 uppercase tracking-widest mb-2 md:mb-4 text-xs md:text-base">{title}</h3>
             {matches.map(m => (
                 <MatchCard key={m.id} match={m} />
             ))}
@@ -65,17 +65,17 @@ function MatchCard({ match }) {
         <div className="bg-[#0B1120] border border-white/10 rounded-lg overflow-hidden shadow-lg relative group hover:border-blue-500/50 transition-colors">
             {/* Conector lines could go here */}
             <div className="flex flex-col">
-                <div className={`p-3 flex justify-between items-center bg-white/5 border-b border-white/5 ${match.winner_id === match.player1_id ? 'bg-green-500/10' : ''}`}>
-                    <span className={`text-sm font-medium truncat max-w-[140px] ${match.winner_id === match.player1_id ? 'text-green-400' : 'text-slate-300'}`}>
+                <div className={`p-2 md:p-3 flex justify-between items-center bg-white/5 border-b border-white/5 ${match.winner_id === match.player1_id ? 'bg-green-500/10' : ''}`}>
+                    <span className={`text-xs md:text-sm font-medium truncate max-w-[90px] md:max-w-[140px] ${match.winner_id === match.player1_id ? 'text-green-400' : 'text-slate-300'}`}>
                         {match.player1_name || 'TBD'}
                     </span>
-                    <span className="font-mono font-bold text-white">{match.score_p1 ?? '-'}</span>
+                    <span className="font-mono font-bold text-white text-xs md:text-sm">{match.score_p1 ?? '-'}</span>
                 </div>
-                <div className={`p-3 flex justify-between items-center ${match.winner_id === match.player2_id ? 'bg-green-500/10' : ''}`}>
-                    <span className={`text-sm font-medium truncat max-w-[140px] ${match.winner_id === match.player2_id ? 'text-green-400' : 'text-slate-300'}`}>
+                <div className={`p-2 md:p-3 flex justify-between items-center ${match.winner_id === match.player2_id ? 'bg-green-500/10' : ''}`}>
+                    <span className={`text-xs md:text-sm font-medium truncate max-w-[90px] md:max-w-[140px] ${match.winner_id === match.player2_id ? 'text-green-400' : 'text-slate-300'}`}>
                         {match.player2_name || 'TBD'}
                     </span>
-                    <span className="font-mono font-bold text-white">{match.score_p2 ?? '-'}</span>
+                    <span className="font-mono font-bold text-white text-xs md:text-sm">{match.score_p2 ?? '-'}</span>
                 </div>
             </div>
             {match.status === 'completed' && (
