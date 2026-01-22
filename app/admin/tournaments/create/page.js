@@ -478,7 +478,15 @@ export default function CreateTournamentPage() {
                                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                     />
                                 </div>
-                                <div className="col-span-2 space-y-1">
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium">Título Central (Opcional)</label>
+                                    <input
+                                        name="footer_center_title"
+                                        placeholder="Ej: CLUB DE BILLAR SANTIAGO (Deja vacío para 'GRAN FINAL')"
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                </div>
+                                <div className="space-y-1">
                                     <label className="text-sm font-medium">Texto Informativo (Centro)</label>
                                     <input
                                         name="footer_info_text"

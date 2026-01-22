@@ -146,7 +146,7 @@ export default function TVDashboard({ tournament, matches, players }) {
                     )}
                     <div className="text-center z-10 w-full">
                         <h3 className="text-yellow-500 font-black text-2xl lg:text-3xl uppercase tracking-[0.1em] animate-pulse truncate drop-shadow-lg leading-none">
-                            {champion ? `¡CAMPEÓN: ${champion.player_name.toUpperCase()}!` : 'GRAN FINAL'}
+                            {tournament.footer_center_title || (champion ? `¡CAMPEÓN: ${champion.player_name.toUpperCase()}!` : 'GRAN FINAL')}
                         </h3>
                         <p className="text-white text-xs lg:text-base font-bold uppercase tracking-[0.3em] mt-1 text-shadow-sm leading-none relative">
                             {tournament.footer_info_text || 'ENTRADA LIBERADA • SALON PRINCIPAL'}
