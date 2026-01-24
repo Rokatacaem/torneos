@@ -30,34 +30,52 @@ export async function getTournament(id) {
 export async function createTournament(formData) {
     try {
         // Extract data from FormData
+        // Extended Logging
+        console.log('createTournament called with formData');
+
+        // Extract data with SAFE parsing
+        const safeInt = (val, def = null) => {
+            if (val === null || val === undefined || val === '') return def;
+            const p = parseInt(val);
+            return isNaN(p) ? def : p;
+        };
+
         const name = formData.get('name');
         const start_date = formData.get('start_date');
         const end_date = formData.get('end_date');
-        const max_players = parseInt(formData.get('max_players'));
+        const max_players = safeInt(formData.get('max_players'));
         const format = formData.get('format');
-        const group_size = parseInt(formData.get('group_size'));
-        const shot_clock_seconds = parseInt(formData.get('shot_clock_seconds') || '40');
-        const group_points_limit = parseInt(formData.get('group_points_limit') || '30');
-        const group_innings_limit = parseInt(formData.get('group_innings_limit') || '20');
-        const playoff_points_limit = parseInt(formData.get('playoff_points_limit') || '40');
-        const playoff_innings_limit = parseInt(formData.get('playoff_innings_limit') || '30');
-        const use_handicap = formData.get('use_handicap') === 'true';
-        const block_duration = parseInt(formData.get('block_duration')) || null;
+        const group_size = safeInt(formData.get('group_size'), 4);
+
+        const shot_clock_seconds = safeInt(formData.get('shot_clock_seconds'), 40);
+        const group_points_limit = safeInt(formData.get('group_points_limit'), 30);
+        const group_innings_limit = safeInt(formData.get('group_innings_limit'), 20);
+        const playoff_points_limit = safeInt(formData.get('playoff_points_limit'), 40);
+        const playoff_innings_limit = safeInt(formData.get('playoff_innings_limit'), 30);
+
+        const use_handicap = formData.get('use_handicap') === 'true' || formData.get('use_handicap') === 'on';
+        const block_duration = safeInt(formData.get('block_duration'));
 
         // New Fields
-        const semifinal_points_limit = parseInt(formData.get('semifinal_points_limit')) || null;
-        const semifinal_innings_limit = parseInt(formData.get('semifinal_innings_limit')) || null;
-        const final_points_limit = parseInt(formData.get('final_points_limit')) || null;
-        const final_innings_limit = parseInt(formData.get('final_innings_limit')) || null;
+        const semifinal_points_limit = safeInt(formData.get('semifinal_points_limit'));
+        const semifinal_innings_limit = safeInt(formData.get('semifinal_innings_limit'));
+        const final_points_limit = safeInt(formData.get('final_points_limit'));
+        const final_innings_limit = safeInt(formData.get('final_innings_limit'));
 
-        const playoff_target_size = parseInt(formData.get('playoff_target_size')) || 16;
-        const qualifiers_per_group = parseInt(formData.get('qualifiers_per_group')) || 2;
+        const playoff_target_size = safeInt(formData.get('playoff_target_size'), 16);
+        const qualifiers_per_group = safeInt(formData.get('qualifiers_per_group'), 2);
 
         const host_club_id = formData.get('host_club_id') || null;
         const discipline = formData.get('discipline') || null;
-        let tables_available = parseInt(formData.get('tables_available')) || 4;
+        let tables_available = safeInt(formData.get('tables_available'), 4);
         const group_format = formData.get('group_format') || 'round_robin';
         const is_official = formData.get('is_official') === 'on';
+
+        // Log parameters for debugging "Unexpected Response"
+        console.log("Tournament Params:", {
+            name, start_date, end_date, max_players, format, group_size,
+            shot_clock_seconds, use_handicap, tables_available, host_club_id
+        });
 
         // File Uploads
         let banner_image_url = formData.get('banner_image_url') || null;
