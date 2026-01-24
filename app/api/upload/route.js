@@ -1,5 +1,5 @@
 
-import { handleUpload } from '@vercel/blob/client';
+import { handleUpload } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 
 export async function POST(request) {
@@ -35,6 +35,7 @@ export async function POST(request) {
 
         return NextResponse.json(jsonResponse);
     } catch (error) {
+        console.error("Error in /api/upload:", error);
         return NextResponse.json(
             { error: error.message },
             { status: 400 } // The webhook will retry 5 times waiting for a 200

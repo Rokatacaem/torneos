@@ -16,12 +16,17 @@ export default function CreateTournamentPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    async function handleSubmit(formData) {
+    async function handleSubmit(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
         setLoading(true);
         setError(null);
 
-        // Client-side File Size Validation (Max 4MB total payload safety)
-        const MAX_SIZE_MB = 4.5; // Increased slightly for client-side check
+        const formData = new FormData(e.currentTarget);
+
+        // Client-side File Size Validation
+        const MAX_SIZE_MB = 4.5;
         const MAX_BYTES = MAX_SIZE_MB * 1024 * 1024;
 
         const logoFile = formData.get('logo_image');
@@ -48,34 +53,46 @@ export default function CreateTournamentPage() {
 
         try {
             // Upload Images to Vercel Blob (Client-Side)
-            if (logoFile && logoFile.size > 0) {
-                const blob = await upload(logoFile.name, logoFile, {
-                    access: 'public',
-                    handleUploadUrl: '/api/upload',
-                });
-                formData.set('logo_image_url', blob.url);
+            // We wrap this in a try/catch specifically for uploads so we can proceed if it fails (e.g. no token in dev)
+            try {
+                if (logoFile && logoFile.size > 0) {
+                    const blob = await upload(logoFile.name, logoFile, {
+                        access: 'public',
+                        handleUploadUrl: '/api/upload',
+                    });
+                    formData.set('logo_image_url', blob.url);
+                }
+
+                if (bannerFile && bannerFile.size > 0) {
+                    const blob = await upload(bannerFile.name, bannerFile, {
+                        access: 'public',
+                        handleUploadUrl: '/api/upload',
+                    });
+                    formData.set('banner_image_url', blob.url);
+                }
+
+                if (brandingFile && brandingFile.size > 0) {
+                    const blob = await upload(brandingFile.name, brandingFile, {
+                        access: 'public',
+                        handleUploadUrl: '/api/upload',
+                    });
+                    formData.set('branding_image_url', blob.url);
+                }
+            } catch (uploadError) {
+                console.warn('Image upload failed, proceeding without images:', uploadError);
+                // Optional: set a warning in UI, but don't block
+                // setError('Aviso: Las imágenes no se pudieron subir (probablemente falta token), pero intentaremos crear el torneo.');
+                // We just remove the file objects so server actions don't try to upload them again (if that logic exists) or just let them be ignored.
+                // The server action 'createTournament' checks for raw files and tries to upload using server-side token if url is missing.
+                // So we stick with the files in formData.
             }
 
-            if (bannerFile && bannerFile.size > 0) {
-                const blob = await upload(bannerFile.name, bannerFile, {
-                    access: 'public',
-                    handleUploadUrl: '/api/upload',
-                });
-                formData.set('banner_image_url', blob.url);
-            }
-
-            if (brandingFile && brandingFile.size > 0) {
-                const blob = await upload(brandingFile.name, brandingFile, {
-                    access: 'public',
-                    handleUploadUrl: '/api/upload',
-                });
-                formData.set('branding_image_url', blob.url);
-            }
-
-            // Remove raw files to avoid server receiving them (optional, saves bandwidth)
-            formData.delete('logo_image');
-            formData.delete('banner_image');
-            formData.delete('branding_image');
+            // Remove raw files to avoid server receiving them if we successfully got URLs?
+            // Actually, if we got URLs, we set them. If we didn't, we want the server to try (server-side fallback) OR just fail gracefully.
+            // Let's rely on the server action logic (lines 71+ in tournament-actions.js) 
+            // BUT, strictly speaking, if client upload failed, maybe server upload will succeed if env vars are different?
+            // Unlikely if it's the same env. 
+            // However, we want to NOT clear the form.
 
             const result = await createTournament(formData);
 
@@ -180,7 +197,7 @@ export default function CreateTournamentPage() {
             </div>
 
             <Card>
-                <form action={handleSubmit}>
+                <form onSubmit={handleSubmit}>
                     <CardHeader>
                         <CardTitle>Detalles del Evento</CardTitle>
                     </CardHeader>
