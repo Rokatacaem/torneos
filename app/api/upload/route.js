@@ -1,5 +1,5 @@
 
-import { handleUpload } from '@vercel/blob';
+import { handleUpload } from '@vercel/blob/client';
 import { NextResponse } from 'next/server';
 
 export async function POST(request) {
