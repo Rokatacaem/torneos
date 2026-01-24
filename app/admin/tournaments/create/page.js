@@ -87,12 +87,12 @@ export default function CreateTournamentPage() {
                 // So we stick with the files in formData.
             }
 
-            // Remove raw files to avoid server receiving them if we successfully got URLs?
-            // Actually, if we got URLs, we set them. If we didn't, we want the server to try (server-side fallback) OR just fail gracefully.
-            // Let's rely on the server action logic (lines 71+ in tournament-actions.js) 
-            // BUT, strictly speaking, if client upload failed, maybe server upload will succeed if env vars are different?
-            // Unlikely if it's the same env. 
-            // However, we want to NOT clear the form.
+            // IMPORTANT: Delete raw file objects from formData to avoid exceeding Vercel Serverless Payload limit (4.5MB)
+            // We already have the URLs if uploads succeeded.
+            // If uploads failed, we can't send the files anyway if they are large.
+            formData.delete('logo_image');
+            formData.delete('banner_image');
+            formData.delete('branding_image');
 
             const result = await createTournament(formData);
 
