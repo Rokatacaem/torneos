@@ -454,7 +454,7 @@ export default function CreateTournamentPage() {
                                         accept="image/*"
                                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                     />
-                                    <p className="text-xs text-muted-foreground">Opcional. Se mostrará en el header.</p>
+                                    <p className="text-xs text-muted-foreground">Opcional. Se mostrará en el header. (Máx 4500 KB)</p>
                                 </div>
                                 <div className="space-y-2">
                                     <label htmlFor="banner_image" className="text-sm font-medium">Banner/Fondo</label>
@@ -465,7 +465,7 @@ export default function CreateTournamentPage() {
                                         accept="image/*"
                                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                     />
-                                    <p className="text-xs text-muted-foreground">Opcional. Fondo para TV Dashboard.</p>
+                                    <p className="text-xs text-muted-foreground">Opcional. Fondo para TV Dashboard. (Máx 4500 KB)</p>
                                 </div>
                                 <div className="space-y-2 col-span-2">
                                     <label htmlFor="branding_image" className="text-sm font-medium">Branding / Footer (Patrocinador)</label>
@@ -476,7 +476,7 @@ export default function CreateTournamentPage() {
                                         accept="image/*"
                                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                     />
-                                    <p className="text-xs text-muted-foreground">Opcional. Aparece en la esquina inferior derecha del TV Dashboard (Replaza "Copa Hermandad").</p>
+                                    <p className="text-xs text-muted-foreground">Opcional. Branding Footer. (Máx 4500 KB)</p>
                                 </div>
                             </div>
                         </div>
