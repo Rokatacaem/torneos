@@ -88,6 +88,8 @@ export async function createTournament(formData) {
             branding_image_url = await saveFile(brandingFile, 'tournaments');
         }
 
+
+
         const result = await query(`
             INSERT INTO tournaments 
             (
@@ -100,7 +102,7 @@ export async function createTournament(formData) {
                 footer_branding_title, footer_branding_subtitle, footer_info_text, footer_center_title
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31)
-            RETURNING *
+            RETURNING id
         `, [
             name, start_date, end_date, max_players, format, group_size || 4,
             shot_clock_seconds || 40, group_points_limit, group_innings_limit, playoff_points_limit, playoff_innings_limit,
@@ -111,13 +113,20 @@ export async function createTournament(formData) {
             footer_branding_title, footer_branding_subtitle, footer_info_text, footer_center_title
         ]);
 
+        if (result.rows.length === 0) {
+            throw new Error('No se pudo crear el torneo (Error de Base de Datos)');
+        }
+
         revalidatePath('/tournaments');
         revalidatePath('/admin/tournaments');
 
-        // Serialize return value to prevent "Unexpected response" due to Date objects
-        return { success: true, tournament: JSON.parse(JSON.stringify(result.rows[0])) };
+        // Return only the ID and success status to ensure serializability
+        // and avoid "Unexpected response" errors from complex objects (Dates, BigInts, etc)
+        // Client only needs to redirect.
+        return { success: true, id: result.rows[0].id };
     } catch (e) {
         console.error("Error creating tournament:", e);
+        // Ensure we return a plain object
         return { success: false, message: e.message || 'Error desconocido al crear torneo' };
     }
 }
