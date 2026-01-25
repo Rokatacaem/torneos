@@ -71,6 +71,11 @@ export async function createTournament(formData) {
         const group_format = formData.get('group_format') || 'round_robin';
         const is_official = formData.get('is_official') === 'on';
 
+        const footer_branding_title = formData.get('footer_branding_title');
+        const footer_branding_subtitle = formData.get('footer_branding_subtitle');
+        const footer_info_text = formData.get('footer_info_text');
+        const footer_center_title = formData.get('footer_center_title');
+
         // Log parameters for debugging "Unexpected Response"
         console.log("Tournament Params:", {
             name, start_date, end_date, max_players, format, group_size,
