@@ -95,19 +95,25 @@ export async function createTournament(formData) {
         if ((bannerFile && bannerFile.size > 0) || (logoFile && logoFile.size > 0) || (brandingFile && brandingFile.size > 0)) {
             if (!process.env.BLOB_READ_WRITE_TOKEN) {
                 // Return a clear error instead of failing silently or crashing
-                return { success: false, message: 'Error de Configuración: Falta BLOB_READ_WRITE_TOKEN para subir imágenes.' };
+                // USER REQUEST: Create tournament even if token is missing (just skip images)
+                console.warn('WARNING: Missing BLOB_READ_WRITE_TOKEN. Skipping server-side image upload.');
+                // We just continue. logic below checks for process.env.BLOB_READ_WRITE_TOKEN again inside saveFile probably?
+                // actually saveFile might crash if we call it.
+                // so we should probably unset the files or ensure logic below doesn't run if token missing.
             }
         }
 
-        if (!banner_image_url && bannerFile && bannerFile.size > 0) {
+        const canUpload = !!process.env.BLOB_READ_WRITE_TOKEN;
+
+        if (canUpload && !banner_image_url && bannerFile && bannerFile.size > 0) {
             banner_image_url = await saveFile(bannerFile, 'tournaments');
         }
 
-        if (!logo_image_url && logoFile && logoFile.size > 0) {
+        if (canUpload && !logo_image_url && logoFile && logoFile.size > 0) {
             logo_image_url = await saveFile(logoFile, 'tournaments');
         }
 
-        if (!branding_image_url && brandingFile && brandingFile.size > 0) {
+        if (canUpload && !branding_image_url && brandingFile && brandingFile.size > 0) {
             branding_image_url = await saveFile(brandingFile, 'tournaments');
         }
 
