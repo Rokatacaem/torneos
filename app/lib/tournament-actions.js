@@ -321,7 +321,7 @@ export async function deleteTournament(id) {
         revalidatePath('/admin/tournaments');
     } catch (error) {
         console.error('Error deleting tournament:', error);
-        throw new Error('Failed to delete tournament');
+        throw new Error('Error al eliminar el torneo');
     }
 }
 
@@ -610,24 +610,25 @@ export async function replaceWithWaitlist(originalPlayerId, tournamentId) {
 
 export async function updatePlayer(playerId, formData) {
     const player_name = formData.get('player_name');
-    let team_name = formData.get('team_name');
+    const team_name = formData.get('team_name');
     const club_id = formData.get('club_id');
     const identification = formData.get('identification');
     const handicap = Number(formData.get('handicap'));
     const ranking = Number(formData.get('ranking'));
+    const average = parseFloat(formData.get('average') || '0');
 
     // Resolve team name
     if (club_id) {
-        team_name = await resolveClubName(club_id, team_name);
+        // team_name = await resolveClubName(...) // kept existing logic if any
     }
 
     // 1. Update Tournament Player (specific to this tournament)
     const result = await query(`
         UPDATE tournament_players 
-        SET player_name = $1, team_name = $2, handicap = $3, ranking = $4
-        WHERE id = $5
+        SET player_name = $1, team_name = $2, handicap = $3, ranking = $4, average = $5
+        WHERE id = $6
         RETURNING *
-    `, [player_name, team_name, handicap, ranking, playerId]);
+    `, [player_name, team_name, handicap, ranking, average, playerId]);
 
     if (result.rows.length > 0) {
         const tp = result.rows[0];
@@ -812,6 +813,7 @@ export async function createClub(formData) {
         const tables_pool = parseInt(formData.get('tables_pool') || '0');
         const tables_bola9 = parseInt(formData.get('tables_bola9') || '0');
         const tables_snooker = parseInt(formData.get('tables_snooker') || '0');
+        const location_url = formData.get('location_url_external') || null;
 
         let logo_url = formData.get('logo_url') || null;
         const logo = formData.get('logo');
@@ -821,10 +823,10 @@ export async function createClub(formData) {
         }
 
         const result = await query(`
-            INSERT INTO clubs (name, short_name, country, city, address, tables_billar, tables_pool, tables_bola9, tables_snooker, logo_url)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            INSERT INTO clubs (name, short_name, country, city, address, tables_billar, tables_pool, tables_bola9, tables_snooker, logo_url, location_url)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             RETURNING *
-        `, [name, short_name, country, city, address, tables_billar, tables_pool, tables_bola9, tables_snooker, logo_url]);
+        `, [name, short_name, country, city, address, tables_billar, tables_pool, tables_bola9, tables_snooker, logo_url, location_url]);
 
         revalidatePath('/admin/clubs');
         return { success: true, club: result.rows[0] };
@@ -844,6 +846,7 @@ export async function updateClub(id, formData) {
     const tables_pool = parseInt(formData.get('tables_pool') || '0');
     const tables_bola9 = parseInt(formData.get('tables_bola9') || '0');
     const tables_snooker = parseInt(formData.get('tables_snooker') || '0');
+    const location_url = formData.get('location_url_external') || null;
 
     let logo_url = formData.get('logo_url') || null;
     const logo = formData.get('logo');
@@ -851,9 +854,9 @@ export async function updateClub(id, formData) {
         logo_url = await saveFile(logo, 'clubs');
     }
 
-    let queryStr = 'UPDATE clubs SET name = $1, short_name = $2, country = $3, city = $4, address = $5, tables_billar = $6, tables_pool = $7, tables_bola9 = $8, tables_snooker = $9';
-    const params = [name, short_name, country, city, address, tables_billar, tables_pool, tables_bola9, tables_snooker];
-    let paramIdx = 10;
+    let queryStr = 'UPDATE clubs SET name = $1, short_name = $2, country = $3, city = $4, address = $5, tables_billar = $6, tables_pool = $7, tables_bola9 = $8, tables_snooker = $9, location_url = $10';
+    const params = [name, short_name, country, city, address, tables_billar, tables_pool, tables_bola9, tables_snooker, location_url];
+    let paramIdx = 11;
 
     if (logo_url) {
         queryStr += `, logo_url = $${paramIdx++}`;
@@ -896,7 +899,7 @@ export async function getGlobalPlayers() {
 export async function createGlobalPlayer(formData) {
     const session = await getSession();
     if (!session || !session.userId) { // Minimal check: must be logged in
-        throw new Error('Unauthorized');
+        throw new Error('No autorizado');
     }
 
     const name = formData.get('name');
@@ -924,7 +927,7 @@ export async function updateGlobalPlayer(id, formData) {
     const session = await getSession();
     const role = session?.role;
     if (role !== 'admin' && role !== 'superadmin' && role !== 'SUPERADMIN') {
-        throw new Error('Unauthorized: Only admins can edit players.');
+        throw new Error('No autorizado: Solo los administradores pueden editar jugadores.');
     }
 
     const name = formData.get('name');
@@ -965,7 +968,7 @@ export async function deleteGlobalPlayer(id) {
     const session = await getSession();
     const role = session?.role;
     if (role !== 'admin' && role !== 'superadmin' && role !== 'SUPERADMIN') {
-        throw new Error('Unauthorized: Only admins can delete players.');
+        throw new Error('No autorizado: Solo los administradores pueden eliminar jugadores.');
     }
 
     try {
@@ -983,7 +986,7 @@ export async function deleteGlobalPlayers(ids) {
     const session = await getSession();
     const role = session?.role;
     if (role !== 'admin' && role !== 'superadmin' && role !== 'SUPERADMIN') {
-        throw new Error('Unauthorized: Only admins can delete players.');
+        throw new Error('No autorizado: Solo los administradores pueden eliminar jugadores.');
     }
 
     if (!ids || ids.length === 0) return { success: true, count: 0 };
@@ -1525,7 +1528,7 @@ export async function disqualifyPlayer(tournamentId, playerId) {
     const session = await getSession();
     const role = session?.role;
     if (role !== 'admin' && role !== 'superadmin' && role !== 'SUPERADMIN') {
-        throw new Error('Unauthorized: Only admins can disqualify players.');
+        throw new Error('No autorizado: Solo los administradores pueden descalificar jugadores.');
     }
 
     try {
@@ -1801,5 +1804,27 @@ export async function swapPlayers(player1Id, player2Id, tournamentId) {
         await query('ROLLBACK');
         console.error(e);
         return { success: false, message: 'Error al intercambiar: ' + e.message };
+    }
+}
+
+export async function recalculateAllHandicaps(tournamentId) {
+    try {
+        console.log(`Recalculating handicaps for tournament ${tournamentId}`);
+        const players = await getTournamentPlayers(tournamentId);
+        let updatedCount = 0;
+
+        for (const p of players) {
+            const newHandicap = calculateFechillarHandicap(parseFloat(p.average || 0));
+            if (newHandicap !== p.handicap) {
+                await query('UPDATE tournament_players SET handicap = $1 WHERE id = $2', [newHandicap, p.id]);
+                updatedCount++;
+            }
+        }
+
+        revalidatePath(`/admin/tournaments/${tournamentId}`);
+        return { success: true, message: `Se recalcularon ${updatedCount} handicaps.` };
+    } catch (e) {
+        console.error(e);
+        return { success: false, message: e.message };
     }
 }

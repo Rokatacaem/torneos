@@ -49,14 +49,26 @@ export default async function ClubDetailPage({ params }) {
 
                         <div className="flex-1">
                             <div className="flex items-center gap-3 text-blue-400 mb-2 font-medium bg-blue-500/10 px-3 py-1 rounded-full w-fit text-sm">
-                                <MapPin size={16} />
                                 {club.city || 'Ciudad no registrada'}
                             </div>
                             <h1 className="text-4xl font-bold tracking-tight mb-2">{club.name}</h1>
-                            <p className="text-slate-400 max-w-2xl text-lg flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                                Club Federado Activo
-                            </p>
+                            <div className="flex flex-wrap items-center gap-4">
+                                <p className="text-slate-400 text-lg flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                                    Club Federado Activo
+                                </p>
+                                {club.location_url && (
+                                    <a
+                                        href={club.location_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1.5 px-3 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 hover:text-blue-300 rounded-lg text-sm font-medium transition-colors border border-blue-500/30"
+                                    >
+                                        <MapPin size={14} />
+                                        Ver Mapa
+                                    </a>
+                                )}
+                            </div>
                         </div>
 
                         <Link

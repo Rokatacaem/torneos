@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { registerPlayer, generateGroups, updatePlayer, searchPlayers, generatePlayoffs, previewGroups, removePlayer, removePlayers, disqualifyPlayer, purgeTournament, generateNextRound, registerBatchPlayers, assignTablesRandomly, updateMatchTable, swapPlayers } from '@/app/lib/tournament-actions';
+import { calculateFechillarHandicap } from '@/app/lib/utils';
+import { registerPlayer, generateGroups, updatePlayer, searchPlayers, generatePlayoffs, previewGroups, removePlayer, removePlayers, disqualifyPlayer, purgeTournament, generateNextRound, registerBatchPlayers, assignTablesRandomly, updateMatchTable, swapPlayers, recalculateAllHandicaps } from '@/app/lib/tournament-actions';
 import { searchGlobalPlayers } from '@/app/lib/player-actions';
 import { generateWhatsAppReport } from '@/app/lib/report-actions';
 import ManualResultModal from '@/app/components/admin/ManualResultModal';
@@ -105,7 +106,10 @@ export default function TournamentManager({ tournament, players, matches, clubs 
         setClubId(p.club_id || '');
         setTeamName(p.club_name || ''); // Fallback
         setIdentification(p.identification || '');
-        setAverage(p.average ? p.average.toString() : '0.000');
+        setIdentification(p.identification || '');
+        const avg = p.average ? p.average.toString() : '0.000';
+        setAverage(avg);
+        setHandicap(calculateFechillarHandicap(parseFloat(avg)));
         setShowSuggestions(false);
     };
 
@@ -148,6 +152,7 @@ export default function TournamentManager({ tournament, players, matches, clubs 
             formData.append('team_name', editingPlayer.team_name || '');
             formData.append('handicap', editingPlayer.handicap || 0);
             formData.append('ranking', editingPlayer.ranking || 0);
+            formData.append('average', editingPlayer.average || 0);
             if (editingPlayer.club_id) formData.append('club_id', editingPlayer.club_id);
 
             // Get file from input
@@ -440,6 +445,23 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                                             Importar
                                         </button>
                                     </div>
+                                    <button
+                                        onClick={async () => {
+                                            if (!confirm('¿Recalcular Handicaps de TODOS los jugadores según su Promedio actual?')) return;
+                                            setLoading(true);
+                                            try {
+                                                const res = await recalculateAllHandicaps(tournament.id);
+                                                alert(res.message);
+                                                router.refresh();
+                                            } catch (e) { alert(e.message); }
+                                            setLoading(false);
+                                        }}
+                                        disabled={loading}
+                                        className="text-xs bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-1 rounded flex items-center gap-1 shadow-sm transition-colors"
+                                        title="Recalcular Handicaps (Debug)"
+                                    >
+                                        Recalcular
+                                    </button>
                                     {matches.length === 0 && players.length >= 2 && (
                                         <button
                                             onClick={handlePreview}
@@ -506,9 +528,12 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                                                     setTeamName(p.team_name || ''); // Try to match by name if not ID? Ideally we need club_id in p
                                                     // We need club_id in p to edit correctly if using select.
                                                     // Assuming p comes from tournament_players which doesn't have club_id directly unless updated query.
-                                                    setHandicap(p.handicap);
+                                                    // Recalculate handicap to be safe or use existing? 
+                                                    // Let's rely on average if we edit it, but initially use existing.
+                                                    // Actually user wants it auto-calculated.
+                                                    setHandicap(calculateFechillarHandicap(parseFloat(p.average || 0)));
                                                     setRanking(p.ranking || '');
-                                                    setAverage(p.average || '');
+                                                    setAverage(p.average || '0.000');
                                                     // ID?
                                                 }}
                                                 className="text-slate-400 hover:text-blue-400 transition-colors md:opacity-0 md:group-hover:opacity-100"
@@ -618,22 +643,28 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                                                 type="number"
                                                 step="0.001"
                                                 value={average}
-                                                onChange={e => setAverage(e.target.value)}
+                                                onChange={e => {
+                                                    const val = e.target.value;
+                                                    setAverage(val);
+                                                    setHandicap(calculateFechillarHandicap(parseFloat(val || 0)));
+                                                }}
                                                 className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
                                                 placeholder="0.000"
                                             />
                                         </div>
                                         <div>
                                             <label className="text-xs text-slate-400 mb-1 block">Handicap {tournament.use_handicap && '(Auto)'}</label>
-                                            <input
-                                                name="handicap"
-                                                type="number"
-                                                value={handicap}
-                                                onChange={e => setHandicap(e.target.value)}
-                                                className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
-                                                placeholder="0"
-                                                disabled={tournament.use_handicap} // Disable if auto-calc
-                                            />
+                                            <div className="relative">
+                                                <input
+                                                    name="handicap"
+                                                    type="number"
+                                                    value={handicap}
+                                                    readOnly={true}
+                                                    className="w-full h-10 rounded-md border border-white/10 bg-[#1A2333] px-3 text-slate-400 text-sm cursor-not-allowed font-bold"
+                                                    placeholder="0"
+                                                />
+                                                <span className="absolute right-3 top-2.5 text-[10px] text-green-500 font-bold uppercase">AUTO</span>
+                                            </div>
                                         </div>
                                         <div className="z-0">
                                             <label className="text-xs text-slate-400 mb-1 block">Ranking</label>
@@ -875,23 +906,43 @@ export default function TournamentManager({ tournament, players, matches, clubs 
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-sm font-medium text-slate-300">Handicap</label>
+                                        <label className="text-sm font-medium text-slate-300">Promedio</label>
                                         <input
                                             type="number"
-                                            value={editingPlayer.handicap || 0}
-                                            onChange={e => setEditingPlayer({ ...editingPlayer, handicap: e.target.value })}
+                                            step="0.001"
+                                            value={editingPlayer.average || ''}
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                setEditingPlayer({
+                                                    ...editingPlayer,
+                                                    average: val,
+                                                    handicap: calculateFechillarHandicap(parseFloat(val || 0))
+                                                });
+                                            }}
                                             className="w-full h-10 rounded-md border border-white/10 bg-[#131B2D] px-3 text-white"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-sm font-medium text-slate-300">Ranking</label>
-                                        <input
-                                            type="number"
-                                            value={editingPlayer.ranking || 0}
-                                            onChange={e => setEditingPlayer({ ...editingPlayer, ranking: e.target.value })}
-                                            className="w-full h-10 rounded-md border border-white/10 bg-[#131B2D] px-3 text-white"
-                                        />
+                                        <label className="text-sm font-medium text-slate-300">Handicap</label>
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                value={editingPlayer.handicap || 0}
+                                                readOnly={true}
+                                                className="w-full h-10 rounded-md border border-white/10 bg-[#1A2333] px-3 text-slate-400 text-sm cursor-not-allowed font-bold"
+                                            />
+                                            <span className="absolute right-3 top-2.5 text-[10px] text-green-500 font-bold uppercase">AUTO</span>
+                                        </div>
                                     </div>
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium text-slate-300">Ranking</label>
+                                    <input
+                                        type="number"
+                                        value={editingPlayer.ranking || 0}
+                                        onChange={e => setEditingPlayer({ ...editingPlayer, ranking: e.target.value })}
+                                        className="w-full h-10 rounded-md border border-white/10 bg-[#131B2D] px-3 text-white"
+                                    />
                                 </div>
                                 <div className="flex gap-4 pt-4">
                                     <button

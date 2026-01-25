@@ -2,11 +2,31 @@
 
 import { useState } from 'react';
 import { calculateFechillarHandicap } from '@/app/lib/utils';
-import { Trophy, Info, ArrowRight, ArrowDownUp } from 'lucide-react';
+import { getPlayerFullHistory } from '@/app/lib/player-actions';
+import PlayerHistoryModal from '@/app/components/ranking/PlayerHistoryModal';
+import { Trophy, Info, ArrowRight, ArrowDownUp, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function RankingTable({ initialRanking }) {
     const [rankingType, setRankingType] = useState('national'); // 'national' | 'annual'
+    const [selectedPlayer, setSelectedPlayer] = useState(null);
+    const [historyData, setHistoryData] = useState(null);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+
+    async function handlePlayerClick(player) {
+        if (loadingHistory) return;
+        setLoadingHistory(true);
+        try {
+            const data = await getPlayerFullHistory(player.id);
+            setHistoryData(data);
+            setSelectedPlayer(player);
+        } catch (error) {
+            console.error('Error loading history:', error);
+            alert('Error al cargar historial del jugador.');
+        } finally {
+            setLoadingHistory(false);
+        }
+    }
 
     // Sort data based on selection
     const sortedRanking = [...initialRanking].sort((a, b) => {
@@ -181,8 +201,12 @@ export default function RankingTable({ initialRanking }) {
                                             </span>
                                         </td>
                                         <td className="px-5 py-4">
-                                            <div className="font-bold text-white text-base">
+                                            <div
+                                                onClick={() => handlePlayerClick(p)}
+                                                className="font-bold text-white text-base cursor-pointer hover:text-blue-400 transition-colors inline-flex items-center gap-2"
+                                            >
                                                 {p.name}
+                                                {loadingHistory && selectedPlayer?.id === p.id && <Loader2 size={14} className="animate-spin text-blue-500" />}
                                             </div>
                                             <div className="text-xs text-slate-500 md:hidden mt-0.5">
                                                 {p.club_name || '-'} • HCP: {hcp}
@@ -255,6 +279,17 @@ export default function RankingTable({ initialRanking }) {
                     Ver Calendario de Torneos <ArrowRight size={18} />
                 </Link>
             </div>
+            {/* Player History Modal */}
+            {selectedPlayer && historyData && (
+                <PlayerHistoryModal
+                    player={selectedPlayer}
+                    history={historyData}
+                    onClose={() => {
+                        setSelectedPlayer(null);
+                        setHistoryData(null);
+                    }}
+                />
+            )}
         </div>
     );
 }

@@ -190,6 +190,10 @@ export default function ClubManager({ clubs }) {
                                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Dirección</label>
                                 <input name="address" className="w-full bg-[#131B2D] border border-white/10 rounded-lg h-10 px-3 text-white focus:border-blue-500 outline-none" placeholder="Calle, Número, Comuna, etc." />
                             </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Link Google Maps (Opcional)</label>
+                                <input name="location_url_external" className="w-full bg-[#131B2D] border border-white/10 rounded-lg h-10 px-3 text-white focus:border-blue-500 outline-none" placeholder="https://maps.google.com/..." />
+                            </div>
 
                             <div className="bg-white/5 p-4 rounded-xl border border-white/5">
                                 <h4 className="text-white font-bold text-sm mb-4 flex items-center gap-2">
@@ -255,6 +259,10 @@ export default function ClubManager({ clubs }) {
                             <div>
                                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Dirección</label>
                                 <input name="address" defaultValue={editingClub.address} className="w-full bg-[#131B2D] border border-white/10 rounded-lg h-10 px-3 text-white focus:border-blue-500 outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Link Google Maps (Opcional)</label>
+                                <input name="location_url_external" defaultValue={editingClub.location_url} className="w-full bg-[#131B2D] border border-white/10 rounded-lg h-10 px-3 text-white focus:border-blue-500 outline-none" />
                             </div>
 
                             <div className="bg-white/5 p-4 rounded-xl border border-white/5">
