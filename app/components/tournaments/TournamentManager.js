@@ -17,7 +17,7 @@ export default function TournamentManager({ tournament, players, matches, clubs 
     const [loading, setLoading] = useState(false);
 
     // Estados para formulario de jugador
-    const [regMode, setRegMode] = useState('new'); // 'new' | 'existing'
+    const [regMode, setRegMode] = useState('existing'); // 'existing' | 'new' - Mostrar búsqueda primero
     const [globalSearchResults, setGlobalSearchResults] = useState([]);
     const [selectedGlobalPlayers, setSelectedGlobalPlayers] = useState(new Set());
 
@@ -35,6 +35,9 @@ export default function TournamentManager({ tournament, players, matches, clubs 
 
     // Preview State
     const [previewData, setPreviewData] = useState(null);
+
+    // Help/Instructions State
+    const [showHelp, setShowHelp] = useState(false);
 
     // Report State
     const [reportText, setReportText] = useState('');
@@ -576,21 +579,153 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                                 <h3 className="font-semibold">Registrar Jugador</h3>
                                 <div className="flex bg-slate-800 p-0.5 rounded-lg">
                                     <button
-                                        onClick={() => setRegMode('new')}
-                                        className={`px-3 py-1 text-xs rounded-md transition-all ${regMode === 'new' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
-                                    >
-                                        Nuevo
-                                    </button>
-                                    <button
                                         onClick={() => setRegMode('existing')}
                                         className={`px-3 py-1 text-xs rounded-md transition-all ${regMode === 'existing' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
                                     >
-                                        Buscar Existente
+                                        1️⃣ Buscar Jugador
+                                    </button>
+                                    <button
+                                        onClick={() => setRegMode('new')}
+                                        className={`px-3 py-1 text-xs rounded-md transition-all ${regMode === 'new' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                                    >
+                                        2️⃣ Crear Nuevo
                                     </button>
                                 </div>
                             </div>
 
-                            {regMode === 'new' ? (
+                            {/* Sección de Ayuda/Instructivo */}
+                            <div className="mb-4 border border-blue-500/30 rounded-lg overflow-hidden bg-blue-950/20">
+                                <button
+                                    onClick={() => setShowHelp(!showHelp)}
+                                    className="w-full px-4 py-2 flex items-center justify-between text-sm font-medium text-blue-300 hover:bg-blue-900/20 transition-colors"
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <circle cx="12" cy="12" r="10" />
+                                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                                        </svg>
+                                        ¿Cómo registrar un jugador?
+                                    </span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform ${showHelp ? 'rotate-180' : ''}`}>
+                                        <polyline points="6 9 12 15 18 9" />
+                                    </svg>
+                                </button>
+                                {showHelp && (
+                                    <div className="px-4 py-3 text-xs text-slate-300 space-y-2 bg-slate-900/40 border-t border-blue-500/20">
+                                        <p className="font-bold text-blue-400">📋 Pasos para inscribir un jugador:</p>
+                                        <ol className="list-decimal list-inside space-y-1.5 ml-2">
+                                            <li><strong className="text-white">PRIMERO:</strong> Busca al jugador escribiendo su nombre en la pestaña <strong className="text-blue-400">"1️⃣ Buscar Jugador"</strong></li>
+                                            <li>Espera que aparezcan los resultados y selecciona marcando la casilla ✓</li>
+                                            <li>Presiona el botón verde <strong className="text-green-400">"Agregar Seleccionados"</strong></li>
+                                            <li><strong className="text-yellow-400">SOLO si NO existe:</strong> Ve a la pestaña <strong>"2️⃣ Crear Nuevo"</strong> y completa los datos</li>
+                                        </ol>
+                                        <div className="mt-3 p-2 bg-yellow-900/30 border border-yellow-600/40 rounded text-yellow-200">
+                                            <p className="font-bold">⚠️ Importante:</p>
+                                            <p>Siempre busca primero antes de crear un jugador nuevo para evitar duplicados.</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {regMode === 'existing' ? (
+                                <div className="space-y-4 animate-in fade-in zoom-in duration-200">
+                                    {/* Search Logic */}
+                                    <div className="space-y-2">
+                                        <label className="text-xs text-slate-400 mb-1 block">🔍 Buscar jugador por nombre</label>
+                                        <input
+                                            autoFocus
+                                            placeholder="Escribe el nombre del jugador..."
+                                            className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
+                                            onChange={async (e) => {
+                                                const term = e.target.value;
+                                                if (term.length > 0) {
+                                                    try {
+                                                        const res = await searchGlobalPlayers(term);
+                                                        // Filter out already in tournament
+                                                        const currentIds = new Set(players.map(p => p.player_id));
+
+                                                        const filtered = res.filter(p => !currentIds.has(p.id));
+                                                        setGlobalSearchResults(filtered);
+                                                    } catch (err) {
+                                                        console.error(err);
+                                                    }
+                                                } else {
+                                                    setGlobalSearchResults([]);
+                                                }
+                                            }}
+                                        />
+                                        <p className="text-[10px] text-slate-500">💡 Tip: Escribe al menos 2 letras del nombre</p>
+                                    </div>
+
+                                    {/* Results List */}
+                                    <div className="border border-white/10 rounded-md bg-[#0B1120] max-h-60 overflow-y-auto divide-y divide-white/5">
+                                        {globalSearchResults.length === 0 ? (
+                                            <div className="p-4 text-center text-xs text-slate-400 space-y-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto text-slate-600 mb-2">
+                                                    <circle cx="11" cy="11" r="8" />
+                                                    <path d="m21 21-4.35-4.35" />
+                                                </svg>
+                                                <p className="font-medium">Comienza a escribir para buscar jugadores</p>
+                                                <p className="text-slate-500">Se mostrarán todos los jugadores que coincidan con tu búsqueda</p>
+                                            </div>
+                                        ) : (
+                                            globalSearchResults.map(p => (
+                                                <div key={p.id} className="flex items-center p-2 hover:bg-white/5 gap-3">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedGlobalPlayers.has(p.id)}
+                                                        onChange={() => {
+                                                            const newSet = new Set(selectedGlobalPlayers);
+                                                            if (newSet.has(p.id)) newSet.delete(p.id);
+                                                            else newSet.add(p.id);
+                                                            setSelectedGlobalPlayers(newSet);
+                                                        }}
+                                                        className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-primary"
+                                                    />
+                                                    <div className="w-8 h-8 rounded-full bg-slate-700 overflow-hidden flex-shrink-0">
+                                                        {p.photo_url ? <img src={p.photo_url} className="w-full h-full object-cover" /> : <span className="flex items-center justify-center h-full text-[10px]">{p.name.substring(0, 2)}</span>}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <div className="text-sm font-medium text-slate-200">{p.name}</div>
+                                                        <div className="text-xs text-slate-500">{p.club_name || 'Sin Club'} • Avg: {p.average || 0}</div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+
+                                    <div className="flex justify-between items-center bg-card p-2 rounded-md border border-white/5">
+                                        <span className="text-xs text-slate-400">Seleccionados: {selectedGlobalPlayers.size}</span>
+                                        <button
+                                            onClick={async () => {
+                                                if (selectedGlobalPlayers.size === 0) return;
+                                                setLoading(true);
+                                                try {
+                                                    const { registerBatchPlayers } = await import('@/app/lib/tournament-actions');
+                                                    const res = await registerBatchPlayers(tournament.id, Array.from(selectedGlobalPlayers));
+                                                    alert(res.message);
+                                                    setSelectedGlobalPlayers(new Set());
+                                                    setGlobalSearchResults([]);
+                                                    router.refresh();
+                                                } catch (e) { alert(e.message); }
+                                                setLoading(false);
+                                            }}
+                                            disabled={loading || selectedGlobalPlayers.size === 0}
+                                            className="bg-green-600 hover:bg-green-500 text-white px-4 py-1.5 rounded text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            Agregar Seleccionados
+                                        </button>
+                                    </div>
+
+                                    <div className="mt-4 p-3 bg-slate-800/50 border border-slate-700 rounded-lg">
+                                        <p className="text-xs text-slate-400 flex items-start gap-2">
+                                            <span className="text-lg">❓</span>
+                                            <span><strong className="text-white">¿No encuentras al jugador?</strong><br />Verifica la ortografía o cambia a la pestaña <strong className="text-blue-400">"2️⃣ Crear Nuevo"</strong> para registrarlo.</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : (
                                 <form onSubmit={handleAddPlayer} className="space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end bg-card p-4 rounded-lg border border-white/5">
                                         <div>
@@ -695,90 +830,6 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                                         {loading ? 'Registrando...' : 'Agregar Nuevo Jugador'}
                                     </button>
                                 </form>
-                            ) : (
-                                <div className="space-y-4 animate-in fade-in zoom-in duration-200">
-                                    {/* Search Logic */}
-                                    <div className="space-y-2">
-                                        <input
-                                            autoFocus
-                                            placeholder="Buscar por nombre..."
-                                            className="w-full h-10 rounded-md border border-white/10 bg-[#0B1120] px-3 text-white text-sm"
-                                            onChange={async (e) => {
-                                                const term = e.target.value;
-                                                if (term.length > 0) {
-                                                    try {
-                                                        const res = await searchGlobalPlayers(term);
-                                                        // Filter out already in tournament
-                                                        const currentIds = new Set(players.map(p => p.player_id));
-
-                                                        const filtered = res.filter(p => !currentIds.has(p.id));
-                                                        setGlobalSearchResults(filtered);
-                                                    } catch (err) {
-                                                        console.error(err);
-                                                    }
-                                                } else {
-                                                    setGlobalSearchResults([]);
-                                                }
-                                            }}
-                                        />
-                                    </div>
-
-                                    {/* Results List */}
-                                    <div className="border border-white/10 rounded-md bg-[#0B1120] max-h-60 overflow-y-auto divide-y divide-white/5">
-                                        {globalSearchResults.length === 0 ? (
-                                            <div className="p-4 text-center text-xs text-slate-500">
-                                                Escribe para buscar jugadores en la base de datos global.
-                                            </div>
-                                        ) : (
-                                            globalSearchResults.map(p => (
-                                                <div key={p.id} className="flex items-center p-2 hover:bg-white/5 gap-3">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedGlobalPlayers.has(p.id)}
-                                                        onChange={() => {
-                                                            const newSet = new Set(selectedGlobalPlayers);
-                                                            if (newSet.has(p.id)) newSet.delete(p.id);
-                                                            else newSet.add(p.id);
-                                                            setSelectedGlobalPlayers(newSet);
-                                                        }}
-                                                        className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-primary"
-                                                    />
-                                                    <div className="w-8 h-8 rounded-full bg-slate-700 overflow-hidden flex-shrink-0">
-                                                        {p.photo_url ? <img src={p.photo_url} className="w-full h-full object-cover" /> : <span className="flex items-center justify-center h-full text-[10px]">{p.name.substring(0, 2)}</span>}
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <div className="text-sm font-medium text-slate-200">{p.name}</div>
-                                                        <div className="text-xs text-slate-500">{p.club_name || 'Sin Club'} • Avg: {p.average || 0}</div>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
-
-                                    <div className="flex justify-between items-center bg-card p-2 rounded-md border border-white/5">
-                                        <span className="text-xs text-slate-400">Seleccionados: {selectedGlobalPlayers.size}</span>
-                                        <button
-                                            onClick={async () => {
-                                                if (selectedGlobalPlayers.size === 0) return;
-                                                setLoading(true);
-                                                try {
-                                                    const { registerBatchPlayers } = await import('@/app/lib/tournament-actions');
-                                                    const res = await registerBatchPlayers(tournament.id, Array.from(selectedGlobalPlayers));
-                                                    alert(res.message);
-                                                    setSelectedGlobalPlayers(new Set());
-                                                    setGlobalSearchResults([]);
-                                                    setRegMode('new'); // switch back or stay? stay is better to add more
-                                                    router.refresh();
-                                                } catch (e) { alert(e.message); }
-                                                setLoading(false);
-                                            }}
-                                            disabled={loading || selectedGlobalPlayers.size === 0}
-                                            className="bg-green-600 hover:bg-green-500 text-white px-4 py-1.5 rounded text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            Agregar Seleccionados
-                                        </button>
-                                    </div>
-                                </div>
                             )}
                         </div>
                     </div>
