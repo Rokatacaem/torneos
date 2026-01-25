@@ -4,7 +4,7 @@ import { updateTournament } from '@/app/lib/tournament-actions';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Info } from 'lucide-react';
 import Link from 'next/link';
 import TournamentGraphicsGuide from '@/app/components/admin/TournamentGraphicsGuide';
 import { upload } from '@vercel/blob/client';
@@ -352,6 +352,52 @@ export default function EditTournamentForm({ tournament }) {
                             </div>
                         </div>
 
+                        {/* Configuración TV Dashboard (Inputs de Texto) */}
+                        <div className="space-y-4 border-t border-border pt-4">
+                            <h3 className="font-semibold text-lg flex items-center gap-2">
+                                <span className="bg-yellow-500/10 text-yellow-500 p-1 rounded"><Info size={16} /></span>
+                                Personalización TV Dashboard
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium">Título Branding (Footer Izq)</label>
+                                    <input
+                                        name="footer_branding_title"
+                                        placeholder="Ej: Copa Hermandad"
+                                        defaultValue={tournament.footer_branding_title || 'Copa Hermandad'}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium">Subtítulo Branding</label>
+                                    <input
+                                        name="footer_branding_subtitle"
+                                        placeholder="Ej: Chile - Argentina"
+                                        defaultValue={tournament.footer_branding_subtitle || 'Chile - Argentina'}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium">Título Central (Opcional)</label>
+                                    <input
+                                        name="footer_center_title"
+                                        placeholder="Ej: CLUB DE BILLAR SANTIAGO (Deja vacío para 'GRAN FINAL')"
+                                        defaultValue={tournament.footer_center_title || ''}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium">Texto Informativo (Centro)</label>
+                                    <input
+                                        name="footer_info_text"
+                                        placeholder="Ej: ENTRADA LIBERADA • SALON PRINCIPAL"
+                                        defaultValue={tournament.footer_info_text || 'ENTRADA LIBERADA • SALON PRINCIPAL'}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Images & Graphics */}
                         <div className="space-y-4 border-t border-border pt-4">
                             <h3 className="font-semibold text-lg flex items-center gap-2">Gráficas del Torneo</h3>
@@ -371,7 +417,7 @@ export default function EditTournamentForm({ tournament }) {
                                     {tournament.logo_image_url && (
                                         <p className="text-xs text-green-500">Logo actual cargado.</p>
                                     )}
-                                    <p className="text-xs text-muted-foreground">Opcional. Se mostrará en el header.</p>
+                                    <p className="text-xs text-muted-foreground">Opcional. Se mostrará en el header. (Máx 4500 KB)</p>
                                 </div>
                                 <div className="space-y-2">
                                     <label htmlFor="banner_image" className="text-sm font-medium">Banner/Fondo</label>
@@ -385,7 +431,7 @@ export default function EditTournamentForm({ tournament }) {
                                     {tournament.banner_image_url && (
                                         <p className="text-xs text-green-500">Banner actual cargado.</p>
                                     )}
-                                    <p className="text-xs text-muted-foreground">Opcional. Fondo para TV Dashboard.</p>
+                                    <p className="text-xs text-muted-foreground">Opcional. Fondo para TV Dashboard. (Máx 4500 KB)</p>
                                 </div>
                                 <div className="space-y-2 col-span-2">
                                     <label htmlFor="branding_image" className="text-sm font-medium">Branding / Footer (Patrocinador)</label>
@@ -402,7 +448,7 @@ export default function EditTournamentForm({ tournament }) {
                                             <img src={tournament.branding_image_url} alt="Current Branding" className="h-6 w-auto object-contain border border-white/10" />
                                         </div>
                                     )}
-                                    <p className="text-xs text-muted-foreground">Opcional. Aparece en la esquina inferior derecha del TV Dashboard (Replaza "Copa Hermandad").</p>
+                                    <p className="text-xs text-muted-foreground">Opcional. Branding Footer. (Máx 4500 KB)</p>
                                 </div>
                             </div>
                         </div>
