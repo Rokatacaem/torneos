@@ -1041,7 +1041,6 @@ function PreviewModal({ groups, onClose, onConfirm, loading, tournament }) {
     // Determine available slots based on tournament config
     // Default range: covering enough slots for groups + buffer
     const tablesAvailable = tournament.tables_available || 4;
-    const blockDuration = tournament.block_duration || 180;
     // Safe Date Initialization
     let startDate;
     try {
