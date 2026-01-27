@@ -12,12 +12,17 @@ export default async function PublicTournamentDetailPage({ params }) {
 
     if (!tournament) return <div className="text-white bg-black h-screen flex items-center justify-center">Torneo no encontrado</div>;
 
+    // Serialization for Client Components
+    const tournamentData = JSON.parse(JSON.stringify(tournament));
+    const matchesData = JSON.parse(JSON.stringify(matches));
+    const playersData = JSON.parse(JSON.stringify(players));
+
     // Directamente renderizar el Dashboard de TV
     return (
         <TVDashboard
-            tournament={tournament}
-            matches={matches}
-            players={players}
+            tournament={tournamentData}
+            matches={matchesData}
+            players={playersData}
         />
     );
 }

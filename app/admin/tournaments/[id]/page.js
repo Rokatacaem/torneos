@@ -15,6 +15,12 @@ export default async function AdminTournamentDetailPage({ params }) {
 
     if (!tournament) return <div>Torneo no encontrado</div>;
 
+    // Serialization to avoid "Date object" warnings/errors in Client Components
+    const tournamentData = JSON.parse(JSON.stringify(tournament));
+    const matchesData = JSON.parse(JSON.stringify(matches));
+    const playersData = JSON.parse(JSON.stringify(players));
+    const clubsData = JSON.parse(JSON.stringify(clubs));
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center">
@@ -51,15 +57,15 @@ export default async function AdminTournamentDetailPage({ params }) {
 
             {/* Manager Component (Registration, Results) */}
             <TournamentManager
-                tournament={tournament}
-                players={players}
-                matches={matches}
-                clubs={clubs}
+                tournament={tournamentData}
+                players={playersData}
+                matches={matchesData}
+                clubs={clubsData}
             />
 
             <div className="bg-card border border-white/5 rounded-xl p-6 shadow-sm">
                 <h2 className="text-xl font-bold mb-4 text-white">Vista Previa Pública</h2>
-                <PublicTournamentView tournament={tournament} matches={matches} players={players} />
+                <PublicTournamentView tournament={tournamentData} matches={matchesData} players={playersData} />
             </div>
         </div >
     );

@@ -1042,20 +1042,34 @@ function PreviewModal({ groups, onClose, onConfirm, loading, tournament }) {
     // Default range: covering enough slots for groups + buffer
     const tablesAvailable = tournament.tables_available || 4;
     const blockDuration = tournament.block_duration || 180;
-    const startDate = new Date(tournament.start_date);
-    const groupsCount = groups.length;
+    // Safe Date Initialization
+    let startDate;
+    try {
+        startDate = tournament.start_date ? new Date(tournament.start_date) : new Date();
+        if (isNaN(startDate.getTime())) startDate = new Date();
+    } catch { startDate = new Date(); }
 
-    // Calculate how many turns we need normally
-    const normalTurns = Math.ceil(groupsCount / tablesAvailable);
-    // Offer a few extra turns for flexibility (e.g. +2)
-    const MAX_TURNS = normalTurns + 2;
+    // Ensure blockDuration is a number
+    const blockDuration = parseInt(tournament.block_duration) || 180;
+
+    // Calculate normal turns
+    const groupsCount = groups.length || 0;
+    const normalTurns = tablesAvailable > 0 ? Math.ceil(groupsCount / tablesAvailable) : 1;
+
+    // Offer a few extra turns for flexibility
+    const MAX_TURNS = normalTurns + 4;
 
     const slots = [];
     for (let t = 0; t < MAX_TURNS; t++) {
         const turnTime = new Date(startDate.getTime() + (t * blockDuration * 60000));
+        let timeLabel = '(Error)';
+        try {
+            timeLabel = turnTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } catch { }
+
         slots.push({
             id: t,
-            label: `Bloque ${t + 1} - ${turnTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+            label: `Bloque ${t + 1} - ${timeLabel}`,
             time: turnTime
         });
     }
