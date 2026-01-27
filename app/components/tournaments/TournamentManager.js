@@ -298,10 +298,10 @@ export default function TournamentManager({ tournament, players, matches, clubs 
         }
     }
 
-    async function handleGenerateConfirm() {
+    async function handleGenerateConfirm(overrides) {
         setLoading(true);
         try {
-            const res = await generateGroups(tournament.id);
+            const res = await generateGroups(tournament.id, overrides);
             if (!res.success) {
                 throw new Error(res.message);
             }
@@ -1024,6 +1024,7 @@ export default function TournamentManager({ tournament, players, matches, clubs 
                         onClose={() => setPreviewData(null)}
                         onConfirm={handleGenerateConfirm}
                         loading={loading}
+                        tournament={tournament}
                     />
                 )
             }
@@ -1036,14 +1037,82 @@ export default function TournamentManager({ tournament, players, matches, clubs 
 // This block removes ResultModal definition
 
 
-function PreviewModal({ groups, onClose, onConfirm, loading }) {
+function PreviewModal({ groups, onClose, onConfirm, loading, tournament }) {
+    // Determine available slots based on tournament config
+    // Default range: covering enough slots for groups + buffer
+    const tablesAvailable = tournament.tables_available || 4;
+    const blockDuration = tournament.block_duration || 180;
+    const startDate = new Date(tournament.start_date);
+    const groupsCount = groups.length;
+
+    // Calculate how many turns we need normally
+    const normalTurns = Math.ceil(groupsCount / tablesAvailable);
+    // Offer a few extra turns for flexibility (e.g. +2)
+    const MAX_TURNS = normalTurns + 2;
+
+    const slots = [];
+    for (let t = 0; t < MAX_TURNS; t++) {
+        const turnTime = new Date(startDate.getTime() + (t * blockDuration * 60000));
+        slots.push({
+            id: t,
+            label: `Bloque ${t + 1} - ${turnTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+            time: turnTime
+        });
+    }
+
+    // State for assignments: { groupName: { slotIndex, table } }
+    const [assignments, setAssignments] = useState({});
+
+    // Initialize assignments from default groups data
+    useEffect(() => {
+        const initial = {};
+        groups.forEach(g => {
+            // Find matching slot index based on time
+            const gTime = new Date(g.schedule.startTime).getTime();
+            const foundSlot = slots.findIndex(s => Math.abs(s.time.getTime() - gTime) < 1000); // 1s tolerance
+
+            initial[g.name] = {
+                slotIndex: foundSlot !== -1 ? foundSlot : 0,
+                table: g.schedule.table
+            };
+        });
+        setAssignments(initial);
+    }, [groups]);
+
+    const handleAssignChange = (groupName, field, value) => {
+        setAssignments(prev => ({
+            ...prev,
+            [groupName]: {
+                ...prev[groupName],
+                [field]: parseInt(value)
+            }
+        }));
+    };
+
+    const handleConfirm = () => {
+        // Build overrides object
+        // Map: groupName -> { startTime: ISOString, table: number }
+        const overrides = {};
+        Object.keys(assignments).forEach(gName => {
+            const assign = assignments[gName];
+            const slot = slots[assign.slotIndex]; // Use safe access
+            if (slot) {
+                overrides[gName] = {
+                    startTime: slot.time.toISOString(),
+                    table: assign.table
+                };
+            }
+        });
+        onConfirm(overrides);
+    };
+
     return (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-[#0B1120] w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl border border-white/10 flex flex-col">
+            <div className="bg-[#0B1120] w-full max-w-5xl max-h-[90vh] rounded-2xl shadow-2xl border border-white/10 flex flex-col">
                 <div className="p-6 border-b border-white/10 flex justify-between items-center bg-blue-600/10">
                     <div>
-                        <h3 className="text-xl font-bold text-white">Vista Previa de Grupos</h3>
-                        <p className="text-sm text-blue-400">Distribución calculada por Ranking (Sistema Snake)</p>
+                        <h3 className="text-xl font-bold text-white">Vista Previa y Programación</h3>
+                        <p className="text-sm text-blue-400">Distribución calculada. Ajusta horarios y mesas según necesidad.</p>
                     </div>
                     <button onClick={onClose} className="text-slate-400 hover:text-white">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 18 18" /></svg>
@@ -1052,34 +1121,63 @@ function PreviewModal({ groups, onClose, onConfirm, loading }) {
 
                 <div className="flex-1 overflow-y-auto p-6">
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {groups.map((group) => (
-                            <div key={group.name} className="border border-white/10 rounded-lg bg-[#131B2D] overflow-hidden">
-                                <div className="bg-slate-800/50 px-4 py-2 border-b border-white/5 flex justify-between items-center">
-                                    <div className="flex flex-col">
-                                        <span className="font-bold text-white">Grupo {group.name}</span>
-                                        {group.schedule && (
-                                            <span className="text-[10px] text-blue-400 font-mono">
-                                                Mesa {group.schedule.table} • {new Date(group.schedule.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
-                                        )}
+                        {groups.map((group) => {
+                            const assign = assignments[group.name] || {};
+                            // Safe access to slot time. 
+                            // If defaults logic fails, fallbacks to date from props or today.
+                            const currentSlot = slots[assign.slotIndex] || slots[0];
+
+                            return (
+                                <div key={group.name} className="border border-white/10 rounded-lg bg-[#131B2D] overflow-hidden flex flex-col">
+                                    <div className="bg-slate-800/50 px-4 py-2 border-b border-white/5 flex justify-between items-center">
+                                        <div className="font-bold text-white">Grupo {group.name}</div>
+                                        <span className="text-xs text-slate-400">{group.players.length} Jugadores</span>
                                     </div>
-                                    <span className="text-xs text-slate-400">{group.players.length} Jugadores</span>
-                                </div>
-                                <div className="divide-y divide-white/5">
-                                    {group.players.map((p, idx) => (
-                                        <div key={p.id} className="px-4 py-2 flex items-center gap-3 text-sm">
-                                            <span className="text-slate-500 font-mono w-4">{idx + 1}.</span>
-                                            <div>
-                                                <div className="text-slate-200 font-medium">{p.player_name}</div>
-                                                <div className="text-slate-500 text-xs">
-                                                    Avg: {p.average || '-'} • Rk: {p.ranking || 0} • HCP: {p.handicap || 0} • {p.team_name}
+
+                                    {/* Programming Controls */}
+                                    <div className="p-3 bg-slate-900/50 border-b border-white/5 grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="text-[10px] text-slate-500 block mb-1">Horario / Bloque</label>
+                                            <select
+                                                className="w-full bg-slate-800 border border-white/10 text-xs text-white rounded p-1"
+                                                value={assign.slotIndex ?? 0}
+                                                onChange={(e) => handleAssignChange(group.name, 'slotIndex', e.target.value)}
+                                            >
+                                                {slots.map((s, idx) => (
+                                                    <option key={s.id} value={idx}>{s.label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] text-slate-500 block mb-1">Mesa</label>
+                                            <select
+                                                className="w-full bg-slate-800 border border-white/10 text-xs text-white rounded p-1"
+                                                value={assign.table ?? 1}
+                                                onChange={(e) => handleAssignChange(group.name, 'table', e.target.value)}
+                                            >
+                                                {Array.from({ length: tablesAvailable }).map((_, i) => (
+                                                    <option key={i + 1} value={i + 1}>Mesa {i + 1}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="divide-y divide-white/5 flex-1 overflow-y-auto max-h-[200px]">
+                                        {group.players.map((p, idx) => (
+                                            <div key={p.id} className="px-4 py-2 flex items-center gap-3 text-sm">
+                                                <span className="text-slate-500 font-mono w-4">{idx + 1}.</span>
+                                                <div>
+                                                    <div className="text-slate-200 font-medium">{p.player_name}</div>
+                                                    <div className="text-slate-500 text-xs">
+                                                        Avg: {p.average || '-'} • Rk: {p.ranking || 0} • HCP: {p.handicap || 0} • {p.team_name}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -1091,7 +1189,7 @@ function PreviewModal({ groups, onClose, onConfirm, loading }) {
                         Cancelar
                     </button>
                     <button
-                        onClick={onConfirm}
+                        onClick={handleConfirm}
                         disabled={loading}
                         className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md font-bold shadow-lg shadow-blue-900/20 disabled:opacity-50"
                     >
@@ -1240,6 +1338,11 @@ function MatchTabs({ matches, loading, setLoading, onRefresh, tournamentId, onSe
         setLoading(false);
     };
 
+    const handleBatchTableEdit = async (tableNum) => {
+        // Implement batch update for active view if needed
+        // For now, this is just a placeholder or could be used for advanced UI
+    };
+
     return (
         <div className="space-y-6">
             {/* Tabs Header */}
@@ -1277,25 +1380,27 @@ function MatchTabs({ matches, loading, setLoading, onRefresh, tournamentId, onSe
             <div className="min-h-[200px]">
                 {currentTab?.id === 'groups' && (
                     <div className="space-y-4">
-                        <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-center bg-slate-800/50 p-3 rounded-lg border border-white/5">
                             <h3 className="font-bold text-lg text-white">Fase de Grupos</h3>
-                            {/* Show Generate Playoffs button ONLY if NOT generated yet */}
-                            {!hasElimination && (
+                            <div className="flex gap-2">
+                                {/* Show Generate Playoffs button ONLY if NOT generated yet */}
+                                {!hasElimination && (
+                                    <button
+                                        onClick={generatePlayoffsAction}
+                                        disabled={loading}
+                                        className="bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-bold hover:bg-orange-500 shadow-sm"
+                                    >
+                                        Generar Llaves Finales
+                                    </button>
+                                )}
                                 <button
-                                    onClick={generatePlayoffsAction}
+                                    onClick={handleSorteoAction}
                                     disabled={loading}
-                                    className="bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-bold hover:bg-orange-500 shadow-sm"
+                                    className="bg-purple-600 text-white px-4 py-2 rounded-md text-sm font-bold hover:bg-purple-500 shadow-sm"
                                 >
-                                    Generar Llaves Finales
+                                    Sorteo de Mesas
                                 </button>
-                            )}
-                            <button
-                                onClick={handleSorteoAction}
-                                disabled={loading}
-                                className="bg-purple-600 text-white px-4 py-2 rounded-md text-sm font-bold hover:bg-purple-500 shadow-sm ml-2"
-                            >
-                                Sorteo de Mesas
-                            </button>
+                            </div>
                         </div>
                         <MatchGrid matches={groupMatches} onSelect={onSelectMatch} onEditTable={handleEditTableCallback} />
                     </div>
@@ -1303,7 +1408,7 @@ function MatchTabs({ matches, loading, setLoading, onRefresh, tournamentId, onSe
 
                 {currentTab?.isRound && (
                     <div className="space-y-4">
-                        <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-center bg-slate-800/50 p-3 rounded-lg border border-white/5">
                             <h3 className="font-bold text-lg text-white">{currentTab.label}</h3>
                             <div className="flex gap-2">
                                 <button
@@ -1342,21 +1447,25 @@ function MatchGrid({ matches, onSelect, onEditTable }) {
                 <div
                     key={m.id}
                     onClick={() => onSelect(m)}
-                    className="border border-white/10 rounded-lg p-3 bg-card text-card-foreground shadow-lg cursor-pointer hover:border-blue-500/50 transition-all hover:shadow-blue-900/10 group"
+                    className="border border-white/10 rounded-lg p-3 bg-card text-card-foreground shadow-lg cursor-pointer hover:border-blue-500/50 transition-all hover:shadow-blue-900/10 group relative"
                 >
                     <div className="flex justify-between text-xs text-slate-500 mb-2">
                         <span className="font-mono">#{m.id} • {m.group_name ? `G.${m.group_name}` : 'Playoff'}</span>
-                        <span
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                const val = prompt('Asignar Mesa #:', m.table_number || '');
-                                if (val) onEditTable(m, val);
-                            }}
-                            className="bg-slate-800 px-1.5 rounded text-[10px] hover:bg-slate-700 cursor-pointer text-blue-300"
-                            title="Click para asignar mesa manualmente"
-                        >
-                            Mesa {m.table_number || '?'}
-                        </span>
+                        <div className="flex gap-2">
+                            {/* Time Override / Display - To do: show schedule time if available */}
+                            <span
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const val = prompt('Asignar Mesa #:', m.table_number || '');
+                                    if (val) onEditTable(m, val);
+                                }}
+                                className="bg-slate-800 px-1.5 rounded text-[10px] hover:bg-slate-700 cursor-pointer text-blue-300 flex items-center gap-1"
+                                title="Click para asignar mesa manualmente"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M3 9h18" /><path d="M9 21V9" /></svg>
+                                Mesa {m.table_number || '?'}
+                            </span>
+                        </div>
                     </div>
 
                     <div className="space-y-2">

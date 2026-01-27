@@ -1084,7 +1084,7 @@ export async function updateMatchResult(matchId, data) {
 
 // --- LOGICA DE GENERACION (Simplificada por ahora) ---
 
-export async function generateGroups(tournamentId) {
+export async function generateGroups(tournamentId, scheduleOverrides = {}) {
     try {
         const tournament = await getTournament(tournamentId);
 
@@ -1133,16 +1133,29 @@ export async function generateGroups(tournamentId) {
         const startDate = new Date(tournament.start_date);
 
         for (let i = 0; i < groupCount; i++) {
-            // Calculate Schedule
-            const turnIndex = Math.floor(i / tablesAvailable);
-            const tableNum = (i % tablesAvailable) + 1;
-            const startTime = new Date(startDate.getTime() + (turnIndex * blockDuration * 60000));
+            const groupName = (i + 1).toString();
+
+            // Check for Override
+            let startTime, tableNum;
+
+            if (scheduleOverrides && scheduleOverrides[groupName]) {
+                // Use Override
+                // Override format expected: { startTime: ISOString, table: number }
+                const override = scheduleOverrides[groupName];
+                startTime = new Date(override.startTime);
+                tableNum = parseInt(override.table);
+            } else {
+                // Default Logic
+                const turnIndex = Math.floor(i / tablesAvailable);
+                tableNum = (i % tablesAvailable) + 1;
+                startTime = new Date(startDate.getTime() + (turnIndex * blockDuration * 60000));
+            }
 
             const gRes = await query(`
             INSERT INTO tournament_groups (phase_id, name, start_time, table_assignment)
             VALUES ($1, $2, $3, $4)
             RETURNING id
-        `, [phaseId, (i + 1).toString(), startTime, tableNum]);
+        `, [phaseId, groupName, startTime, tableNum]);
             groups.push(gRes.rows[0].id);
         }
 
