@@ -99,14 +99,14 @@ export async function finishMatchWO(matchId, winnerId, targetPoints) {
     if (matchRes.rows.length === 0) return;
     const match = matchRes.rows[0];
 
+    // For WO, we set score to 0 for both players as per new rule.
+    // The points (2) are handled by the winner_id logic in standings.
     let scoreP1 = 0;
     let scoreP2 = 0;
 
-    if (match.player1_id == winnerId) {
-        scoreP1 = targetPoints;
-    } else {
-        scoreP2 = targetPoints;
-    }
+    // if (match.player1_id == winnerId) { scoreP1 = targetPoints; } 
+    // else { scoreP2 = targetPoints; } 
+    // ^ DISABLED: WO should have 0 carambolas.
 
     await query(`
         UPDATE tournament_matches
