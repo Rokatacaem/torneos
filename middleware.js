@@ -16,8 +16,8 @@ async function decrypt(input) {
 }
 
 // 1. Specify protected and public routes
-const protectedRoutes = ['/admin', '/referee', '/mi-perfil'];
-const publicRoutes = ['/login', '/tournaments', '/'];
+const protectedRoutes = ['/admin', '/mi-perfil'];
+const publicRoutes = ['/login', '/tournaments', '/', '/referee'];
 
 export default async function middleware(req) {
     // 2. Check if the current route is protected or public
@@ -45,13 +45,6 @@ export default async function middleware(req) {
         }
     }
     // Prevent players/referees from accessing each other's protected areas? (optional, but good practice)
-    // Prevent players/referees from accessing each other's protected areas? (optional, but good practice)
-    if (path.startsWith('/referee')) {
-        const allowedRefereeRoles = ['referee', 'admin', 'superadmin', 'SUPERADMIN', 'delegate'];
-        if (!allowedRefereeRoles.includes(session?.role)) {
-            return NextResponse.redirect(new URL('/login', req.nextUrl));
-        }
-    }
 
 
     // 5. Redirect validated users away from Login/Public pages to their Dashboard
