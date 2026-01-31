@@ -666,6 +666,7 @@ function MatchControlClientContent({ initialMatch }) {
                                         // We need to pass it or calc it. 
                                         // Actually `p1Target` is calculated in the component scope above.
                                         await finishMatchWO(match.id, match.player1_id, p1Target || 0);
+                                        setShowWOModal(false);
                                         router.refresh();
                                     }
                                 }}
@@ -679,6 +680,7 @@ function MatchControlClientContent({ initialMatch }) {
                                 onClick={async () => {
                                     if (confirm(`¿Confirmar W.O. a favor de ${match.player2_name}?`)) {
                                         await finishMatchWO(match.id, match.player2_id, p2Target || 0);
+                                        setShowWOModal(false);
                                         router.refresh();
                                     }
                                 }}
