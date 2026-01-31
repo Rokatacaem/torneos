@@ -128,7 +128,80 @@ export async function finishMatchWO(matchId, winnerId, targetPoints) {
         console.error("Error in GSL Check:", e);
     }
 
+    // Check for Group of 3 WO Rule
+    try {
+        const groupInfoRes = await query('SELECT group_id FROM tournament_matches WHERE id = $1', [matchId]);
+        const groupInfo = groupInfoRes.rows[0];
+        if (groupInfo && groupInfo.group_id) {
+            await checkGroupOf3WORule(groupInfo.group_id);
+        }
+    } catch (e) {
+        console.error("Error in Group of 3 WO Rule:", e);
+    }
+
     revalidatePath('/');
     revalidatePath('/tournaments');
     revalidatePath('/referee');
+}
+
+async function checkGroupOf3WORule(groupId) {
+    if (!groupId) return;
+
+    // 1. Check Group Size (Unique Players)
+    const playersRes = await query(`
+        SELECT DISTINCT player_id FROM (
+            SELECT player1_id as player_id FROM tournament_matches WHERE group_id = $1
+            UNION
+            SELECT player2_id as player_id FROM tournament_matches WHERE group_id = $1
+        ) as p
+    `, [groupId]);
+
+    const playerCount = playersRes.rows.length;
+    if (playerCount !== 3) return;
+
+    // 2. Iterate pairs to find the active pair (0 WOs between them)
+    const matchesRes = await query(`
+        SELECT * FROM tournament_matches WHERE group_id = $1
+    `, [groupId]);
+    const matches = matchesRes.rows;
+    const players = playersRes.rows.map(r => r.player_id);
+
+    for (let i = 0; i < players.length; i++) {
+        for (let j = i + 1; j < players.length; j++) {
+            const p1 = players[i];
+            const p2 = players[j];
+
+            const pairMatches = matches.filter(m =>
+                (m.player1_id === p1 && m.player2_id === p2) ||
+                (m.player1_id === p2 && m.player2_id === p1)
+            );
+
+            const hasWO = pairMatches.some(m => m.win_reason === 'wo');
+
+            if (!hasWO) {
+                // This is the "Active" pair (B vs C).
+                // They should have 2 matches.
+                if (pairMatches.length < 2) {
+                    console.log(`[WO Rule] Creating return match for ${p1} vs ${p2}`);
+                    const refMatch = pairMatches[0];
+                    await query(`
+                        INSERT INTO tournament_matches (
+                            tournament_id, phase_id, group_id, 
+                            player1_id, player2_id, 
+                            status, 
+                            updated_at
+                        ) VALUES (
+                            $1, $2, $3, 
+                            $4, $5, 
+                            'scheduled', 
+                            NOW()
+                        )
+                    `, [
+                        refMatch.tournament_id, refMatch.phase_id, refMatch.group_id,
+                        p2, p1
+                    ]);
+                }
+            }
+        }
+    }
 }
