@@ -39,10 +39,20 @@ export function calculateGroupStandings(matches) {
         if (p1 && p2) {
             p1.played++;
             p2.played++;
-            p1.scoreFor += match.score_p1;
-            p1.scoreAgainst += match.score_p2;
-            p2.scoreFor += match.score_p2;
-            p2.scoreAgainst += match.score_p1;
+            if (match.win_reason !== 'wo') {
+                p1.scoreFor += match.score_p1;
+                p1.scoreAgainst += match.score_p2;
+                p2.scoreFor += match.score_p2;
+                p2.scoreAgainst += match.score_p1;
+
+                const matchInnings = match.innings || 0;
+                p1.innings = (p1.innings || 0) + matchInnings;
+                p2.innings = (p2.innings || 0) + matchInnings;
+
+                // Track High Run (SM)
+                if (match.high_run_p1 > (p1.highRun || 0)) p1.highRun = match.high_run_p1;
+                if (match.high_run_p2 > (p2.highRun || 0)) p2.highRun = match.high_run_p2;
+            }
 
             if (match.winner_id === match.player1_id) {
                 p1.won++;
@@ -55,14 +65,6 @@ export function calculateGroupStandings(matches) {
             } else {
                 p2.points += 1;
             }
-
-            const matchInnings = match.innings || 0;
-            p1.innings = (p1.innings || 0) + matchInnings;
-            p2.innings = (p2.innings || 0) + matchInnings;
-
-            // Track High Run (SM)
-            if (match.high_run_p1 > (p1.highRun || 0)) p1.highRun = match.high_run_p1;
-            if (match.high_run_p2 > (p2.highRun || 0)) p2.highRun = match.high_run_p2;
         }
     });
 
@@ -139,26 +141,28 @@ export function calculateGlobalStandings(matches) {
             if (p1 && p2) {
                 // Basic Stats
                 p1.played++; p2.played++;
-                p1.scoreFor += m.score_p1;
-                p1.scoreAgainst += m.score_p2;
-                p2.scoreFor += m.score_p2;
-                p2.scoreAgainst += m.score_p1;
+                if (m.win_reason !== 'wo') {
+                    p1.scoreFor += m.score_p1;
+                    p1.scoreAgainst += m.score_p2;
+                    p2.scoreFor += m.score_p2;
+                    p2.scoreAgainst += m.score_p1;
 
-                const innings = m.innings || 1; // Avoid div by 0
-                p1.innings += innings;
-                p2.innings += innings;
+                    const innings = m.innings || 1; // Avoid div by 0
+                    p1.innings += innings;
+                    p2.innings += innings;
 
-                // Logic for PP (Best Particular Average)
-                const p1Avg = m.score_p1 / innings;
-                const p2Avg = m.score_p2 / innings;
-                if (p1Avg > p1.bestAvg) p1.bestAvg = p1Avg;
-                if (p2Avg > p2.bestAvg) p2.bestAvg = p2Avg;
+                    // Logic for PP (Best Particular Average)
+                    const p1Avg = m.score_p1 / innings;
+                    const p2Avg = m.score_p2 / innings;
+                    if (p1Avg > p1.bestAvg) p1.bestAvg = p1Avg;
+                    if (p2Avg > p2.bestAvg) p2.bestAvg = p2Avg;
 
-                // Logic for SM (High Run - Actual data)
-                const p1Run = m.high_run_p1 || 0;
-                const p2Run = m.high_run_p2 || 0;
-                if (p1Run > p1.highRun) p1.highRun = p1Run;
-                if (p2Run > p2.highRun) p2.highRun = p2Run;
+                    // Logic for SM (High Run - Actual data)
+                    const p1Run = m.high_run_p1 || 0;
+                    const p2Run = m.high_run_p2 || 0;
+                    if (p1Run > p1.highRun) p1.highRun = p1Run;
+                    if (p2Run > p2.highRun) p2.highRun = p2Run;
+                }
 
                 // Points
                 if (m.winner_id === m.player1_id) {
