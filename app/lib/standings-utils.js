@@ -86,8 +86,13 @@ export function calculateGroupStandings(matches) {
             if (b.points !== a.points) return b.points - a.points;
 
             // Prioritize Undefeated (Fewer matches played for same points = better efficiency)
-            // E.g. in GSL: 2-0 (Played 2) > 2-1 (Played 3)
             if (a.played !== b.played) return a.played - b.played;
+
+            // New Tie-Breaker: Weighted Average (Percentage Performance)
+            // Since matches are won by POTE, groups should be sorted by POTE.
+            const pondA = parseFloat(a.weightedAvg || 0);
+            const pondB = parseFloat(b.weightedAvg || 0);
+            if (pondA !== pondB) return pondB - pondA;
 
             if ((b.scoreFor - b.scoreAgainst) !== (a.scoreFor - a.scoreAgainst))
                 return (b.scoreFor - b.scoreAgainst) - (a.scoreFor - a.scoreAgainst);
@@ -201,6 +206,6 @@ export function calculateGlobalStandings(matches) {
         return p;
     }).sort((a, b) => {
         if (b.points !== a.points) return b.points - a.points;
-        return parseFloat(b.generalAvg) - parseFloat(a.generalAvg);
+        return parseFloat(b.weightedAvg) - parseFloat(a.weightedAvg);
     });
 }
