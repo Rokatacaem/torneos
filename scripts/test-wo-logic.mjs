@@ -43,8 +43,8 @@ console.log('P1 Group:', {
     average: p1Group.average
 });
 
-if (p1Group.scoreFor !== 20 || p1Group.innings !== 10) {
-    console.error("FAIL: Group stats included WO data incorrectly.");
+if (p1Group.scoreFor !== 20 || p1Group.innings !== 10 || p1Group.played !== 1) {
+    console.error("FAIL: Group stats included WO data incorrectly (Played count should be 1).", p1Group);
     process.exit(1);
 }
 
@@ -60,8 +60,8 @@ console.log('P1 Global:', {
     generalAvg: p1Global.generalAvg
 });
 
-if (p1Global.scoreFor !== 20 || p1Global.innings !== 10) {
-    console.error("FAIL: Global stats included WO data incorrectly.");
+if (p1Global.scoreFor !== 20 || p1Global.innings !== 10 || p1Global.played !== 1) {
+    console.error("FAIL: Global stats included WO data incorrectly (Played count should be 1).", p1Global);
     process.exit(1);
 }
 

@@ -37,9 +37,9 @@ export function calculateGroupStandings(matches) {
         const p2 = groups[group][match.player2_id];
 
         if (p1 && p2) {
-            p1.played++;
-            p2.played++;
             if (match.win_reason !== 'wo') {
+                p1.played++;
+                p2.played++;
                 p1.scoreFor += match.score_p1;
                 p1.scoreAgainst += match.score_p2;
                 p2.scoreFor += match.score_p2;
@@ -140,8 +140,8 @@ export function calculateGlobalStandings(matches) {
 
             if (p1 && p2) {
                 // Basic Stats
-                p1.played++; p2.played++;
                 if (m.win_reason !== 'wo') {
+                    p1.played++; p2.played++;
                     p1.scoreFor += m.score_p1;
                     p1.scoreAgainst += m.score_p2;
                     p2.scoreFor += m.score_p2;
