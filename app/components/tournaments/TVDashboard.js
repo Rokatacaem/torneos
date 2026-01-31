@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { calculateGroupStandings, calculateGlobalStandings } from '@/app/lib/standings-utils';
 import BracketModule from './BracketModule';
@@ -11,6 +12,15 @@ import GroupsModule from './GroupsModule';
 export default function TVDashboard({ tournament, matches, players }) {
     const globalStandings = calculateGlobalStandings(matches);
     const groupStandings = calculateGroupStandings(matches);
+    const router = useRouter();
+
+    // Auto-Refresh Logic (Every 10 seconds)
+    useEffect(() => {
+        const interval = setInterval(() => {
+            router.refresh();
+        }, 10000);
+        return () => clearInterval(interval);
+    }, [router]);
 
     // Phases Logic
     const phasesMap = new Map();
