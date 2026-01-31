@@ -10,6 +10,7 @@ export default function GeneralTableModule({ standings }) {
                             <th className="py-1 px-1 text-center bg-[#061020]">#</th>
                             <th className="py-1 px-2 bg-[#061020] text-sm lg:text-base">JUGADOR</th>
                             <th className="py-1 px-1 text-center text-slate-400 bg-[#061020]" title="Partidos Jugados">P</th>
+                            <th className="py-1 px-1 text-center text-slate-500 bg-[#061020]" title="Handicap">HD</th>
                             <th className="py-1 px-1 text-center text-slate-400 bg-[#061020]" title="Carambolas">C</th>
                             <th className="py-1 px-1 text-center text-slate-400 bg-[#061020]" title="Entradas">E</th>
                             <th className="py-1 px-1 text-center text-white bg-[#061020]" title="Serie Mayor">SM</th>
@@ -34,6 +35,7 @@ export default function GeneralTableModule({ standings }) {
                                     </span>
                                 </td>
                                 <td className="py-0.5 text-center text-slate-400 font-mono text-[10px] lg:text-xs">{p.played}</td>
+                                <td className="py-0.5 text-center text-slate-500 font-mono text-[10px] lg:text-xs">{p.handicap}</td>
                                 <td className="py-0.5 text-center text-cyan-200/60 font-mono text-[10px] lg:text-xs">{p.scoreFor}</td>
                                 <td className="py-0.5 text-center text-cyan-200/60 font-mono text-[10px] lg:text-xs">{p.innings}</td>
                                 <td className="py-0.5 text-center text-white/90 font-black text-xs lg:text-sm">{p.highRun}</td>

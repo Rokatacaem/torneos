@@ -57,7 +57,11 @@ export default function GroupsModule({ standings }) {
                                                         <img src={p.photo_url} alt="" className="w-full h-full object-cover" />
                                                     </div>
                                                 )}
-                                                <span className="truncate">{p.name.split(' ').slice(-1)[0]} <span className="text-[10px] opacity-70 ml-0.5">{p.name.charAt(0)}.</span></span>
+                                                <span className="truncate">
+                                                    {p.name.split(' ').slice(-1)[0]}
+                                                    <span className="text-[10px] opacity-70 ml-0.5">{p.name.charAt(0)}.</span>
+                                                    <span className="text-[9px] text-yellow-500/80 ml-1 font-mono">({p.handicap})</span>
+                                                </span>
                                             </td>
                                             <td className="p-1 text-center font-mono tracking-tighter">{p.played}</td>
                                             <td className="p-1 text-center text-slate-400 font-mono tracking-tighter">{p.average}</td>

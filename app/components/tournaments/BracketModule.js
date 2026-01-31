@@ -176,13 +176,19 @@ function BracketNode({ match, align = 'left', isFinal = false, index }) {
             <div className={`flex justify-between items-center px-2 py-1 ${p1Win ? 'bg-yellow-500 text-black font-bold' : 'text-slate-300'}`}>
                 {align === 'left' ? (
                     <>
-                        <span className="truncate text-xs font-bold uppercase tracking-tight">{p1Name}</span>
+                        <span className="truncate text-xs font-bold uppercase tracking-tight">
+                            {p1Name}
+                            <span className="text-[9px] text-cyan-500/70 ml-1">({match.player1_handicap || '-'})</span>
+                        </span>
                         <span className={`ml-1 font-mono text-sm ${p1Win ? 'text-black' : 'text-white'}`}>{isCompleted ? match.score_p1 : '-'}</span>
                     </>
                 ) : (
                     <>
                         <span className={`mr-1 font-mono text-sm ${p1Win ? 'text-black' : 'text-white'}`}>{isCompleted ? match.score_p1 : '-'}</span>
-                        <span className="truncate text-xs font-bold uppercase tracking-tight text-right">{p1Name}</span>
+                        <span className="truncate text-xs font-bold uppercase tracking-tight text-right">
+                            {p1Name}
+                            <span className="text-[9px] text-cyan-500/70 ml-1">({match.player1_handicap || '-'})</span>
+                        </span>
                     </>
                 )}
             </div>
@@ -193,13 +199,19 @@ function BracketNode({ match, align = 'left', isFinal = false, index }) {
             <div className={`flex justify-between items-center px-2 py-1 ${p2Win ? 'bg-yellow-500 text-black font-bold' : 'text-slate-300'}`}>
                 {align === 'left' ? (
                     <>
-                        <span className="truncate text-xs font-bold uppercase tracking-tight">{p2Name}</span>
+                        <span className="truncate text-xs font-bold uppercase tracking-tight">
+                            {p2Name}
+                            <span className="text-[9px] text-cyan-500/70 ml-1">({match.player2_handicap || '-'})</span>
+                        </span>
                         <span className={`ml-1 font-mono text-sm ${p2Win ? 'text-black' : 'text-white'}`}>{isCompleted ? match.score_p2 : '-'}</span>
                     </>
                 ) : (
                     <>
                         <span className={`mr-1 font-mono text-sm ${p2Win ? 'text-black' : 'text-white'}`}>{isCompleted ? match.score_p2 : '-'}</span>
-                        <span className="truncate text-xs font-bold uppercase tracking-tight text-right">{p2Name}</span>
+                        <span className="truncate text-xs font-bold uppercase tracking-tight text-right">
+                            {p2Name}
+                            <span className="text-[9px] text-cyan-500/70 ml-1">({match.player2_handicap || '-'})</span>
+                        </span>
                     </>
                 )}
             </div>
