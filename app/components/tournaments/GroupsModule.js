@@ -42,7 +42,8 @@ export default function GroupsModule({ standings }) {
                                     <tr className="text-cyan-400 border-b border-white/5 bg-[#030810]/50 text-[9px] lg:text-[11px]">
                                         <th className="w-[40%] p-1 font-bold">JUGADOR</th>
                                         <th className="w-[12%] text-center p-1 font-bold">PJ</th>
-                                        <th className="w-[22%] text-center p-1 font-bold">PROM</th>
+                                        <th className="w-[18%] text-center p-1 font-bold">GEN</th>
+                                        <th className="w-[18%] text-center p-1 font-bold text-yellow-500">POND</th>
                                         <th className="w-[11%] text-center p-1 font-bold text-white">SM</th>
                                         <th className="w-[15%] text-center text-white p-1 font-black bg-white/5">PTS</th>
                                     </tr>
@@ -59,7 +60,8 @@ export default function GroupsModule({ standings }) {
                                                 <span className="truncate">{p.name.split(' ').slice(-1)[0]} <span className="text-[10px] opacity-70 ml-0.5">{p.name.charAt(0)}.</span></span>
                                             </td>
                                             <td className="p-1 text-center font-mono tracking-tighter">{p.played}</td>
-                                            <td className="p-1 text-center text-yellow-500 font-mono tracking-tighter">{p.average}</td>
+                                            <td className="p-1 text-center text-slate-400 font-mono tracking-tighter">{p.average}</td>
+                                            <td className="p-1 text-center text-yellow-500 font-mono tracking-tighter font-bold">{p.weightedAvg}</td>
                                             <td className="p-1 text-center text-white font-mono tracking-tighter">{p.highRun || 0}</td>
                                             <td className="p-1 text-center font-black bg-white/5 text-cyan-200 tracking-tighter">{p.points}</td>
                                         </tr>

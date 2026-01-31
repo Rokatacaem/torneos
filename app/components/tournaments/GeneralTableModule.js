@@ -14,6 +14,7 @@ export default function GeneralTableModule({ standings }) {
                             <th className="py-1 px-1 text-center text-slate-400 bg-[#061020]" title="Entradas">E</th>
                             <th className="py-1 px-1 text-center text-white bg-[#061020]" title="Serie Mayor">SM</th>
                             <th className="py-1 px-1 text-center text-yellow-500 bg-[#061020] text-xs lg:text-sm" title="Promedio General">PG</th>
+                            <th className="py-1 px-1 text-center text-green-500 bg-[#061020] text-xs lg:text-sm" title="Promedio Ponderado">PP</th>
                             <th className="py-1 px-2 text-center text-white bg-[#061020] text-xs lg:text-sm">PTS</th>
                         </tr>
                     </thead>
@@ -37,6 +38,7 @@ export default function GeneralTableModule({ standings }) {
                                 <td className="py-0.5 text-center text-cyan-200/60 font-mono text-[10px] lg:text-xs">{p.innings}</td>
                                 <td className="py-0.5 text-center text-white/90 font-black text-xs lg:text-sm">{p.highRun}</td>
                                 <td className="py-0.5 text-center text-yellow-400 font-mono font-black text-sm lg:text-base">{p.generalAvg}</td>
+                                <td className="py-0.5 text-center text-green-400 font-mono font-black text-sm lg:text-base">{p.weightedAvg}</td>
                                 <td className="py-0.5 text-center text-white font-black bg-slate-900/40 text-sm lg:text-base">{p.points}</td>
                             </tr>
                         ))}

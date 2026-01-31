@@ -519,22 +519,43 @@ function MatchControlClientContent({ initialMatch }) {
         );
     }
 
-    // Match Finished Modal
     if (isMatchFinished) {
-        // Determine winner based on score
+        // Determine winner based on score or Weighted Average (if handicap)
         const p1Score = match.score_p1 || 0;
         const p2Score = match.score_p2 || 0;
         let winnerName, winnerColor;
 
-        if (p1Score > p2Score) {
-            winnerName = match.player1_name;
-            winnerColor = "text-white"; // Assuming P1 White
-        } else if (p2Score > p1Score) {
-            winnerName = match.player2_name;
-            winnerColor = "text-yellow-400"; // Assuming P2 Yellow
+        if (match.use_handicap) {
+            // New logic: Winner is the one with highest Percentage (Weighted Avg)
+            // Percentage = Score / Handicap
+            const p1Target = match.player1_handicap || 1;
+            const p2Target = match.player2_handicap || 1;
+
+            const p1Pct = p1Score / p1Target;
+            const p2Pct = p2Score / p2Target;
+
+            if (p1Pct > p2Pct) {
+                winnerName = match.player1_name;
+                winnerColor = "text-white";
+            } else if (p2Pct > p1Pct) {
+                winnerName = match.player2_name;
+                winnerColor = "text-yellow-400";
+            } else {
+                winnerName = "Empate";
+                winnerColor = "text-slate-300";
+            }
         } else {
-            winnerName = "Empate";
-            winnerColor = "text-slate-300";
+            // Standard Logic (Absolute Score)
+            if (p1Score > p2Score) {
+                winnerName = match.player1_name;
+                winnerColor = "text-white";
+            } else if (p2Score > p1Score) {
+                winnerName = match.player2_name;
+                winnerColor = "text-yellow-400";
+            } else {
+                winnerName = "Empate";
+                winnerColor = "text-slate-300";
+            }
         }
 
         return (
@@ -578,13 +599,23 @@ function MatchControlClientContent({ initialMatch }) {
                             </button>
                             <button
                                 onClick={async () => {
-                                    // Determine Winner ID based on current scores
+                                    // Determine Winner ID based on rules
                                     let winnerId = null;
                                     const finalP1 = match.score_p1 || 0;
                                     const finalP2 = match.score_p2 || 0;
 
-                                    if (finalP1 > finalP2) winnerId = match.player1_id;
-                                    else if (finalP2 > finalP1) winnerId = match.player2_id;
+                                    if (match.use_handicap) {
+                                        const t1 = match.player1_handicap || 1;
+                                        const t2 = match.player2_handicap || 1;
+                                        const pct1 = finalP1 / t1;
+                                        const pct2 = finalP2 / t2;
+
+                                        if (pct1 > pct2) winnerId = match.player1_id;
+                                        else if (pct2 > pct1) winnerId = match.player2_id;
+                                    } else {
+                                        if (finalP1 > finalP2) winnerId = match.player1_id;
+                                        else if (finalP2 > finalP1) winnerId = match.player2_id;
+                                    }
 
                                     await finishMatch(match.id, winnerId);
                                     router.push('/referee');

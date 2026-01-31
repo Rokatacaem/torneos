@@ -74,6 +74,13 @@ export function calculateGroupStandings(matches) {
         sortedGroups[groupKey] = Object.values(groups[groupKey]).map(p => {
             const inns = p.innings || 0;
             p.average = inns > 0 ? (p.scoreFor / inns).toFixed(3) : '0.000';
+
+            // Weighted Average (Promedio Ponderado) = Score / (Handicap * Played)
+            // If accumulated handicap is needed: Handicap * Played matches.
+            // Assuming p.handicap is the single match handicap.
+            const totalHandicap = (p.handicap || 0) * (p.played || 0);
+            p.weightedAvg = totalHandicap > 0 ? (p.scoreFor / totalHandicap).toFixed(3) : '0.000';
+
             return p;
         }).sort((a, b) => {
             if (b.points !== a.points) return b.points - a.points;
@@ -183,6 +190,10 @@ export function calculateGlobalStandings(matches) {
 
     return Object.values(players).map(p => {
         p.generalAvg = p.innings > 0 ? (p.scoreFor / p.innings).toFixed(3) : '0.000';
+
+        const totalHandicap = (p.handicap || 0) * (p.played || 0);
+        p.weightedAvg = totalHandicap > 0 ? (p.scoreFor / totalHandicap).toFixed(3) : '0.000';
+
         p.particularAvg = p.bestAvg.toFixed(3);
         // Use real club if available, else derive check
         p.clubCode = p.club ? p.club.substring(0, 3).toUpperCase() : p.name.substring(0, 3).toUpperCase();
