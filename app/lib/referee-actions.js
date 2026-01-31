@@ -84,6 +84,9 @@ export async function finishMatch(matchId, winnerId) {
 }
 
 export async function finishMatchWO(matchId, winnerId, targetPoints) {
+    // Ensure types
+    targetPoints = Number(targetPoints) || 0;
+    // ...
     // Determine which score to set
     // If winner is p1, set score_p1 = targetPoints, score_p2 = 0
     // We need to know who is who.
@@ -99,7 +102,7 @@ export async function finishMatchWO(matchId, winnerId, targetPoints) {
     let scoreP1 = 0;
     let scoreP2 = 0;
 
-    if (match.player1_id === winnerId) {
+    if (match.player1_id == winnerId) {
         scoreP1 = targetPoints;
     } else {
         scoreP2 = targetPoints;
