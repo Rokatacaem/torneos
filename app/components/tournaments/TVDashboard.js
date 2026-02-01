@@ -51,7 +51,19 @@ export default function TVDashboard({ tournament, matches, players }) {
     // Filter active matches for Matches View
     // Prioritize In Progress, then Scheduled.
     // If none, show Completed from latest phase.
-    const activeMatches = matches.filter(m => m.status === 'in_progress' || m.status === 'scheduled')
+    // Safe sort helper
+    const safeSortMatches = (arr) => {
+        if (!arr) return [];
+        return arr.sort((a, b) => {
+            const dateA = a.updated_at ? String(a.updated_at) : '';
+            const dateB = b.updated_at ? String(b.updated_at) : '';
+            return dateB.localeCompare(dateA);
+        });
+    };
+
+    // Filter active matches for Matches View
+    const matchesList = matches || [];
+    const activeMatches = matchesList.filter(m => m.status === 'in_progress' || m.status === 'scheduled')
         .sort((a, b) => {
             if (a.status === 'in_progress' && b.status !== 'in_progress') return -1;
             if (a.status !== 'in_progress' && b.status === 'in_progress') return 1;
@@ -59,13 +71,11 @@ export default function TVDashboard({ tournament, matches, players }) {
         });
 
     // If no active matches, show recent completed (last 12?)
+    const completedMatches = matchesList.filter(m => m.status === 'completed');
+
     const displayMatches = activeMatches.length > 0
         ? activeMatches
-        : matches.filter(m => m.status === 'completed').sort((a, b) => {
-            const dateA = a.updated_at || '';
-            const dateB = b.updated_at || '';
-            return dateB.localeCompare(dateA);
-        }).slice(0, 12);
+        : safeSortMatches(completedMatches).slice(0, 12);
 
     return (
         // 1cm Perimeter (p-4 approx 16px) No overflow.
