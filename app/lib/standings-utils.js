@@ -29,6 +29,16 @@ export function calculateGroupStandings(matches) {
     });
 
     // 2. Process results
+    // Helper to detect unique pairs and count matches between them
+    const pairMatches = {};
+
+    // 2. Process results
+    // Sort matches first to ensure order processing! Important for "First Match = Points, Second = No Points"
+    // Assuming m.id or m.table_number indicates order. 
+    // Matches should be sorted by sequence logic ideally. 
+    // As per getMatches they come sorted by sequence_order, group, table_number. 
+    // Let's rely on array order.
+
     matches.forEach(match => {
         if (match.status !== 'completed') return;
 
@@ -37,7 +47,20 @@ export function calculateGroupStandings(matches) {
         const p2 = groups[group][match.player2_id];
 
         if (p1 && p2) {
+            // Check if this pair has played before in this group
+            // Sort IDs to ensure consistency (p1-p2 vs p2-p1)
+            const pairKey = [match.player1_id, match.player2_id].sort().join('-');
+            if (!pairMatches[group]) pairMatches[group] = {};
+
+            // Count occurrence of this pair
+            const matchIndex = (pairMatches[group][pairKey] || 0) + 1;
+            pairMatches[group][pairKey] = matchIndex;
+
+            const isReturnMatch = matchIndex > 1;
+
             if (match.win_reason !== 'wo') {
+                // Average stats ALWAYS count (p1.played, p1.scoreFor, etc)
+                // "The second match between them counts for average" - User
                 p1.played++;
                 p2.played++;
                 p1.scoreFor += match.score_p1;
@@ -54,16 +77,45 @@ export function calculateGroupStandings(matches) {
                 if (match.high_run_p2 > (p2.highRun || 0)) p2.highRun = match.high_run_p2;
             }
 
-            if (match.winner_id === match.player1_id) {
-                p1.won++;
-                p1.points += 2;
-                p2.lost++;
-            } else if (match.winner_id === match.player2_id) {
-                p2.won++;
-                p1.lost++;
-                p2.points += 2;
+            // Points Logic
+            // "The second match between them... does not count the 2 points"
+            if (!isReturnMatch) {
+                if (match.winner_id === match.player1_id) {
+                    p1.won++;
+                    p1.points += 2;
+                    p2.lost++;
+                } else if (match.winner_id === match.player2_id) {
+                    p2.won++;
+                    p2.points += 2;
+                    p1.lost++;
+                } else {
+                    p1.points += 1;
+                    p2.points += 1;
+                }
             } else {
-                p2.points += 1;
+                // Return Match Logic: No Points. 
+                // Win/Loss counters? 
+                // "First match determines winner of group" (ranking wise)
+                // "Second match counts for average but not points"
+                // Do we increment won/lost counters? 
+                // Usually Played/Won/Lost/Points are coupled. 
+                // If we increment Won but give 0 points, it looks weird (1 played, 1 won, 0 pts).
+                // But user says "solo se contabiliza para promedio".
+                // I will NOT increment Won/Lost for return match to keep Points/Record consistent, 
+                // BUT I WILL increment Played (done in average stats block above).
+
+                // Wait, if I increment Played but not Won/Lost/Points.
+                // Won + Lost + Draw should equal Played?
+                // If I have 2 Played, 1 Won (First match), 0 Lost. Where did the second match go?
+                // This might confuse the user or the table ("PJ 2, PG 1, PP 0").
+                // However, user specifically said "Max points to reach is 4".
+                // If I give points, I break that.
+                // If I assume this is a 'friendly' for stats, maybe keep Won/Lost out of it?
+                // Let's stick to strict interpretation: Points = 0.
+                // Ideally, maybe Won/Lost shouldn't change either to avoid confusing the standing table.
+
+                // DECISION: Only increment Played (for average calc) and Score/Innings.
+                // Do NOT increment Won/Lost/Points.
             }
         }
     });
@@ -136,13 +188,11 @@ export function calculateGlobalStandings(matches) {
         }
     };
 
+    // Track unique matches per group for point restriction
+    const globalPairMatches = {};
+
     matches.forEach(m => {
         // Init with handicap and team if available
-        // Note: matches object keys depend on getMatches query. 
-        // In getMatches, we select p1.team_name alias? No, we select p.* from tournament_players?
-        // Let's check getMatches query below. It selects: 
-        // p1.player_name, p1.handicap. It DOES NOT select team_name explicitly for p1/p2.
-        // We need to fix getMatches first to return team_name.
         if (m.player1_id) initPlayer(m.player1_id, m.player1_name, m.player1_handicap, m.player1_team);
         if (m.player2_id) initPlayer(m.player2_id, m.player2_name, m.player2_handicap, m.player2_team);
 
@@ -151,6 +201,15 @@ export function calculateGlobalStandings(matches) {
             const p2 = players[m.player2_id];
 
             if (p1 && p2) {
+                // Determine if this is a "Return Match" in groups (0 points)
+                let isReturnMatch = false;
+                if (m.phase_type === 'group' && m.group_name) {
+                    const pairKey = `${m.group_name}-${[m.player1_id, m.player2_id].sort().join('-')}`;
+                    const count = (globalPairMatches[pairKey] || 0) + 1;
+                    globalPairMatches[pairKey] = count;
+                    if (count > 1) isReturnMatch = true;
+                }
+
                 // Basic Stats
                 if (m.win_reason !== 'wo') {
                     p1.played++; p2.played++;
@@ -176,18 +235,20 @@ export function calculateGlobalStandings(matches) {
                     if (p2Run > p2.highRun) p2.highRun = p2Run;
                 }
 
-                // Points
-                if (m.winner_id === m.player1_id) {
-                    p1.won++;
-                    p1.points += 2; // Match points usually 2 in billiards tournaments
-                    p2.lost++;
-                } else if (m.winner_id === m.player2_id) {
-                    p2.won++;
-                    p2.points += 2;
-                    p1.lost++;
-                } else {
-                    p1.points += 1;
-                    p2.points += 1;
+                // Points - Only if NOT return match
+                if (!isReturnMatch) {
+                    if (m.winner_id === m.player1_id) {
+                        p1.won++;
+                        p1.points += 2;
+                        p2.lost++;
+                    } else if (m.winner_id === m.player2_id) {
+                        p2.won++;
+                        p2.points += 2;
+                        p1.lost++;
+                    } else {
+                        p1.points += 1;
+                        p2.points += 1;
+                    }
                 }
             }
         }
