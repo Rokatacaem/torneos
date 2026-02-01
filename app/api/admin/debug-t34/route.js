@@ -10,6 +10,9 @@ export async function GET(request) {
     try {
         console.log(`Debugging Tournament ${tournamentId}...`);
 
+        // Check All Tournaments
+        const tournaments = await query('SELECT id, name FROM tournaments ORDER BY id DESC LIMIT 5', []);
+
         // Check Phases
         const phases = await query('SELECT * FROM tournament_phases WHERE tournament_id = $1', [tournamentId]);
 
@@ -22,7 +25,8 @@ export async function GET(request) {
         return NextResponse.json({
             phases: phases.rows,
             matchesSummary: matchesSummary.rows,
-            sampleMatches: sampleMatches.rows
+            sampleMatches: sampleMatches.rows,
+            tournaments: tournaments.rows
         });
     } catch (error) {
         return NextResponse.json({ error: error.message, stack: error.stack }, { status: 500 });
