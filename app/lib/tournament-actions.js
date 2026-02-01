@@ -1344,7 +1344,7 @@ export async function generatePlayoffs(tournamentId) {
     const matches = await getMatches(tournamentId);
     const groups = {}; // groupId -> { players: { playerId: { points, sets, avg... } } }
 
-    const initStats = () => ({ points: 0, innings: 0, score: 0, matches: 0 });
+    const initStats = () => ({ points: 0, innings: 0, score: 0, matches: 0, handicap: 0 });
 
     matches.filter(m => m.phase_type === 'group' && m.status === 'completed').forEach(m => {
         if (!groups[m.group_id]) groups[m.group_id] = {};
@@ -1355,6 +1355,10 @@ export async function generatePlayoffs(tournamentId) {
 
         const p1 = g[m.player1_id];
         const p2 = g[m.player2_id];
+
+        // Capture handicap (use first available)
+        if (!p1.handicap && m.player1_handicap) p1.handicap = m.player1_handicap;
+        if (!p2.handicap && m.player2_handicap) p2.handicap = m.player2_handicap;
 
         p1.matches++;
         p2.matches++;
@@ -1376,17 +1380,21 @@ export async function generatePlayoffs(tournamentId) {
         const pStats = groups[gid];
         const sorted = Object.entries(pStats).map(([pid, stats]) => {
             const avg = stats.innings > 0 ? stats.score / stats.innings : 0;
-            return { pid: parseInt(pid), ...stats, avg };
+            const totalHcp = (stats.handicap || 0) * (stats.matches || 0);
+            const wAvg = totalHcp > 0 ? stats.score / totalHcp : 0;
+            return { pid: parseInt(pid), ...stats, avg, wAvg };
         })
             .sort((a, b) => {
-                // Modified Sort for GSL: Prioritize efficiency (Fewer matches to reach same points = Q1 vs Q2)
+                // Modified Sort for GSL: Prioritize efficiency
                 if (tournament.group_format === 'gsl') {
                     if (b.points !== a.points) return b.points - a.points;
-                    if (a.matches !== b.matches) return a.matches - b.matches; // Less matches is better (2-0 vs 2-1)
-                    return b.avg - a.avg;
+                    if (a.matches !== b.matches) return a.matches - b.matches;
+                    return b.wAvg - a.wAvg; // Use Weighted Avg here too? Or General? specific to GSL rules.
                 }
-                // Standard Round Robin Sort
-                return b.points - a.points || b.avg - a.avg;
+                // Standard Sort: Points -> Weighted Avg -> General Avg
+                if (b.points !== a.points) return b.points - a.points;
+                if (Math.abs(b.wAvg - a.wAvg) > 0.0001) return b.wAvg - a.wAvg;
+                return b.avg - a.avg;
             });
 
         // Take qualifiersPerGroup
@@ -1400,7 +1408,12 @@ export async function generatePlayoffs(tournamentId) {
     if (qualified.length < 2) throw new Error('No hay suficientes partidos jugados para generar llaves');
 
     // Sort ALL qualifiers globally for seeding
-    qualified.sort((a, b) => b.points - a.points || b.avg - a.avg);
+    // "primero puntos, promedio ponderado y por ultimo promedio general"
+    qualified.sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        if (Math.abs(b.wAvg - a.wAvg) > 0.0001) return b.wAvg - a.wAvg;
+        return b.avg - a.avg;
+    });
 
     // 4. Calculate Adjustment Logic
     const totalQualified = qualified.length;
