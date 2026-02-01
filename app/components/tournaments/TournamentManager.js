@@ -1485,12 +1485,14 @@ function MatchGrid({ matches, onSelect, onEditTable }) {
                         <div className="flex justify-between items-center">
                             <div className={`font-medium truncate ${m.winner_id === m.player1_id ? 'text-green-400' : 'text-slate-300'}`}>
                                 {m.player1_name || '...'}
+                                {m.player1_handicap && <span className="text-[10px] text-zinc-500 ml-1">({m.player1_handicap})</span>}
                             </div>
                             <div className="font-bold text-xl font-mono min-w-[30px] text-right">{m.score_p1}</div>
                         </div>
                         <div className="flex justify-between items-center">
                             <div className={`font-medium truncate ${m.winner_id === m.player2_id ? 'text-green-400' : 'text-slate-300'}`}>
                                 {m.player2_name || '...'}
+                                {m.player2_handicap && <span className="text-[10px] text-zinc-500 ml-1">({m.player2_handicap})</span>}
                             </div>
                             <div className="font-bold text-xl font-mono min-w-[30px] text-right">{m.score_p2}</div>
                         </div>
