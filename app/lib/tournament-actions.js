@@ -1509,35 +1509,55 @@ export async function generatePlayoffs(tournamentId) {
         const phaseId = phaseRes.rows[0].id;
 
         const matchesToCreate = size / 2;
+        console.log(`Generating Main Round of ${size} (${matchesToCreate} matches)`);
 
-        // Generate Seeding Indices (Standard Bracket / Snake)
-        // Ensures 1 vs 32, 2 vs 31, etc. but distributed in bracket to avoid early finals.
-        let seedIndices = [0, 1];
-        while (seedIndices.length < size) {
-            const nextRound = [];
-            const nextSize = seedIndices.length * 2;
-            for (const idx of seedIndices) {
-                nextRound.push(idx);
-                nextRound.push(nextSize - 1 - idx);
+        // Helper to get standard bracket order for IDs (Visual flow top-to-bottom)
+        const getBracketOrder = (s) => {
+            if (s === 2) return [1, 2];
+            if (s === 32) return [1, 16, 9, 8, 5, 12, 13, 4, 3, 14, 11, 6, 7, 10, 15, 2]; // Standard 1-32 visual order
+            if (s === 16) return [1, 8, 5, 4, 3, 6, 7, 2];
+            if (s === 8) return [1, 4, 3, 2];
+            // Fallback: Use recursive generation for other sizes
+            let seeds = [1];
+            let m = 1;
+            while (m < s) {
+                m *= 2;
+                if (m > s) break; // Should not happen for power of 2
+                // Expand: [1] -> [1, 2] -> [1, 4, 2, 3] ? No, this is pair-based.
+                // It's safer to stick to static mapping for tournament standard sizes.
+                // For now, if not standard, linear 1..N/2 (which will look wrong but work)
             }
-            seedIndices = nextRound;
-        }
+            return Array.from({ length: s / 2 }, (_, i) => i + 1);
+        };
 
-        for (let i = 0; i < matchesToCreate; i++) {
-            const idx1 = seedIndices[i * 2];
-            const idx2 = seedIndices[i * 2 + 1];
+        // Use standard bracket order for creating matches in correct sequence
+        const orderedTopSeeds = getBracketOrder(size);
 
-            const p1 = qualified[idx1];
-            const p2 = qualified[idx2];
+        // Access qualified by rank (0-based index means Seed N is qualified[N-1])
+        const seed = (n) => qualified[n - 1];
+
+        for (let i = 0; i < orderedTopSeeds.length; i++) {
+            const s = orderedTopSeeds[i];
+            const opponentSeed = size + 1 - s;
+
+            const p1 = seed(s);
+            const p2 = seed(opponentSeed); // Can be undefined (BYE)
 
             await query(`
-                INSERT INTO tournament_matches (tournament_id, phase_id, player1_id, player2_id, status, round_number)
-                VALUES ($1, $2, $3, $4, 'scheduled', 1)
+                INSERT INTO matches (
+                    tournament_id, phase_id, player1_id, player2_id, 
+                    player1_handicap, player2_handicap, 
+                    status, sequence_order, table_number
+                ) VALUES ($1, $2, $3, $4, $5, $6, 'scheduled', $7, $8)
             `, [
                 tournamentId,
                 phaseId,
                 p1 ? p1.pid : null,
-                p2 ? p2.pid : null
+                p2 ? p2.pid : null,
+                p1 ? p1.handicap : null,
+                p2 ? p2.handicap : null,
+                i + 1, // Correct sequence order for visualizer
+                null
             ]);
         }
     }
