@@ -1409,7 +1409,10 @@ export async function generatePlayoffs(tournamentId) {
         }
     }
 
-    if (qualified.length < 2) throw new Error('No hay suficientes partidos jugados para generar llaves');
+    if (qualified.length < 2) {
+        const completedCount = matches.filter(m => m.phase_type === 'group' && m.status === 'completed').length;
+        throw new Error(`No hay suficientes clasificados para generar llaves. (Qualifiers: ${qualified.length}, Completed Group Matches: ${completedCount}, Groups: ${Object.keys(groups).length})`);
+    }
 
     // Sort qualifiers for seeding
     // NEW LOGIC: Split 1sts and 2nds.
