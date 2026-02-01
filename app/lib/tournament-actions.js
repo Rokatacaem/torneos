@@ -1550,8 +1550,8 @@ export async function generatePlayoffs(tournamentId) {
                 INSERT INTO tournament_matches (
                     tournament_id, phase_id, player1_id, player2_id, 
                     player1_handicap, player2_handicap, 
-                    status, sequence_order, table_number
-                ) VALUES ($1, $2, $3, $4, $5, $6, 'scheduled', $7, $8)
+                    status, table_number
+                ) VALUES ($1, $2, $3, $4, $5, $6, 'scheduled', $7)
             `, [
                 tournamentId,
                 phaseId,
@@ -1559,7 +1559,6 @@ export async function generatePlayoffs(tournamentId) {
                 p2 ? p2.pid : null,
                 p1 ? p1.handicap : null,
                 p2 ? p2.handicap : null,
-                i + 1, // Correct sequence order for visualizer
                 null
             ]);
         }

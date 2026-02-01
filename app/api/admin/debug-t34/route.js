@@ -17,7 +17,7 @@ export async function GET(request) {
         const matchesSummary = await query('SELECT count(*) as total, status, phase_id FROM tournament_matches WHERE tournament_id = $1 GROUP BY status, phase_id', [tournamentId]);
 
         // Check Sample Matches
-        const sampleMatches = await query('SELECT id, sequence_order, phase_id, status FROM tournament_matches WHERE tournament_id = $1 LIMIT 10', [tournamentId]);
+        const sampleMatches = await query('SELECT id, phase_id, status FROM tournament_matches WHERE tournament_id = $1 LIMIT 10', [tournamentId]);
 
         return NextResponse.json({
             phases: phases.rows,
