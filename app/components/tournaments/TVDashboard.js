@@ -8,6 +8,7 @@ import { calculateGroupStandings, calculateGlobalStandings } from '@/app/lib/sta
 import BracketModule from './BracketModule';
 import GeneralTableModule from './GeneralTableModule';
 import GroupsModule from './GroupsModule';
+import TVMatchesModule from './TVMatchesModule';
 
 export default function TVDashboard({ tournament, matches, players }) {
     const globalStandings = calculateGlobalStandings(matches);
@@ -30,29 +31,37 @@ export default function TVDashboard({ tournament, matches, players }) {
     const phases = Array.from(phasesMap.values()).sort((a, b) => a.order - b.order);
     const hasElimination = phases.some(p => p.type === 'elimination' || p.type === 'final');
 
-    // Rotation Logic (Groups vs Playoffs)
-    const [viewMode, setViewMode] = useState('groups'); // 'groups' or 'playoffs'
+    // Rotation Logic (Ranking -> Matches -> Bracket)
+    const [viewMode, setViewMode] = useState('ranking'); // 'ranking', 'matches', 'bracket'
 
     useEffect(() => {
-        if (!hasElimination) {
-            setViewMode('groups');
-            return;
-        }
-
-        // Cycle every 15 seconds if we have both phases
+        // Cycle every 15 seconds
         const interval = setInterval(() => {
-            setViewMode(prev => prev === 'groups' ? 'playoffs' : 'groups');
+            setViewMode(prev => {
+                if (prev === 'ranking') return 'matches';
+                if (prev === 'matches') return hasElimination ? 'bracket' : 'ranking';
+                if (prev === 'bracket') return 'ranking';
+                return 'ranking';
+            });
         }, 15000);
 
         return () => clearInterval(interval);
     }, [hasElimination]);
 
-    const finalMatch = matches.find(m => m.phase_type === 'final');
-    const championId = finalMatch?.winner_id;
-    const champion = championId ? players.find(p => p.id === championId) : null;
+    // Filter active matches for Matches View
+    // Prioritize In Progress, then Scheduled.
+    // If none, show Completed from latest phase.
+    const activeMatches = matches.filter(m => m.status === 'in_progress' || m.status === 'scheduled')
+        .sort((a, b) => {
+            if (a.status === 'in_progress' && b.status !== 'in_progress') return -1;
+            if (a.status !== 'in_progress' && b.status === 'in_progress') return 1;
+            return (a.id - b.id);
+        });
 
-    const recordRun = globalStandings.reduce((max, p) => Math.max(max, p.highRun || 0), 0);
-    const bestPlayer = globalStandings[0];
+    // If no active matches, show recent completed (last 12?)
+    const displayMatches = activeMatches.length > 0
+        ? activeMatches
+        : matches.filter(m => m.status === 'completed').sort((a, b) => b.updated_at?.localeCompare(a.updated_at)).slice(0, 12);
 
     return (
         // 1cm Perimeter (p-4 approx 16px) No overflow.
@@ -92,6 +101,10 @@ export default function TVDashboard({ tournament, matches, players }) {
                     <h1 className="text-2xl lg:text-3xl xl:text-4xl font-black text-white tracking-widest leading-none uppercase font-serif drop-shadow-md truncate">
                         <span className="text-yellow-500">{tournament.name?.split(' ')[0] || 'TORNEO'}</span> {tournament.name?.split(' ').slice(1).join(' ')}
                     </h1>
+                    {/* View Indicator */}
+                    <div className="text-[10px] text-cyan-400 font-bold tracking-[0.3em] uppercase mt-1">
+                        {viewMode === 'ranking' ? 'Ranking General' : viewMode === 'matches' ? 'En Juego' : 'Fase Final'}
+                    </div>
                 </div>
 
                 <div className="flex items-center h-full gap-4">
@@ -108,22 +121,25 @@ export default function TVDashboard({ tournament, matches, players }) {
 
             {/* --- MAIN CONTENT (82% Height) --- */}
             <div className="h-[82%] w-full flex py-2 gap-2 relative z-10 transition-opacity duration-1000 ease-in-out">
-                {viewMode === 'playoffs' ? (
-                    <>
-                        {/* LEFT: TABLE (25%) */}
-                        <div className="w-[25%] h-full rounded-lg border-2 border-cyan-900/40 overflow-hidden shadow-2xl bg-[#0a192f] flex flex-col animate-in fade-in slide-in-from-left-4 duration-500">
-                            <GeneralTableModule standings={globalStandings} />
-                        </div>
 
-                        {/* RIGHT: BRACKET (75%) */}
-                        <div className="w-[75%] h-full rounded-lg border-2 border-cyan-900/40 overflow-hidden shadow-2xl bg-[#0a192f] flex flex-col animate-in fade-in slide-in-from-right-8 duration-700">
-                            <BracketModule matches={matches} phases={phases} />
-                        </div>
-                    </>
-                ) : (
-                    /* FULL: GROUPS GRID */
-                    <div className="w-full h-full rounded-lg border-2 border-cyan-900/40 overflow-hidden shadow-2xl bg-[#0a192f] animate-in fade-in slide-in-from-left-4 duration-500">
-                        <GroupsModule standings={groupStandings} />
+                {/* MODE: RANKING */}
+                {viewMode === 'ranking' && (
+                    <div className="w-full h-full rounded-lg border-2 border-cyan-900/40 overflow-hidden shadow-2xl bg-[#0a192f] animate-in fade-in zoom-in-95 duration-500">
+                        <GeneralTableModule standings={globalStandings} />
+                    </div>
+                )}
+
+                {/* MODE: MATCHES */}
+                {viewMode === 'matches' && (
+                    <div className="w-full h-full rounded-lg border-2 border-cyan-900/40 overflow-hidden shadow-2xl bg-[#0a192f] animate-in fade-in zoom-in-95 duration-500">
+                        <TVMatchesModule matches={displayMatches} />
+                    </div>
+                )}
+
+                {/* MODE: BRACKET */}
+                {viewMode === 'bracket' && (
+                    <div className="w-full h-full rounded-lg border-2 border-cyan-900/40 overflow-hidden shadow-2xl bg-[#0a192f] animate-in fade-in zoom-in-95 duration-500">
+                        <BracketModule matches={matches} phases={phases} />
                     </div>
                 )}
             </div>
