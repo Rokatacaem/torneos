@@ -127,11 +127,16 @@ export function calculateGroupStandings(matches) {
             const inns = p.innings || 0;
             p.average = inns > 0 ? (p.scoreFor / inns).toFixed(3) : '0.000';
 
-            // Weighted Average (Promedio Ponderado) = Score / (Handicap * Played)
-            // If accumulated handicap is needed: Handicap * Played matches.
-            // Assuming p.handicap is the single match handicap.
-            const totalHandicap = (p.handicap || 0) * (p.played || 0);
-            p.weightedAvg = totalHandicap > 0 ? (p.scoreFor / totalHandicap).toFixed(3) : '0.000';
+            // Weighted Average (Promedio Ponderado)
+            // User Rule: Multiply score by (28 / Handicap). Then divide by Innings (implied by "Promedio").
+            // Factor = 28 / p.handicap.
+            // WeightedScore = p.scoreFor * Factor.
+            // WeightedAvg = WeightedScore / p.innings.
+
+            const handicap = p.handicap || 20; // Default if missing
+            const factor = handicap > 0 ? 28 / handicap : 1;
+            const weightedScore = p.scoreFor * factor;
+            p.weightedAvg = inns > 0 ? (weightedScore / inns).toFixed(3) : '0.000';
 
             return p;
         }).sort((a, b) => {
@@ -257,8 +262,10 @@ export function calculateGlobalStandings(matches) {
     return Object.values(players).map(p => {
         p.generalAvg = p.innings > 0 ? (p.scoreFor / p.innings).toFixed(3) : '0.000';
 
-        const totalHandicap = (p.handicap || 0) * (p.played || 0);
-        p.weightedAvg = totalHandicap > 0 ? (p.scoreFor / totalHandicap).toFixed(3) : '0.000';
+        const handicap = p.handicap || 20;
+        const factor = handicap > 0 ? 28 / handicap : 1;
+        const weightedScore = p.scoreFor * factor;
+        p.weightedAvg = p.innings > 0 ? (weightedScore / p.innings).toFixed(3) : '0.000';
 
         p.particularAvg = p.bestAvg.toFixed(3);
         // Use real club if available, else derive check

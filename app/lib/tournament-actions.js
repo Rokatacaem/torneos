@@ -1380,8 +1380,12 @@ export async function generatePlayoffs(tournamentId) {
         const pStats = groups[gid];
         const sorted = Object.entries(pStats).map(([pid, stats]) => {
             const avg = stats.innings > 0 ? stats.score / stats.innings : 0;
-            const totalHcp = (stats.handicap || 0) * (stats.matches || 0);
-            const wAvg = totalHcp > 0 ? stats.score / totalHcp : 0;
+
+            const handicap = stats.handicap || 20;
+            const factor = handicap > 0 ? 28 / handicap : 1;
+            const weightedScore = stats.score * factor;
+            const wAvg = stats.innings > 0 ? weightedScore / stats.innings : 0;
+
             return { pid: parseInt(pid), ...stats, avg, wAvg };
         })
             .sort((a, b) => {
