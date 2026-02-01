@@ -55,13 +55,17 @@ export default function TVDashboard({ tournament, matches, players }) {
         .sort((a, b) => {
             if (a.status === 'in_progress' && b.status !== 'in_progress') return -1;
             if (a.status !== 'in_progress' && b.status === 'in_progress') return 1;
-            return (a.id - b.id);
+            return (Number(a.id) || 0) - (Number(b.id) || 0);
         });
 
     // If no active matches, show recent completed (last 12?)
     const displayMatches = activeMatches.length > 0
         ? activeMatches
-        : matches.filter(m => m.status === 'completed').sort((a, b) => b.updated_at?.localeCompare(a.updated_at)).slice(0, 12);
+        : matches.filter(m => m.status === 'completed').sort((a, b) => {
+            const dateA = a.updated_at || '';
+            const dateB = b.updated_at || '';
+            return dateB.localeCompare(dateA);
+        }).slice(0, 12);
 
     return (
         // 1cm Perimeter (p-4 approx 16px) No overflow.
