@@ -1482,9 +1482,25 @@ export async function generatePlayoffs(tournamentId) {
 
         const matchesToCreate = size / 2;
 
+        // Generate Seeding Indices (Standard Bracket / Snake)
+        // Ensures 1 vs 32, 2 vs 31, etc. but distributed in bracket to avoid early finals.
+        let seedIndices = [0, 1];
+        while (seedIndices.length < size) {
+            const nextRound = [];
+            const nextSize = seedIndices.length * 2;
+            for (const idx of seedIndices) {
+                nextRound.push(idx);
+                nextRound.push(nextSize - 1 - idx);
+            }
+            seedIndices = nextRound;
+        }
+
         for (let i = 0; i < matchesToCreate; i++) {
-            const p1 = qualified[i];
-            const p2 = qualified[size - 1 - i]; // Can be undefined (BYE)
+            const idx1 = seedIndices[i * 2];
+            const idx2 = seedIndices[i * 2 + 1];
+
+            const p1 = qualified[idx1];
+            const p2 = qualified[idx2];
 
             await query(`
                 INSERT INTO tournament_matches (tournament_id, phase_id, player1_id, player2_id, status, round_number)
