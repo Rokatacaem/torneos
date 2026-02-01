@@ -1407,13 +1407,24 @@ export async function generatePlayoffs(tournamentId) {
 
     if (qualified.length < 2) throw new Error('No hay suficientes partidos jugados para generar llaves');
 
-    // Sort ALL qualifiers globally for seeding
-    // "primero puntos, promedio ponderado y por ultimo promedio general"
-    qualified.sort((a, b) => {
+    // Sort qualifiers for seeding
+    // NEW LOGIC: Split 1sts and 2nds.
+    // "Primero ordena los numero uno (16)... luego los segundos (16)"
+    // "Empareja mejor primero con peor segundo" -> Handled by 1 vs 32 logic if list is ordered [1sts... , ...2nds]
+
+    // Sort function
+    const sortFn = (a, b) => {
         if (b.points !== a.points) return b.points - a.points;
         if (Math.abs(b.wAvg - a.wAvg) > 0.0001) return b.wAvg - a.wAvg;
         return b.avg - a.avg;
-    });
+    };
+
+    const firsts = qualified.filter(q => q.rankInGroup === 1).sort(sortFn);
+    const seconds = qualified.filter(q => q.rankInGroup === 2).sort(sortFn);
+    // Handle 3rds etc if they exist (e.g. wildcards)? For now assume 1s and 2s based on user prompt.
+    const others = qualified.filter(q => q.rankInGroup > 2).sort(sortFn);
+
+    qualified = [...firsts, ...seconds, ...others];
 
     // 4. Calculate Adjustment Logic
     const totalQualified = qualified.length;
