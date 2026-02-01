@@ -1547,7 +1547,7 @@ export async function generatePlayoffs(tournamentId) {
             const p2 = seed(opponentSeed); // Can be undefined (BYE)
 
             await query(`
-                INSERT INTO matches (
+                INSERT INTO tournament_matches (
                     tournament_id, phase_id, player1_id, player2_id, 
                     player1_handicap, player2_handicap, 
                     status, sequence_order, table_number

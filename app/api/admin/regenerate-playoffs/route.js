@@ -25,7 +25,7 @@ export async function GET(request) {
         for (const row of phasesRes.rows) {
             console.log(`Deleting phase ${row.id}`);
             // Delete matches
-            await query(`DELETE FROM matches WHERE phase_id = $1`, [row.id]);
+            await query(`DELETE FROM tournament_matches WHERE phase_id = $1`, [row.id]);
             // Delete phase
             await query(`DELETE FROM tournament_phases WHERE id = $1`, [row.id]);
         }
