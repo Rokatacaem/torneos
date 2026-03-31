@@ -1299,8 +1299,11 @@ export async function previewGroups(tournamentId) {
 
     // Config de Agenda
     const tablesAvailable = tournament.tables_available || 4;
-    const blockDuration = tournament.block_duration || 180; // Default 3h
-    const startDate = new Date(tournament.start_date);
+    const blockDuration = parseInt(tournament.block_duration) || 180; // Default 3h
+    let startDate = tournament.start_date ? new Date(tournament.start_date) : new Date();
+    if (isNaN(startDate.getTime())) {
+        startDate = new Date(); // Fallback si es string inválido
+    }
 
     // Generate Groups Structure (Numbers 1, 2, 3...)
     const groups = [];
@@ -1315,7 +1318,7 @@ export async function previewGroups(tournamentId) {
             players: [],
             schedule: {
                 table: tableNum,
-                startTime: startTime.toISOString()
+                startTime: isNaN(startTime.getTime()) ? new Date().toISOString() : startTime.toISOString()
             }
         });
     }

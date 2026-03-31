@@ -252,10 +252,14 @@ export default function TournamentManager({ tournament, players, matches, clubs 
     async function handlePreview() {
         setLoading(true);
         try {
-            const groups = await previewGroups(tournament.id);
-            setPreviewData(groups);
+            const data = await previewGroups(tournament.id);
+            if (!Array.isArray(data)) {
+                throw new Error(data?.message || 'Error: Formato de datos inválido desde el servidor');
+            }
+            setPreviewData(data);
         } catch (err) {
             alert('Error generando vista previa: ' + err.message);
+            console.error('Preview error details:', err.stack || err);
         } finally {
             setLoading(false);
         }
@@ -1037,7 +1041,7 @@ export default function TournamentManager({ tournament, players, matches, clubs 
 // This block removes ResultModal definition
 
 
-function PreviewModal({ groups, onClose, onConfirm, loading, tournament }) {
+function PreviewModal({ groups = [], onClose, onConfirm, loading, tournament }) {
     // Determine available slots based on tournament config
     // Default range: covering enough slots for groups + buffer
     const tablesAvailable = tournament.tables_available || 4;
@@ -1176,13 +1180,13 @@ function PreviewModal({ groups, onClose, onConfirm, loading, tournament }) {
                                     </div>
 
                                     <div className="divide-y divide-white/5 flex-1 overflow-y-auto max-h-[200px]">
-                                        {group.players.map((p, idx) => (
-                                            <div key={p.id} className="px-4 py-2 flex items-center gap-3 text-sm">
+                                        {(group.players || []).map((p, idx) => (
+                                            <div key={p.id || idx} className="px-4 py-2 flex items-center gap-3 text-sm">
                                                 <span className="text-slate-500 font-mono w-4">{idx + 1}.</span>
                                                 <div>
-                                                    <div className="text-slate-200 font-medium">{p.player_name}</div>
+                                                    <div className="text-slate-200 font-medium">{p.player_name || 'Desconocido'}</div>
                                                     <div className="text-slate-500 text-xs">
-                                                        Avg: {p.average || '-'} • Rk: {p.ranking || 0} • HCP: {p.handicap || 0} • {p.team_name}
+                                                        Avg: {p.average || '-'} • Rk: {p.ranking || 0} • HCP: {p.handicap || 0} • {p.team_name || ''}
                                                     </div>
                                                 </div>
                                             </div>
