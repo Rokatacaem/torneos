@@ -160,8 +160,9 @@ export async function POST(request) {
                     await client.query('BEGIN');
 
                     // Get integer IDs from tournament_players for this global player (UUID)
+                    // We cast playerId to text to ensure compatibility with the player_id column
                     const tpRes = await client.query(
-                        `SELECT id FROM tournament_players WHERE player_id = $1`, [playerId]
+                        `SELECT id FROM tournament_players WHERE player_id::text = $1::text`, [playerId]
                     );
                     const tpIds = tpRes.rows.map(r => r.id);
 

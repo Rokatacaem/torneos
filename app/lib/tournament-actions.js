@@ -1014,8 +1014,9 @@ export async function forceDeleteGlobalPlayer(id) {
         await client.query('BEGIN');
 
         // 1. Get the integer IDs from tournament_players for this global player (UUID)
+        // We cast playerId to text to ensure compatibility with the player_id column
         const tpRes = await client.query(
-            `SELECT id FROM tournament_players WHERE player_id = $1`, [id]
+            `SELECT id FROM tournament_players WHERE player_id::text = $1::text`, [id]
         );
         const tpIds = tpRes.rows.map(r => r.id); // integer array
 
