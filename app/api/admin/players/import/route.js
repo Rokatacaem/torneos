@@ -55,6 +55,12 @@ export async function POST(request) {
         for (const row of jsonData) {
             const name = row['Nombre']?.toString().trim();
             const clubName = row['Club']?.toString().trim();
+
+            // ID_BD = internal database primary key (exported from the system)
+            const rawIdBD = row['ID_BD'];
+            const dbId = rawIdBD !== undefined && rawIdBD !== '' ? parseInt(rawIdBD, 10) : null;
+
+            // Legacy field kept for backwards compatibility
             const identification = row['ID']?.toString().trim() || null;
 
             const rawAverage = row['Promedio'];
@@ -86,12 +92,18 @@ export async function POST(request) {
             }
 
             try {
-                // Match by ID first, then by name
+                // Match priority: 1) ID_BD (PK), 2) identification field, 3) name
                 let existingId = null;
 
-                if (identification) {
-                    const byId = await query('SELECT id FROM players WHERE identification = $1', [identification]);
-                    if (byId.rows.length > 0) existingId = byId.rows[0].id;
+                if (dbId && !isNaN(dbId)) {
+                    // Fastest and most reliable: direct PK lookup
+                    const byPK = await query('SELECT id FROM players WHERE id = $1', [dbId]);
+                    if (byPK.rows.length > 0) existingId = byPK.rows[0].id;
+                }
+
+                if (!existingId && identification) {
+                    const byIdent = await query('SELECT id FROM players WHERE identification = $1', [identification]);
+                    if (byIdent.rows.length > 0) existingId = byIdent.rows[0].id;
                 }
 
                 if (!existingId) {
@@ -99,7 +111,6 @@ export async function POST(request) {
                         'SELECT id FROM players WHERE LOWER(TRIM(name)) = LOWER(TRIM($1))',
                         [name]
                     );
-                    // In sync mode, if there are duplicates by name, pick the first one (others will be deleted)
                     if (byName.rows.length > 0) existingId = byName.rows[0].id;
                 }
 

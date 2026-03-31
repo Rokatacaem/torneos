@@ -22,7 +22,7 @@ export async function GET(request) {
                     p.name as "Nombre", 
                     c.name as "Club",
                     p.average as "Promedio",
-                    p.identification as "ID"
+                    p.id as "ID_BD"
                 FROM players p
                 LEFT JOIN clubs c ON p.club_id = c.id
                 ORDER BY 
@@ -30,15 +30,15 @@ export async function GET(request) {
                     p.name ASC
             `);
             data = res.rows.map(row => ({
-                Ranking: row.Ranking || 0,
+                Ranking: row.Ranking || '',
                 Nombre: row.Nombre,
                 Club: row.Club || '',
-                Promedio: row.Promedio || 0,
-                ID: row.ID || ''
+                Promedio: row.Promedio || '',
+                ID_BD: row.ID_BD   // Internal DB id - DO NOT modify this column
             }));
         }
 
-        const worksheet = XLSX.utils.json_to_sheet(data, { header: ["Ranking", "Nombre", "Club", "Promedio", "ID"] });
+        const worksheet = XLSX.utils.json_to_sheet(data, { header: ["Ranking", "Nombre", "Club", "Promedio", "ID_BD"] });
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Jugadores");
 
