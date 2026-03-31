@@ -987,7 +987,7 @@ export async function deleteGlobalPlayer(id) {
     const session = await getSession();
     const role = session?.role;
     if (role !== 'admin' && role !== 'superadmin' && role !== 'SUPERADMIN') {
-        throw new Error('No autorizado: Solo los administradores pueden eliminar jugadores.');
+        return { error: 'No autorizado: Solo los administradores pueden eliminar jugadores.' };
     }
 
     try {
@@ -996,7 +996,7 @@ export async function deleteGlobalPlayer(id) {
         return { success: true };
     } catch (e) {
         console.error('Error deleting player:', e);
-        throw new Error('No se puede eliminar: El jugador está participando en torneos.');
+        return { error: 'No se puede eliminar: El jugador está participando en torneos.' };
     }
 }
 
@@ -1005,7 +1005,7 @@ export async function deleteGlobalPlayers(ids) {
     const session = await getSession();
     const role = session?.role;
     if (role !== 'admin' && role !== 'superadmin' && role !== 'SUPERADMIN') {
-        throw new Error('No autorizado: Solo los administradores pueden eliminar jugadores.');
+        return { error: 'No autorizado: Solo los administradores pueden eliminar jugadores.' };
     }
 
     if (!ids || ids.length === 0) return { success: true, count: 0 };
@@ -1016,7 +1016,7 @@ export async function deleteGlobalPlayers(ids) {
         return { success: true, count: ids.length };
     } catch (e) {
         console.error('Error deleting players:', e);
-        throw new Error('No se pueden eliminar algunos jugadores porque están participando en torneos.');
+        return { error: 'No se pueden eliminar algunos jugadores porque están participando en torneos.' };
     }
 }
 

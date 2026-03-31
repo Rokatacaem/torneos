@@ -85,7 +85,10 @@ export default function PlayerDirectory({ initialPlayers, clubs, role }) {
 
         setLoading(true);
         try {
-            await deleteGlobalPlayer(player.id);
+            const res = await deleteGlobalPlayer(player.id);
+            if (res && res.error) {
+                throw new Error(res.error);
+            }
             alert('Jugador eliminado');
             // Optimistic update or reload
             setPlayers(prev => prev.filter(p => p.id !== player.id));
@@ -118,7 +121,10 @@ export default function PlayerDirectory({ initialPlayers, clubs, role }) {
 
         setLoading(true);
         try {
-            await deleteGlobalPlayers(selectedIds);
+            const res = await deleteGlobalPlayers(selectedIds);
+            if (res && res.error) {
+                throw new Error(res.error);
+            }
             alert('Jugadores eliminados correctamente');
             setPlayers(prev => prev.filter(p => !selectedIds.includes(p.id)));
             setSelectedIds([]);
