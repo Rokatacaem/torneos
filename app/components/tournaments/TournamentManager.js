@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { calculateFechillarHandicap } from '@/app/lib/utils';
 import { registerPlayer, generateGroups, updatePlayer, searchPlayers, generatePlayoffs, previewGroups, removePlayer, removePlayers, disqualifyPlayer, purgeTournament, generateNextRound, registerBatchPlayers, assignTablesRandomly, updateMatchTable, swapPlayers, recalculateAllHandicaps } from '@/app/lib/tournament-actions';
 import { searchGlobalPlayers } from '@/app/lib/player-actions';

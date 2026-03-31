@@ -1,6 +1,6 @@
 'use server';
 
-import { query } from './db';
+import { query, getClient } from './db';
 import { revalidatePath } from 'next/cache';
 import { saveFile } from './upload-utils';
 import { calculateFechillarHandicap } from '@/app/lib/utils';
@@ -986,8 +986,9 @@ export async function updateGlobalPlayer(id, formData) {
 export async function deleteGlobalPlayer(id) {
     const session = await getSession();
     const role = session?.role;
-    if (role !== 'admin' && role !== 'superadmin' && role !== 'SUPERADMIN') {
-        return { error: 'No autorizado: Solo los administradores pueden eliminar jugadores.' };
+    const allowedRoles = ['admin', 'superadmin', 'SUPERADMIN', 'creator', 'Creator'];
+    if (!allowedRoles.includes(role)) {
+        return { error: `No autorizado: Tu rol (${role}) no tiene permisos para eliminar jugadores.` };
     }
 
     try {
@@ -996,16 +997,50 @@ export async function deleteGlobalPlayer(id) {
         return { success: true };
     } catch (e) {
         console.error('Error deleting player:', e);
-        return { error: 'No se puede eliminar: El jugador está participando en torneos.' };
+        return { error: 'No se puede eliminar: El jugador está participando en torneos. Usa "Forzar Eliminación" para borrarlo completamente.' };
     }
 }
+
+export async function forceDeleteGlobalPlayer(id) {
+    const session = await getSession();
+    const role = session?.role;
+    const allowedRoles = ['SUPERADMIN', 'superadmin'];
+    if (!allowedRoles.includes(role)) {
+        return { error: 'Acción restringida: Solo el Superadministrador puede forzar la eliminación.' };
+    }
+
+    const client = await getClient();
+    try {
+        await client.query('BEGIN');
+        // 1. Nullify winner references to this player in matches
+        await client.query(`UPDATE tournament_matches SET winner_id = NULL WHERE winner_id = $1`, [id]);
+        // 2. Delete matches where this player participated
+        await client.query(`DELETE FROM tournament_matches WHERE player1_id = $1 OR player2_id = $1`, [id]);
+        // 3. Remove tournament enrollments
+        await client.query(`DELETE FROM tournament_players WHERE player_id = $1`, [id]);
+        // 4. Safe to delete the player record now
+        await client.query(`DELETE FROM players WHERE id = $1`, [id]);
+        await client.query('COMMIT');
+        revalidatePath('/admin/players');
+        return { success: true };
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error('Error force deleting player:', e);
+        return { error: 'Error al eliminar: ' + e.message };
+    } finally {
+        client.release();
+    }
+}
+
+
 
 
 export async function deleteGlobalPlayers(ids) {
     const session = await getSession();
     const role = session?.role;
-    if (role !== 'admin' && role !== 'superadmin' && role !== 'SUPERADMIN') {
-        return { error: 'No autorizado: Solo los administradores pueden eliminar jugadores.' };
+    const allowedRoles = ['SUPERADMIN', 'superadmin'];
+    if (!allowedRoles.includes(role)) {
+        return { error: 'Acción restringida: Solo el Superadministrador puede eliminar jugadores en masa.' };
     }
 
     if (!ids || ids.length === 0) return { success: true, count: 0 };

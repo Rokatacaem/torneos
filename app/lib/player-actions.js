@@ -71,7 +71,7 @@ export async function searchGlobalPlayers(term) {
             SELECT p.id, p.name, p.club_id, p.average, p.photo_url, c.name as club_name
             FROM players p
             LEFT JOIN clubs c ON p.club_id = c.id
-            WHERE p.name ILIKE $1
+            WHERE p.name ILIKE $1 OR c.name ILIKE $1
             ORDER BY p.name ASC
             LIMIT 50
         `, [`%${term}%`]);

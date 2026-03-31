@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { createGlobalPlayer, updateGlobalPlayer, deleteGlobalPlayer, deleteGlobalPlayers } from '@/app/lib/tournament-actions';
-import { Search, Plus, Pencil, User, Upload, Trash2, CheckSquare, Square } from 'lucide-react';
+import { createGlobalPlayer, updateGlobalPlayer, deleteGlobalPlayer, deleteGlobalPlayers, forceDeleteGlobalPlayer } from '@/app/lib/tournament-actions';
+import { Search, Plus, Pencil, User, Upload, Trash2, CheckSquare, Square, Download, AlertTriangle } from 'lucide-react';
 import { upload } from '@vercel/blob/client';
 
 export default function PlayerDirectory({ initialPlayers, clubs, role }) {
@@ -14,17 +14,29 @@ export default function PlayerDirectory({ initialPlayers, clubs, role }) {
     const [selectedIds, setSelectedIds] = useState([]); // Bulk Selection State
 
     // Check role permissions
-    const isAdmin = role === 'admin' || role === 'superadmin' || role === 'SUPERADMIN';
+    const allowedRoles = ['admin', 'superadmin', 'SUPERADMIN', 'creator', 'Creator'];
+    const isAdmin = allowedRoles.includes(role);
+    const isSuperAdmin = ['SUPERADMIN', 'superadmin'].includes(role);
     const canEdit = isAdmin;
     const canImport = isAdmin;
     const canDelete = isAdmin;
-    const canCreate = true; // Delegates CAN create
+    const canCreate = true;
+    const [syncMode, setSyncMode] = useState(false);
 
     // Filtered Players
     const filteredPlayers = players.filter(p =>
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (p.club_name && p.club_name.toLowerCase().includes(searchTerm.toLowerCase()))
     );
+
+    // Duplicate Detection: group by normalized name, mark those appearing > 1
+    const nameCounts = {};
+    players.forEach(p => {
+        const key = p.name.toLowerCase().trim();
+        nameCounts[key] = (nameCounts[key] || 0) + 1;
+    });
+    const duplicateNames = new Set(Object.keys(nameCounts).filter(k => nameCounts[k] > 1));
+    const duplicateCount = players.filter(p => duplicateNames.has(p.name.toLowerCase().trim())).length;
 
     async function handleCreate(e) {
         e.preventDefault();
@@ -86,20 +98,40 @@ export default function PlayerDirectory({ initialPlayers, clubs, role }) {
         setLoading(true);
         try {
             const res = await deleteGlobalPlayer(player.id);
-            if (res && res.error) {
-                throw new Error(res.error);
+            if (!res) throw new Error('Sin respuesta del servidor');
+            if (res.error) {
+                // If blocked by FK, offer force delete
+                setLoading(false);
+                if (confirm(`⚠️ ${player.name} está vinculado a torneos.\n\n¿Deseas FORZAR la eliminación?\n(Se borrará también su historial de partidos en esos torneos)`)) {
+                    await handleForceDelete(player);
+                }
+                return;
             }
-            alert('Jugador eliminado');
-            // Optimistic update or reload
             setPlayers(prev => prev.filter(p => p.id !== player.id));
+            alert(`✅ ${player.name} eliminado correctamente.`);
         } catch (error) {
-            alert('Error eliminando: ' + error.message);
+            alert('❌ Error: ' + error.message);
         } finally {
             setLoading(false);
         }
     }
 
 
+    async function handleForceDelete(player) {
+        if (!confirm(`⚠️ FORZAR ELIMINACIÓN de ${player.name}\n\nEsto borrará también su historial de partidos en torneos.\n¿Continuar?`)) return;
+        setLoading(true);
+        try {
+            const res = await forceDeleteGlobalPlayer(player.id);
+            if (!res) throw new Error('Sin respuesta del servidor');
+            if (res.error) throw new Error(res.error);
+            setPlayers(prev => prev.filter(p => p.id !== player.id));
+            alert(`✅ ${player.name} eliminado forzosamente.`);
+        } catch (error) {
+            alert('❌ Error: ' + error.message);
+        } finally {
+            setLoading(false);
+        }
+    }
 
     // Bulk Actions
     const handleSelectAll = () => {
@@ -117,19 +149,23 @@ export default function PlayerDirectory({ initialPlayers, clubs, role }) {
     };
 
     const handleBulkDelete = async () => {
-        if (!confirm(`¿Estás seguro de eliminar ${selectedIds.length} jugadores seleccionados?`)) return;
+        const count = selectedIds.length;
+        if (count === 0) return;
+        if (!confirm(`¿Estás seguro de eliminar ${count} jugadores seleccionados? Esta acción no se puede deshacer.`)) return;
 
         setLoading(true);
         try {
-            const res = await deleteGlobalPlayers(selectedIds);
-            if (res && res.error) {
-                throw new Error(res.error);
-            }
-            alert('Jugadores eliminados correctamente');
+            // Convert to numbers in case IDs come as strings
+            const numericIds = selectedIds.map(id => typeof id === 'string' ? parseInt(id, 10) : id);
+            const res = await deleteGlobalPlayers(numericIds);
+            if (!res) throw new Error('Sin respuesta del servidor');
+            if (res.error) throw new Error(res.error);
+            // Optimistic remove from local state
             setPlayers(prev => prev.filter(p => !selectedIds.includes(p.id)));
             setSelectedIds([]);
+            alert(`✅ ${res.count ?? count} jugadores eliminados correctamente.`);
         } catch (error) {
-            alert('Error: ' + error.message);
+            alert('❌ Error: ' + error.message);
         } finally {
             setLoading(false);
         }
@@ -139,7 +175,11 @@ export default function PlayerDirectory({ initialPlayers, clubs, role }) {
         const file = e.target.files[0];
         if (!file) return;
 
-        if (!confirm('¿Estás seguro de importar este archivo? Los jugadores existentes se actualizarán y los nuevos se crearán.')) {
+        const syncWarning = syncMode
+            ? '\n\n⚠️ MODO SINCRONIZACIÓN ACTIVO:\nLos jugadores que NO estén en el Excel serán ELIMINADOS (incluyendo su historial de torneos).'
+            : '';
+
+        if (!confirm(`¿Importar "${file.name}"?\nJugadores existentes se actualizarán, nuevos se crearán.${syncWarning}`)) {
             e.target.value = '';
             return;
         }
@@ -148,17 +188,22 @@ export default function PlayerDirectory({ initialPlayers, clubs, role }) {
         const formData = new FormData();
         formData.append('file', file);
 
+        const url = syncMode
+            ? '/api/admin/players/import?mode=sync'
+            : '/api/admin/players/import';
+
         try {
-            const res = await fetch('/api/admin/players/import', {
-                method: 'POST',
-                body: formData
-            });
+            const res = await fetch(url, { method: 'POST', body: formData });
             const data = await res.json();
 
             if (res.ok) {
-                alert(`Importación completada.\nCreados: ${data.stats.created}\nActualizados: ${data.stats.updated}`);
+                let msg = `✅ Importación completada:\n  • Creados: ${data.stats.created}\n  • Actualizados: ${data.stats.updated}`;
+                if (syncMode && data.stats.deleted !== undefined) {
+                    msg += `\n  • Eliminados: ${data.stats.deleted}`;
+                }
+                alert(msg);
                 if (data.errors && data.errors.length > 0) {
-                    alert('Errores:\n' + data.errors.join('\n'));
+                    alert('⚠️ Advertencias:\n' + data.errors.slice(0, 10).join('\n'));
                 }
                 window.location.reload();
             } else {
@@ -186,129 +231,212 @@ export default function PlayerDirectory({ initialPlayers, clubs, role }) {
                 </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 justify-end mb-4">
+            <div className="flex flex-wrap gap-2 justify-between items-center mb-4">
+                {/* Left: Selection controls */}
                 {canDelete && filteredPlayers.length > 0 && (
-                    <div className="flex items-center gap-2 mr-auto bg-muted px-3 rounded-md">
+                    <div className="flex items-center gap-3 bg-muted px-3 py-2 rounded-md">
                         <button
                             onClick={handleSelectAll}
-                            className="flex items-center gap-2 text-sm font-medium hover:text-primary py-2"
+                            className="flex items-center gap-2 text-sm font-medium hover:text-primary"
                         >
                             {selectedIds.length === filteredPlayers.length ? (
-                                <CheckSquare className="h-4 w-4" />
+                                <CheckSquare className="h-4 w-4 text-primary" />
                             ) : (
-                                <Square className="h-4 w-4" />
+                                <Square className="h-4 w-4 text-muted-foreground" />
                             )}
-                            {selectedIds.length > 0 ? `${selectedIds.length} Seleccionados` : 'Seleccionar Todo'}
+                            {selectedIds.length > 0 ? `${selectedIds.length} seleccionados` : 'Seleccionar Todo'}
                         </button>
                         {selectedIds.length > 0 && (
                             <button
                                 onClick={handleBulkDelete}
-                                className="text-red-500 hover:text-red-700 text-sm font-medium border-l border-zinc-500 pl-3 ml-1"
+                                disabled={loading}
+                                className="flex items-center gap-1 text-red-500 hover:text-red-400 text-sm font-medium border-l border-zinc-500 pl-3"
                             >
-                                <div className="flex items-center gap-1">
-                                    <Trash2 className="h-4 w-4" />
-                                    Eliminar ({selectedIds.length})
-                                </div>
+                                <Trash2 className="h-4 w-4" />
+                                Eliminar ({selectedIds.length})
                             </button>
                         )}
                     </div>
                 )}
 
-                {canImport && (
-                    <div className="relative">
-                        <input
-                            type="file"
-                            accept=".xlsx, .xls"
-                            onChange={handleImport}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            disabled={loading}
-                        />
-                        <button
+                {/* Right: count + actions */}
+                <div className="flex flex-wrap items-center gap-2 ml-auto">
+                    <span className="text-xs text-muted-foreground">
+                        {filteredPlayers.length} jugadores
+                        {duplicateNames.size > 0 && (
+                            <span className="ml-2 text-orange-400 font-semibold">
+                                · {duplicateCount} posibles duplicados
+                            </span>
+                        )}
+                    </span>
+
+                    {/* Sync mode toggle - SUPERADMIN only */}
+                    {canImport && isSuperAdmin && (
+                        <label className={`flex items-center gap-1.5 text-xs px-2 py-1.5 rounded-md border cursor-pointer transition-colors select-none
+                            ${syncMode ? 'bg-red-500/15 border-red-500/40 text-red-400' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
+                            <input
+                                type="checkbox"
+                                checked={syncMode}
+                                onChange={e => setSyncMode(e.target.checked)}
+                                className="w-3 h-3 accent-red-500"
+                            />
+                            <AlertTriangle className={`h-3 w-3 ${syncMode ? 'text-red-400' : ''}`} />
+                            Modo Sincronización
+                        </label>
+                    )}
+
+                    {/* Export button */}
+                    {canImport && (
+                        <a
+                            href="/api/admin/players/export"
                             className="flex items-center gap-2 bg-accent text-accent-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent/80 transition-colors"
-                            disabled={loading}
+                            title="Exportar listado completo de jugadores a Excel"
                         >
-                            <Upload className="h-4 w-4" />
-                            {loading ? 'Importando...' : 'Importar Excel'}
+                            <Download className="h-4 w-4" />
+                            Exportar
+                        </a>
+                    )}
+
+                    {/* Import button */}
+                    {canImport && (
+                        <div className="relative">
+                            <input
+                                type="file"
+                                accept=".xlsx, .xls"
+                                onChange={handleImport}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                disabled={loading}
+                            />
+                            <button
+                                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors
+                                    ${syncMode
+                                        ? 'bg-red-600 text-white hover:bg-red-700'
+                                        : 'bg-accent text-accent-foreground hover:bg-accent/80'}`}
+                                disabled={loading}
+                            >
+                                <Upload className="h-4 w-4" />
+                                {loading ? 'Procesando...' : syncMode ? 'Importar + Sincronizar' : 'Importar Excel'}
+                            </button>
+                        </div>
+                    )}
+
+                    {canCreate && (
+                        <button
+                            onClick={() => setIsCreateOpen(true)}
+                            className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
+                        >
+                            <Plus className="h-4 w-4" />
+                            Nuevo Jugador
                         </button>
-                    </div>
-                )}                {canCreate && (
-                    <button
-                        onClick={() => setIsCreateOpen(true)}
-                        className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
-                    >
-                        <Plus className="h-4 w-4" />
-                        Nuevo Jugador
-                    </button>
-                )}
+                    )}
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredPlayers.map(p => (
-                    <div
-                        key={p.id}
-                        className={`relative group bg-card border rounded-lg p-4 flex flex-col items-center gap-3 hover:shadow-md transition-shadow cursor-pointer ${selectedIds.includes(p.id) ? 'ring-2 ring-primary bg-primary/5' : ''}`}
-                        onClick={(e) => {
-                            if (canDelete) {
-                                // Prevent triggering when clicking buttons
-                                if (e.target.closest('button')) return;
-                                toggleSelection(p.id);
-                            }
-                        }}
-                    >
-                        {canDelete && (
-                            <div className="absolute top-2 left-2 z-10">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        toggleSelection(p.id);
-                                    }}
-                                    className="text-primary hover:scale-110 transition-transform"
-                                >
-                                    {selectedIds.includes(p.id) ? (
-                                        <CheckSquare className="h-5 w-5 fill-background" />
+
+            {/* LIST VIEW */}
+            <div className="border rounded-lg overflow-hidden">
+                {/* Table Header */}
+                <div className="grid grid-cols-[40px_40px_1fr_1fr_90px_110px] gap-2 px-3 py-2 bg-muted/50 border-b text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <div></div>
+                    <div></div>
+                    <div>Jugador</div>
+                    <div>Club</div>
+                    <div className="text-right">Promedio</div>
+                    <div className="text-right">Acciones</div>
+                </div>
+
+                <div className="divide-y max-h-[70vh] overflow-y-auto">
+                    {filteredPlayers.map(p => {
+                        const isDuplicate = duplicateNames.has(p.name.toLowerCase().trim());
+                        const isSelected = selectedIds.includes(p.id);
+                        return (
+                            <div
+                                key={p.id}
+                                className={[
+                                    'grid grid-cols-[40px_40px_1fr_1fr_90px_110px] gap-2 px-3 py-2.5 items-center hover:bg-muted/30 transition-colors',
+                                    isSelected ? 'bg-primary/10 ring-1 ring-inset ring-primary/30' : '',
+                                    isDuplicate ? 'border-l-4 border-orange-500' : ''
+                                ].join(' ')}
+                            >
+                                {/* Checkbox */}
+                                {canDelete ? (
+                                    <button
+                                        onClick={() => toggleSelection(p.id)}
+                                        className="flex items-center justify-center"
+                                    >
+                                        {isSelected ? (
+                                            <CheckSquare className="h-4 w-4 text-primary" />
+                                        ) : (
+                                            <Square className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                                        )}
+                                    </button>
+                                ) : <div />}
+
+                                {/* Avatar */}
+                                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center overflow-hidden border border-border flex-shrink-0">
+                                    {p.photo_url ? (
+                                        <img src={p.photo_url} alt={p.name} className="w-full h-full object-cover" />
                                     ) : (
-                                        <Square className="h-5 w-5 text-muted-foreground opacity-50 hover:opacity-100" />
+                                        <User className="h-4 w-4 text-muted-foreground/50" />
                                     )}
-                                </button>
-                            </div>
-                        )}
-                        {canEdit && (
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
-                                    onClick={() => setEditingPlayer(p)}
-                                    className="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-full"
-                                >
-                                    <Pencil className="h-4 w-4" />
-                                </button>
-                            </div>
-                        )}
+                                </div>
 
-                        {canDelete && (
-                            <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
-                                    onClick={() => handleDelete(p)}
-                                    className="p-2 text-red-500 hover:bg-red-50 rounded-full"
-                                    title="Eliminar Jugador"
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </button>
+                                {/* Name */}
+                                <div className="min-w-0 flex items-center gap-2">
+                                    <span className="font-medium text-sm truncate">{p.name}</span>
+                                    {isDuplicate && (
+                                        <span className="text-[10px] font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                                            DUPLICADO
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Club */}
+                                <div className="text-sm text-muted-foreground truncate">
+                                    {p.club_name || <span className="italic opacity-50">Sin Club</span>}
+                                </div>
+
+                                {/* Average */}
+                                <div className="text-sm text-right tabular-nums">
+                                    {p.average ? parseFloat(p.average).toFixed(3) : '—'}
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex items-center justify-end gap-1">
+                                    {canEdit && (
+                                        <button
+                                            onClick={() => setEditingPlayer(p)}
+                                            className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-colors"
+                                            title="Editar"
+                                        >
+                                            <Pencil className="h-3.5 w-3.5" />
+                                        </button>
+                                    )}
+                                    {canDelete && (
+                                        <button
+                                            onClick={() => handleDelete(p)}
+                                            disabled={loading}
+                                            className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded transition-colors"
+                                            title="Eliminar (solo si no participa en torneos)"
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </button>
+                                    )}
+                                    {canDelete && (
+                                        <button
+                                            onClick={() => handleForceDelete(p)}
+                                            disabled={loading}
+                                            className="p-1.5 text-muted-foreground hover:text-orange-500 hover:bg-orange-500/10 rounded transition-colors"
+                                            title="⚠️ Forzar eliminación (borra historial de torneos)"
+                                        >
+                                            <span className="text-[10px] font-bold leading-none">⚠️</span>
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                        )}
-
-                        <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-muted shadow-sm">
-                            {p.photo_url ? (
-                                <img src={p.photo_url} alt={p.name} className="w-full h-full object-cover" />
-                            ) : (
-                                <User className="h-10 w-10 text-muted-foreground/50" />
-                            )}
-                        </div>
-
-                        <div className="text-center w-full">
-                            <h3 className="font-bold text-lg truncate w-full" title={p.name}>{p.name}</h3>
-                            <p className="text-sm text-muted-foreground truncate w-full" title={p.club_name}>{p.club_name || 'Sin Club'}</p>
-                        </div>
-                    </div>
-                ))}
+                        );
+                    })}
+                </div>
             </div>
 
             {filteredPlayers.length === 0 && (
