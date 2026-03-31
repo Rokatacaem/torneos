@@ -1012,14 +1012,32 @@ export async function forceDeleteGlobalPlayer(id) {
     const client = await getClient();
     try {
         await client.query('BEGIN');
-        // 1. Nullify winner references to this player in matches
-        await client.query(`UPDATE tournament_matches SET winner_id = NULL WHERE winner_id = $1`, [id]);
-        // 2. Delete matches where this player participated
-        await client.query(`DELETE FROM tournament_matches WHERE player1_id = $1 OR player2_id = $1`, [id]);
-        // 3. Remove tournament enrollments
+
+        // 1. Get the integer IDs from tournament_players for this global player (UUID)
+        const tpRes = await client.query(
+            `SELECT id FROM tournament_players WHERE player_id = $1`, [id]
+        );
+        const tpIds = tpRes.rows.map(r => r.id); // integer array
+
+        if (tpIds.length > 0) {
+            // 2. Nullify winner references using integer tournament_player IDs
+            await client.query(
+                `UPDATE tournament_matches SET winner_id = NULL WHERE winner_id = ANY($1)`,
+                [tpIds]
+            );
+            // 3. Delete matches where this player participated (integer FK)
+            await client.query(
+                `DELETE FROM tournament_matches WHERE player1_id = ANY($1) OR player2_id = ANY($1)`,
+                [tpIds]
+            );
+        }
+
+        // 4. Remove tournament enrollments
         await client.query(`DELETE FROM tournament_players WHERE player_id = $1`, [id]);
-        // 4. Safe to delete the player record now
+
+        // 5. Safe to delete the global player record (UUID PK)
         await client.query(`DELETE FROM players WHERE id = $1`, [id]);
+
         await client.query('COMMIT');
         revalidatePath('/admin/players');
         return { success: true };
@@ -1031,6 +1049,7 @@ export async function forceDeleteGlobalPlayer(id) {
         client.release();
     }
 }
+
 
 
 

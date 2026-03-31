@@ -149,7 +149,6 @@ export async function POST(request) {
 
         // --- SYNC MODE: Force-delete players not present in the Excel ---
         if (syncMode && processedPlayerIds.size > 0) {
-            // Get all player IDs currently in DB
             const allPlayersRes = await query('SELECT id FROM players');
             const toDelete = allPlayersRes.rows
                 .map(r => r.id)
@@ -159,8 +158,24 @@ export async function POST(request) {
                 const client = await getClient();
                 try {
                     await client.query('BEGIN');
-                    await client.query(`UPDATE tournament_matches SET winner_id = NULL WHERE winner_id = $1`, [playerId]);
-                    await client.query(`DELETE FROM tournament_matches WHERE player1_id = $1 OR player2_id = $1`, [playerId]);
+
+                    // Get integer IDs from tournament_players for this global player (UUID)
+                    const tpRes = await client.query(
+                        `SELECT id FROM tournament_players WHERE player_id = $1`, [playerId]
+                    );
+                    const tpIds = tpRes.rows.map(r => r.id);
+
+                    if (tpIds.length > 0) {
+                        await client.query(
+                            `UPDATE tournament_matches SET winner_id = NULL WHERE winner_id = ANY($1)`,
+                            [tpIds]
+                        );
+                        await client.query(
+                            `DELETE FROM tournament_matches WHERE player1_id = ANY($1) OR player2_id = ANY($1)`,
+                            [tpIds]
+                        );
+                    }
+
                     await client.query(`DELETE FROM tournament_players WHERE player_id = $1`, [playerId]);
                     await client.query(`DELETE FROM players WHERE id = $1`, [playerId]);
                     await client.query('COMMIT');
@@ -173,6 +188,7 @@ export async function POST(request) {
                 }
             }
         }
+
 
         return NextResponse.json({
             message: 'Importación procesada',
