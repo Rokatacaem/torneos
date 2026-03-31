@@ -563,9 +563,12 @@ export async function registerBatchPlayers(tournamentId, playerIds) {
 
 
 export async function replaceWithWaitlist(originalPlayerId, tournamentId) {
+    const { getClient } = await import('./db.js');
+    const client = await getClient();
+
     try {
         // 1. Find FIFO waitlist player
-        const waitlistRes = await query(`
+        const waitlistRes = await client.query(`
             SELECT * FROM tournament_players 
             WHERE tournament_id = $1 AND status = 'waitlist'
             ORDER BY id ASC 
@@ -573,36 +576,41 @@ export async function replaceWithWaitlist(originalPlayerId, tournamentId) {
         `, [tournamentId]);
 
         if (waitlistRes.rows.length === 0) {
+            client.release();
             return { success: false, message: 'No hay jugadores en lista de espera' };
         }
 
         const replacement = waitlistRes.rows[0];
 
-        await query('BEGIN');
+        await client.query('BEGIN');
 
         // 2. Update matches of original player to use replacement
-        await query(`
+        await client.query(`
             UPDATE tournament_matches 
             SET player1_id = $1 
             WHERE tournament_id = $2 AND player1_id = $3 AND status = 'scheduled'
         `, [replacement.id, tournamentId, originalPlayerId]);
 
-        await query(`
+        await client.query(`
             UPDATE tournament_matches 
             SET player2_id = $1 
             WHERE tournament_id = $2 AND player2_id = $3 AND status = 'scheduled'
         `, [replacement.id, tournamentId, originalPlayerId]);
 
         // 3. Update Statuses
-        await query(`UPDATE tournament_players SET status = 'eliminated' WHERE id = $1`, [originalPlayerId]);
-        await query(`UPDATE tournament_players SET status = 'active' WHERE id = $1`, [replacement.id]);
+        await client.query(`UPDATE tournament_players SET status = 'eliminated' WHERE id = $1`, [originalPlayerId]);
+        await client.query(`UPDATE tournament_players SET status = 'active' WHERE id = $1`, [replacement.id]);
 
-        await query('COMMIT');
+        await client.query('COMMIT');
 
+        client.release();
+        
+        const { revalidatePath } = await import('next/cache');
         revalidatePath(`/admin/tournaments/${tournamentId}`);
         return { success: true, message: `Jugador reemplazado por ${replacement.player_name}` };
     } catch (e) {
-        await query('ROLLBACK');
+        await client.query('ROLLBACK');
+        client.release();
         console.error(e);
         return { success: false, message: 'Error al reemplazar jugador' };
     }
@@ -678,65 +686,72 @@ export async function updatePlayer(playerId, formData) {
 
 
 export async function removePlayer(tournamentId, playerId) {
-    // 1. Check if tournament has started or matches exist involving this player?
-    // For now, we assume removal is allowed if no matches played mostly.
-    // Ideally, we should check matches status.
-
-    await query('BEGIN');
+    const { getClient } = await import('./db.js');
+    const client = await getClient();
+    
     try {
+        await client.query('BEGIN');
+        
         // Delete player
-        await query('DELETE FROM tournament_players WHERE id = $1 AND tournament_id = $2', [playerId, tournamentId]);
+        await client.query('DELETE FROM tournament_players WHERE id = $1 AND tournament_id = $2', [playerId, tournamentId]);
 
-        // Waitlist Management: Check if we need to promote someone
-        // If tournament was full, now we have 1 spot.
-        // We find the oldest waitlist player and promote them to active.
+        const tourRes = await client.query('SELECT max_players FROM tournaments WHERE id = $1', [tournamentId]);
+        const tour = tourRes.rows[0];
 
-        const tour = await getTournament(tournamentId);
-        const players = await getTournamentPlayers(tournamentId);
-        const activeCount = players.filter(p => p.status === 'active' || !p.status).length;
+        if (tour && tour.max_players) {
+            const remainingRes = await client.query(`SELECT COUNT(*) as c FROM tournament_players WHERE tournament_id = $1 AND (status = 'active' OR status IS NULL)`, [tournamentId]);
+            const activeCount = parseInt(remainingRes.rows[0].c);
 
-        if (tour.max_players && activeCount < tour.max_players) {
-            // Find oldest waitlist
-            const waitlistRes = await query(`
-                SELECT * FROM tournament_players 
-                WHERE tournament_id = $1 AND status = 'waitlist'
-                ORDER BY id ASC 
-                LIMIT 1
-            `, [tournamentId]);
+            if (activeCount < tour.max_players) {
+                const waitlistRes = await client.query(`
+                    SELECT * FROM tournament_players 
+                    WHERE tournament_id = $1 AND status = 'waitlist'
+                    ORDER BY id ASC 
+                    LIMIT 1
+                `, [tournamentId]);
 
-            if (waitlistRes.rows.length > 0) {
-                const nextPlayer = waitlistRes.rows[0];
-                await query(`UPDATE tournament_players SET status = 'active' WHERE id = $1`, [nextPlayer.id]);
+                if (waitlistRes.rows.length > 0) {
+                    const nextPlayer = waitlistRes.rows[0];
+                    await client.query(`UPDATE tournament_players SET status = 'active' WHERE id = $1`, [nextPlayer.id]);
+                }
             }
         }
 
-        await query('COMMIT');
-        revalidatePath(`/admin/tournaments/${tournamentId}`);
-        return { success: true };
+        await client.query('COMMIT');
     } catch (e) {
-        await query('ROLLBACK');
-        console.error(e);
-        throw new Error('Error eliminando jugador');
+        await client.query('ROLLBACK');
+        console.error("=== DELETE PLAYER ERROR ===", e);
+        throw new Error('Error eliminando jugador: ' + (e.message || 'Error de base de datos'));
+    } finally {
+        client.release();
     }
+    
+    const { revalidatePath } = await import('next/cache');
+    revalidatePath(`/admin/tournaments/${tournamentId}`);
+    return { success: true };
 }
 
 export async function removePlayers(tournamentId, playerIds) {
     if (!playerIds || playerIds.length === 0) return { success: true };
 
-    await query('BEGIN');
+    const { getClient } = await import('./db.js');
+    const client = await getClient();
+
     try {
+        await client.query('BEGIN');
+        
         // 1. Delete all selected players
-        // We use ANY to pass the array
-        await query(`
+        await client.query(`
             DELETE FROM tournament_players 
             WHERE tournament_id = $1 AND id = ANY($2)
         `, [tournamentId, playerIds]);
 
         // 2. Waitlist Promotion Logic
-        // Calculate how many spots opened up
-        const tour = await getTournament(tournamentId);
-        if (tour.max_players) {
-            const remainingRes = await query(`
+        const tourRes = await client.query('SELECT max_players FROM tournaments WHERE id = $1', [tournamentId]);
+        const tour = tourRes.rows[0];
+
+        if (tour && tour.max_players) {
+            const remainingRes = await client.query(`
                 SELECT COUNT(*) as count FROM tournament_players 
                 WHERE tournament_id = $1 AND (status = 'active' OR status IS NULL)
             `, [tournamentId]);
@@ -745,7 +760,7 @@ export async function removePlayers(tournamentId, playerIds) {
             const spotsAvailable = tour.max_players - activeCount;
 
             if (spotsAvailable > 0) {
-                const waitlistRes = await query(`
+                const waitlistRes = await client.query(`
                     SELECT id FROM tournament_players 
                     WHERE tournament_id = $1 AND status = 'waitlist'
                     ORDER BY id ASC 
@@ -753,19 +768,23 @@ export async function removePlayers(tournamentId, playerIds) {
                 `, [tournamentId, spotsAvailable]);
 
                 for (const row of waitlistRes.rows) {
-                    await query(`UPDATE tournament_players SET status = 'active' WHERE id = $1`, [row.id]);
+                    await client.query(`UPDATE tournament_players SET status = 'active' WHERE id = $1`, [row.id]);
                 }
             }
         }
 
-        await query('COMMIT');
-        revalidatePath(`/admin/tournaments/${tournamentId}`);
-        return { success: true };
+        await client.query('COMMIT');
     } catch (e) {
-        await query('ROLLBACK');
-        console.error("Error bulk removing players:", e);
-        throw new Error('Error eliminando jugadores seleccionados');
+        await client.query('ROLLBACK');
+        console.error("=== BULK DELETE PLAYERS ERROR ===", e);
+        throw new Error('Error eliminando jugadores seleccionados: ' + (e.message || 'Error de BD'));
+    } finally {
+        client.release();
     }
+    
+    const { revalidatePath } = await import('next/cache');
+    revalidatePath(`/admin/tournaments/${tournamentId}`);
+    return { success: true };
 }
 
 export async function searchPlayers(term) {

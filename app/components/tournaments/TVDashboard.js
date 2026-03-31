@@ -77,6 +77,11 @@ export default function TVDashboard({ tournament, matches, players }) {
         ? activeMatches
         : safeSortMatches(completedMatches).slice(0, 12);
 
+    // Placeholder data for Footer records to avoid crash
+    const bestPlayer = null; 
+    const recordRun = 0;
+    const champion = null;
+
     return (
         // 1cm Perimeter (p-4 approx 16px) No overflow.
         <div className="w-screen h-screen bg-[#040e1a] text-white flex flex-col font-sans select-none overflow-hidden p-4">
