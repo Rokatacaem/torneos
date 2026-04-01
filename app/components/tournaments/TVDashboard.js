@@ -84,17 +84,21 @@ export default function TVDashboard({ tournament, matches, players }) {
 
     return (
         // 1cm Perimeter (p-4 approx 16px) No overflow.
-        <div className="w-screen h-screen bg-[#040e1a] text-white flex flex-col font-sans select-none overflow-hidden p-4">
+        <div className="w-screen h-screen bg-[#040e1a] text-white flex flex-col font-sans select-none overflow-hidden p-4 relative">
+            {/* Full Screen Banner Background */}
+            {tournament.banner_image_url && (
+                <div className="absolute inset-0 z-0 overflow-hidden">
+                    <img 
+                        src={tournament.banner_image_url} 
+                        alt="Background" 
+                        className="w-full h-full object-cover opacity-10 scale-105 blur-[2px]" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-b from-[#040e1a]/80 via-transparent to-[#040e1a]/80"></div>
+                </div>
+            )}
 
             {/* --- HEADER (8% Height) --- */}
-            <header className="h-[8%] shrink-0 bg-[#061020] border-b-4 border-yellow-600 flex items-center justify-between px-6 relative shadow-xl z-20 rounded-t-lg overflow-hidden">
-                {/* Custom Banner Background */}
-                {tournament.banner_image_url && (
-                    <div className="absolute inset-0 z-0">
-                        <img src={tournament.banner_image_url} alt="Banner" className="w-full h-full object-cover opacity-30" />
-                        <div className="absolute inset-0 bg-gradient-to-r from-[#061020] via-[#061020]/80 to-[#061020]"></div>
-                    </div>
-                )}
+            <header className="h-[8%] shrink-0 bg-[#061020]/90 backdrop-blur-md border-b-4 border-yellow-600 flex items-center justify-between px-6 relative shadow-xl z-20 rounded-t-lg overflow-hidden">
 
                 <div className="flex items-center h-full py-1 z-10 gap-4">
                     <Link
@@ -105,12 +109,20 @@ export default function TVDashboard({ tournament, matches, players }) {
                         <ArrowLeft size={20} />
                     </Link>
 
+                    {/* Federation Logo (FECHILLAR) */}
+                    <div className="h-full py-1">
+                        <img src="/Logo3DAzul.png" alt="FECHILLAR" className="h-full w-auto object-contain drop-shadow-md" />
+                    </div>
+
+                    <div className="w-px h-8 bg-white/10 mx-2"></div>
+
+                    {/* Tournament Logo */}
                     {tournament.logo_image_url ? (
                         <div className="aspect-square h-full py-1">
                             <img src={tournament.logo_image_url} alt="Logo" className="h-full w-auto object-contain drop-shadow-md" />
                         </div>
                     ) : (
-                        <div className="aspect-square h-full rounded-full bg-radial-gradient(circle at 30% 30%, #fff, #eab308) shadow-lg flex items-center justify-center border-2 border-[#061020] p-2">
+                        <div className="aspect-square h-full rounded-full bg-yellow-500 shadow-lg flex items-center justify-center border-2 border-[#061020] p-1.5">
                             <span className="text-[#061020] font-black text-xl">8</span>
                         </div>
                     )}
@@ -237,8 +249,9 @@ export default function TVDashboard({ tournament, matches, players }) {
                             </div>
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center z-10">
-                            <div className="text-white font-black text-[10px] uppercase text-center mb-0.5 leading-tight tracking-widest drop-shadow-lg">
+                        <div className="flex flex-col items-center justify-center z-10 h-full">
+                            <img src="/Logo3DAzul.png" alt="FECHILLAR" className="h-[60%] w-auto object-contain mb-1 opacity-80" />
+                            <div className="text-white font-black text-[8px] uppercase text-center leading-tight tracking-[0.2em]">
                                 {tournament.footer_branding_title || 'Torneo Oficial'}<br />
                                 <span className="text-yellow-500">{tournament.footer_branding_subtitle || 'FECHILLAR'}</span>
                             </div>
