@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/app/lib/db';
 import * as XLSX from 'xlsx';
+import { calculateFechillarHandicap } from '@/app/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +19,11 @@ export async function GET(request) {
         } else {
             const res = await query(`
                 SELECT 
-                    p.ranking as "Ranking",
+                    p.ranking as "ranking_pts",
+                    p.category as "category",
+                    p.tournaments_played as "tournaments_played",
+                    p.ranking_annual as "ranking_annual",
+                    p.tournaments_played_annual as "tournaments_played_annual",
                     p.name as "Nombre", 
                     c.name as "Club",
                     p.average as "Promedio",
@@ -30,15 +35,20 @@ export async function GET(request) {
                     p.name ASC
             `);
             data = res.rows.map(row => ({
-                Ranking: row.Ranking || '',
+                'Pts Nacional': row.ranking_pts || '',
+                Categoria: row.category || 'C',
                 Nombre: row.Nombre,
                 Club: row.Club || '',
+                Torneos: row.tournaments_played || 0,
+                'Torneos (Año)': row.tournaments_played_annual || 0,
+                'Pts Anual': row.ranking_annual || 0,
                 Promedio: row.Promedio || '',
+                HCP: row.Promedio ? calculateFechillarHandicap(row.Promedio) : '',
                 ID_BD: row.ID_BD   // Internal DB id - DO NOT modify this column
             }));
         }
 
-        const worksheet = XLSX.utils.json_to_sheet(data, { header: ["Ranking", "Nombre", "Club", "Promedio", "ID_BD"] });
+        const worksheet = XLSX.utils.json_to_sheet(data, { header: ["Pts Nacional", "Categoria", "Nombre", "Club", "Torneos", "Torneos (Año)", "Pts Anual", "Promedio", "HCP", "ID_BD"] });
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Jugadores");
 

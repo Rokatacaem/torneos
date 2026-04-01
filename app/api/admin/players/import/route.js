@@ -66,8 +66,19 @@ export async function POST(request) {
             const rawAverage = row['Promedio'];
             const average = rawAverage !== undefined && rawAverage !== '' ? parseFloat(rawAverage) : null;
 
-            const rawRanking = row['Ranking'];
+            const rawRanking = row['Ranking'] !== undefined ? row['Ranking'] : (row['Pts Nacional (Ranking)'] !== undefined ? row['Pts Nacional (Ranking)'] : row['Pts Nacional']);
             const ranking = rawRanking !== undefined && rawRanking !== '' ? parseInt(rawRanking, 10) : null;
+
+            const category = row['Categoria']?.toString().toUpperCase().trim() || null;
+            
+            const rawTorneos = row['Torneos'];
+            const tournaments_played = rawTorneos !== undefined && rawTorneos !== '' ? parseInt(rawTorneos, 10) : null;
+            
+            const rawTorneosAnual = row['Torneos (Año)'] !== undefined ? row['Torneos (Año)'] : row['Torneos Anual'];
+            const tournaments_played_annual = rawTorneosAnual !== undefined && rawTorneosAnual !== '' ? parseInt(rawTorneosAnual, 10) : null;
+            
+            const rawPtsAnual = row['Pts Anual'];
+            const ranking_annual = rawPtsAnual !== undefined && rawPtsAnual !== '' ? parseInt(rawPtsAnual, 10) : null;
 
             if (!name) continue;
 
@@ -127,6 +138,11 @@ export async function POST(request) {
                     if (ranking !== null && !isNaN(ranking)) { setClauses.push(`ranking = $${idx++}`); params.push(ranking); }
                     if (identification) { setClauses.push(`identification = $${idx++}`); params.push(identification); }
 
+                    if (category) { setClauses.push(`category = $${idx++}`); params.push(category); }
+                    if (tournaments_played !== null && !isNaN(tournaments_played)) { setClauses.push(`tournaments_played = $${idx++}`); params.push(tournaments_played); }
+                    if (tournaments_played_annual !== null && !isNaN(tournaments_played_annual)) { setClauses.push(`tournaments_played_annual = $${idx++}`); params.push(tournaments_played_annual); }
+                    if (ranking_annual !== null && !isNaN(ranking_annual)) { setClauses.push(`ranking_annual = $${idx++}`); params.push(ranking_annual); }
+
                     params.push(existingId);
                     await query(
                         `UPDATE players SET ${setClauses.join(', ')} WHERE id = $${idx}`,
@@ -135,9 +151,9 @@ export async function POST(request) {
                     updatedCount++;
                 } else {
                     const newPlayer = await query(
-                        `INSERT INTO players (name, club_id, average, ranking, identification, created_at)
-                         VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING id`,
-                        [name, clubId, average ?? null, ranking ?? null, identification]
+                        `INSERT INTO players (name, club_id, average, ranking, identification, category, tournaments_played, tournaments_played_annual, ranking_annual, created_at)
+                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW()) RETURNING id`,
+                        [name, clubId, average ?? null, ranking ?? null, identification, category, tournaments_played ?? 0, tournaments_played_annual ?? 0, ranking_annual ?? null]
                     );
                     processedPlayerIds.add(newPlayer.rows[0].id);
                     createdCount++;
