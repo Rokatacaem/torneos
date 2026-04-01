@@ -106,3 +106,58 @@ export async function updateMatchResult(matchId, formData) {
         return { success: false, message: `Error interno: ${e.message}` };
     }
 }
+
+export async function recalculateTournamentWinners(tournamentId) {
+    const session = await getSession();
+    if (!session || !['admin', 'superadmin'].includes(session.role)) {
+        throw new Error('No autorizado');
+    }
+
+    try {
+        // 1. Fetch Tournament Config and Completed Matches with HCPs
+        const res = await query(`
+            SELECT m.*, 
+                   p1.handicap as hcp1, 
+                   p2.handicap as hcp2,
+                   t.use_handicap
+            FROM tournament_matches m
+            JOIN tournament_players p1 ON m.player1_id = p1.id
+            JOIN tournament_players p2 ON m.player2_id = p2.id
+            JOIN tournaments t ON m.tournament_id = t.id
+            WHERE m.tournament_id = $1 AND m.status = 'completed'
+        `, [tournamentId]);
+
+        let updatedCount = 0;
+        for (const m of res.rows) {
+            // Recalculate winner IF it's a draw and use_handicap is active
+            if (m.score_p1 === m.score_p2 && m.score_p1 > 0 && m.use_handicap) {
+                const h1 = m.hcp1 || 28;
+                const h2 = m.hcp2 || 28;
+                let newWinnerId = null;
+
+                if (h1 < h2) newWinnerId = m.player1_id;
+                else if (h2 < h1) newWinnerId = m.player2_id;
+
+                if (newWinnerId !== m.winner_id) {
+                    await query(`UPDATE tournament_matches SET winner_id = $1 WHERE id = $2`, [newWinnerId, m.id]);
+                    updatedCount++;
+                }
+            } else if (m.score_p1 !== m.score_p2) {
+                // Auto-fix normal wins if they were somehow wrong
+                const newWinnerId = m.score_p1 > m.score_p2 ? m.player1_id : m.player2_id;
+                if (newWinnerId !== m.winner_id) {
+                    await query(`UPDATE tournament_matches SET winner_id = $1 WHERE id = $2`, [newWinnerId, m.id]);
+                    updatedCount++;
+                }
+            }
+        }
+
+        revalidatePath(`/admin/tournaments/${tournamentId}`);
+        revalidatePath(`/tournaments/${tournamentId}`);
+
+        return { success: true, count: updatedCount, message: `Recalculados ${updatedCount} ganadores.` };
+    } catch (e) {
+        console.error("Recalculate error:", e);
+        return { success: false, message: e.message };
+    }
+}

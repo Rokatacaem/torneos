@@ -9,7 +9,8 @@ import ManualResultModal from '@/app/components/admin/ManualResultModal';
 import FinalizeTournamentButton from './FinalizeTournamentButton';
 import BracketView from './BracketView';
 import { useRouter } from 'next/navigation';
-import { Copy, MessageSquare, X } from 'lucide-react';
+import { Copy, MessageSquare, RefreshCcw, X } from 'lucide-react';
+import { recalculateTournamentWinners } from '@/app/lib/match-actions';
 
 export default function TournamentManager({ tournament, players, matches, clubs = [] }) {
     const router = useRouter();
@@ -1356,6 +1357,18 @@ function MatchTabs({ matches, loading, setLoading, onRefresh, tournamentId, onSe
         setLoading(false);
     };
 
+    const handleRecalculateAction = async () => {
+        if (!confirm('¿Sincronizar resultados históricos? Esto recalculará ganadores por handicap en empates.')) return;
+        setLoading(true);
+        try {
+            const res = await recalculateTournamentWinners(tournamentId);
+            if (!res.success) throw new Error(res.message);
+            alert(res.message);
+            onRefresh();
+        } catch (e) { alert(e.message); }
+        setLoading(false);
+    };
+
     const handleBatchTableEdit = async (tableNum) => {
         // Implement batch update for active view if needed
         // For now, this is just a placeholder or could be used for advanced UI
@@ -1382,8 +1395,17 @@ function MatchTabs({ matches, loading, setLoading, onRefresh, tournamentId, onSe
                     </button>
                 ))}
 
-                {/* Reset Button (Always visible but unobtrusive) */}
-                <div className="ml-auto">
+                {/* Action Buttons (Sync/Reset) */}
+                <div className="ml-auto flex items-center gap-2">
+                    <button
+                        onClick={handleRecalculateAction}
+                        disabled={loading}
+                        className="flex items-center gap-1 text-xs text-blue-500/70 hover:text-blue-400 font-bold px-2 py-1 rounded bg-blue-500/5 hover:bg-blue-500/10 transition-colors"
+                        title="Sincronizar Ganadores por Handicap"
+                    >
+                         <RefreshCcw size={12} className={loading ? 'animate-spin' : ''} />
+                         Sincronizar Ganadores
+                    </button>
                     <button
                         onClick={resetFixtureAction}
                         disabled={loading}
