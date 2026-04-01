@@ -129,10 +129,14 @@ export default function TVDashboard({ tournament, matches, players }) {
                 <div className="flex items-center h-full gap-4">
                     {/* Rules Mini-Display */}
                     <div className="hidden xl:flex items-center gap-4 text-xs font-bold text-slate-300 bg-black/20 px-3 py-1 rounded-full border border-white/5">
-                        <span className="text-yellow-500">META: <span className="text-white text-base">{viewMode === 'groups' ? tournament.group_points_limit || '-' : tournament.playoff_points_limit || '-'}</span></span>
-                        <div className="w-px h-3 bg-white/20"></div>
-                        <span className="text-yellow-500">MAX: <span className="text-white text-base">{viewMode === 'groups' ? tournament.group_innings_limit || '-' : tournament.playoff_innings_limit || '-'}</span></span>
-                        <div className="w-px h-3 bg-white/20"></div>
+                        {!tournament.use_handicap && (
+                            <>
+                                <span className="text-yellow-500">META: <span className="text-white text-base">{viewMode === 'groups' ? tournament.group_points_limit || '-' : tournament.playoff_points_limit || '-'}</span></span>
+                                <div className="w-px h-3 bg-white/20"></div>
+                                <span className="text-yellow-500">MAX: <span className="text-white text-base">{viewMode === 'groups' ? tournament.group_innings_limit || '-' : tournament.playoff_innings_limit || '-'}</span></span>
+                                <div className="w-px h-3 bg-white/20"></div>
+                            </>
+                        )}
                         <span className="text-yellow-500">RELOJ: <span className="text-white text-base">{tournament.shot_clock_seconds || 40}</span></span>
                     </div>
                 </div>
@@ -200,31 +204,50 @@ export default function TVDashboard({ tournament, matches, players }) {
                 </div>
 
                 {/* Branding */}
-                <div className="w-[20%] bg-white flex flex-col items-center justify-center p-0.5 relative overflow-hidden">
-                    {tournament.branding_image_url ? (
-                        <img src={tournament.branding_image_url} alt="Branding" className="w-full h-full object-contain" />
-                    ) : (
-                        <>
-                            <div className="text-[#061020] font-black text-[10px] uppercase text-center mb-0.5 leading-tight">
-                                {tournament.footer_branding_title || 'Copa Branded'}<br />
-                                {tournament.footer_branding_subtitle || 'Torneo Oficial'}
+                <div className="w-[30%] bg-[#0a192f] border-l border-white/10 flex items-center justify-around p-1 relative overflow-hidden group">
+                    {/* Glow effect background */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-yellow-500/5 opacity-50"></div>
+
+                    {/* Club Sede Logo */}
+                    {tournament.host_club_logo_url && (
+                        <div className="flex flex-col items-center justify-center h-full max-w-[45%] z-10">
+                            <span className="text-[7px] text-yellow-500/80 font-black uppercase tracking-wider mb-1">Club Sede</span>
+                            <div className="h-[60%] w-full flex items-center justify-center mb-1">
+                                <img src={tournament.host_club_logo_url} alt="Club Logo" className="h-full w-auto object-contain drop-shadow-md" />
                             </div>
-                            {/* Simplified Horizontal Flag/Logo for height efficiency */}
-                            <div className="flex items-center gap-1 scale-90">
-                                <div className="w-6 h-4 bg-red-600 relative border border-slate-300 shadow-sm">
-                                    <div className="absolute top-0 left-0 w-full h-1/2 bg-white"></div>
-                                    <div className="absolute top-0.5 left-0.5 w-1.5 h-1.5 bg-blue-800 rounded-sm"></div>
-                                </div>
-                                <div className="text-slate-900 font-black text-xs">X</div>
-                                <div className="w-6 h-4 bg-cyan-200 relative border border-slate-300 shadow-sm">
-                                    <div className="absolute top-0 bottom-0 left-[33%] right-[33%] bg-white"></div>
-                                </div>
+                            <div className="text-[8px] text-white font-bold uppercase leading-none text-center">
+                                {tournament.host_club_city || 'SANTIAGO'}
+                                <span className="mx-1 text-slate-500">-</span>
+                                <span className="text-slate-400">{tournament.host_club_country || 'CHILE'}</span>
                             </div>
-                            <div className="absolute bottom-0.5 right-1 w-full text-right pr-1">
-                                <div className="text-[7px] text-slate-500 font-bold leading-none">Dev by Rodrigo Zúñiga</div>
-                            </div>
-                        </>
+                        </div>
                     )}
+
+                    {/* Divider if both exist */}
+                    {tournament.host_club_logo_url && tournament.branding_image_url && (
+                        <div className="w-px h-[50%] bg-gradient-to-b from-transparent via-white/10 to-transparent z-10"></div>
+                    )}
+
+                    {/* Patronador / Branding Logo */}
+                    {tournament.branding_image_url ? (
+                        <div className="flex flex-col items-center justify-center h-full max-w-[45%] z-10">
+                            <span className="text-[7px] text-yellow-500/80 font-black uppercase tracking-wider mb-1">Patrocinador</span>
+                            <div className="h-[60%] w-full flex items-center justify-center">
+                                <img src={tournament.branding_image_url} alt="Sponsor Logo" className="h-full w-auto object-contain drop-shadow-md" />
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center z-10">
+                            <div className="text-white font-black text-[10px] uppercase text-center mb-0.5 leading-tight tracking-widest drop-shadow-lg">
+                                {tournament.footer_branding_title || 'Torneo Oficial'}<br />
+                                <span className="text-yellow-500">{tournament.footer_branding_subtitle || 'FECHILLAR'}</span>
+                            </div>
+                        </div>
+                    )}
+                    
+                    <div className="absolute bottom-0.5 right-1 opacity-50 z-10">
+                        <div className="text-[6px] text-slate-500 font-bold leading-none italic">Dev by Rodrigo Zúñiga</div>
+                    </div>
                 </div>
             </footer >
         </div >

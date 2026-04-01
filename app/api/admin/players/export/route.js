@@ -14,7 +14,16 @@ export async function GET(request) {
 
         if (isTemplate) {
             data = [
-                { Nombre: '', Club: '' }
+                { 
+                    'Pts Nacional': '', 
+                    Categoria: 'C', 
+                    Nombre: '', 
+                    Club: '', 
+                    Torneos: '0', 
+                    'Torneos (Año)': '0', 
+                    'Pts Anual': '0', 
+                    Promedio: '0.000'
+                }
             ];
         } else {
             const res = await query(`

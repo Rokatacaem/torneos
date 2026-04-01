@@ -19,7 +19,10 @@ export async function getTournaments() {
 
 export async function getTournament(id) {
     const result = await query(`
-    SELECT * FROM tournaments WHERE id = $1
+        SELECT t.*, c.logo_url as host_club_logo_url, c.city as host_club_city, c.country as host_club_country
+        FROM tournaments t 
+        LEFT JOIN clubs c ON t.host_club_id = c.id 
+        WHERE t.id = $1
   `, [id]);
     // Force fresh data if needed, but usually revalidatePath handles it.
     // However, for immediate actions like preview, let's ensure we don't rely on stale Data Cache.
