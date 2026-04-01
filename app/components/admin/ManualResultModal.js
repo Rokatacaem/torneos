@@ -103,6 +103,20 @@ export default function ManualResultModal({ match, onClose }) {
                             />
                         </div>
 
+                        {/* Salida (Starting Player) */}
+                        <div className="pt-2 border-t border-white/10">
+                            <label className="block text-xs font-semibold text-orange-400 uppercase tracking-wider mb-2 text-center">Salida (Inicia)</label>
+                            <select
+                                name="startPlayerId"
+                                className="w-full bg-[#131B2D] border border-white/10 rounded-lg h-10 px-3 text-white text-center focus:border-orange-500 outline-none appearance-none"
+                                defaultValue={match.start_player_id || ""}
+                            >
+                                <option value="">No definido</option>
+                                <option value={match.player1_id}>{match.player1_name}</option>
+                                <option value={match.player2_id}>{match.player2_name}</option>
+                            </select>
+                        </div>
+
                         {/* Manual Winner Override */}
                         <div className="pt-2 border-t border-white/10">
                             <label className="block text-xs font-semibold text-green-400 uppercase tracking-wider mb-2 text-center">Ganador (Desempate/Forzar)</label>

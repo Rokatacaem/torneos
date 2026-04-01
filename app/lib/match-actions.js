@@ -37,6 +37,7 @@ export async function updateMatchResult(matchId, formData) {
         const match = matchRes.rows[0];
         const tournamentId = match.tournament_id;
 
+        const startPlayerId = parseInt(formData.get('startPlayerId')) || null;
         const manualWinnerId = formData.get('manualWinnerId');
 
         let winnerId = null;
@@ -49,7 +50,7 @@ export async function updateMatchResult(matchId, formData) {
         // Empate = null if manualWinnerId is not set
 
         // Update match in TOURNAMENT_MATCHES table
-        // Using correct columns: score_p1, score_p2, high_run_p1, high_run_p2
+        // Using correct columns: score_p1, score_p2, high_run_p1, high_run_p2, start_player_id
         await query(`
             UPDATE tournament_matches
             SET 
@@ -61,9 +62,10 @@ export async function updateMatchResult(matchId, formData) {
                 winner_id = $6, 
                 table_number = $8,
                 status = 'completed',
+                start_player_id = $9,
                 updated_at = NOW()
             WHERE id = $7
-        `, [scoreP1, scoreP2, highRunP1, highRunP2, innings, winnerId, matchId, tableNumber]);
+        `, [scoreP1, scoreP2, highRunP1, highRunP2, innings, winnerId, matchId, tableNumber, startPlayerId]);
 
         // Revalidate Admin and Public views
         revalidatePath(`/tournaments/${tournamentId}`);
