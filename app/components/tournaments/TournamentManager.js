@@ -1220,6 +1220,7 @@ function PreviewModal({ groups = [], onClose, onConfirm, loading, tournament }) 
 
 function MatchTabs({ matches, loading, setLoading, onRefresh, tournamentId, onSelectMatch }) {
     const [activeTab, setActiveTab] = useState('groups');
+    const [statusFilter, setStatusFilter] = useState('pending'); // 'pending' or 'completed'
 
     // Group logic
     const groupMatches = matches.filter(m => m.phase_type === 'group');
@@ -1393,6 +1394,28 @@ function MatchTabs({ matches, loading, setLoading, onRefresh, tournamentId, onSe
                 </div>
             </div>
 
+            {/* Status Filter Toggle */}
+            <div className="flex gap-1 bg-[#0B1120] p-1 rounded-lg border border-white/5 max-w-fit">
+                <button
+                    onClick={() => setStatusFilter('pending')}
+                    className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${statusFilter === 'pending'
+                        ? 'bg-blue-600 text-white shadow-lg'
+                        : 'text-slate-500 hover:text-slate-300'
+                        }`}
+                >
+                    Partidos Pendientes ({matches.filter(m => m.status !== 'completed').length})
+                </button>
+                <button
+                    onClick={() => setStatusFilter('completed')}
+                    className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${statusFilter === 'completed'
+                        ? 'bg-green-600 text-white shadow-lg'
+                        : 'text-slate-500 hover:text-slate-300'
+                        }`}
+                >
+                    Finalizados ({matches.filter(m => m.status === 'completed').length})
+                </button>
+            </div>
+
             {/* Content */}
             <div className="min-h-[200px]">
                 {currentTab?.id === 'groups' && (
@@ -1419,7 +1442,11 @@ function MatchTabs({ matches, loading, setLoading, onRefresh, tournamentId, onSe
                                 </button>
                             </div>
                         </div>
-                        <MatchGrid matches={groupMatches} onSelect={onSelectMatch} onEditTable={handleEditTableCallback} />
+                        <MatchGrid 
+                            matches={groupMatches.filter(m => statusFilter === 'completed' ? m.status === 'completed' : m.status !== 'completed')} 
+                            onSelect={onSelectMatch} 
+                            onEditTable={handleEditTableCallback} 
+                        />
                     </div>
                 )}
 
@@ -1447,7 +1474,11 @@ function MatchTabs({ matches, loading, setLoading, onRefresh, tournamentId, onSe
                                 )}
                             </div>
                         </div>
-                        <MatchGrid matches={currentTab.matches} onSelect={onSelectMatch} onEditTable={handleEditTableCallback} />
+                        <MatchGrid 
+                            matches={(currentTab.matches || []).filter(m => statusFilter === 'completed' ? m.status === 'completed' : m.status !== 'completed')} 
+                            onSelect={onSelectMatch} 
+                            onEditTable={handleEditTableCallback} 
+                        />
                     </div>
                 )}
             </div>

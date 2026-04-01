@@ -23,11 +23,17 @@ export async function updateMatchResult(matchId, formData) {
     }
 
     try {
-        // Fetch to determine IDs
+        // Fetch to determine IDs and Player Handicaps
         const matchRes = await query(`
-            SELECT id, tournament_id, player1_id, player2_id 
-            FROM tournament_matches 
-            WHERE id = $1
+            SELECT m.*, 
+                   p1.handicap as hcp1, 
+                   p2.handicap as hcp2,
+                   t.use_handicap
+            FROM tournament_matches m
+            JOIN tournament_players p1 ON m.player1_id = p1.id
+            JOIN tournament_players p2 ON m.player2_id = p2.id
+            JOIN tournaments t ON m.tournament_id = t.id
+            WHERE m.id = $1
         `, [matchId]);
 
         if (matchRes.rows.length === 0) {
@@ -44,13 +50,28 @@ export async function updateMatchResult(matchId, formData) {
         if (manualWinnerId) {
             winnerId = parseInt(manualWinnerId);
         } else {
-            if (scoreP1 > scoreP2) winnerId = match.player1_id;
-            else if (scoreP2 > scoreP1) winnerId = match.player2_id;
+            if (scoreP1 > scoreP2) {
+                winnerId = match.player1_id;
+            } else if (scoreP2 > scoreP1) {
+                winnerId = match.player2_id;
+            } else if (scoreP1 === scoreP2 && scoreP1 > 0 && match.use_handicap) {
+                // TIED SCORE + HANDICAP TOURNAMENT -> Determine by Weighted Performance (Score / HCP)
+                // Higher percentage wins. Since scores are equal, lower handicap (meta) wins.
+                // Example: 20-20. P1(28) vs P2(20). P2 is 100%, P1 is 71%. P2 wins.
+                const h1 = match.hcp1 || 28;
+                const h2 = match.hcp2 || 28;
+                
+                if (h1 < h2) {
+                    winnerId = match.player1_id; // P1 better percentage
+                } else if (h2 < h1) {
+                    winnerId = match.player2_id; // P2 better percentage
+                }
+                // If HCPs are also equal, it remains a tie (null).
+            }
         }
-        // Empate = null if manualWinnerId is not set
+        // Empate = null if manualWinnerId is not set AND not resolved by handicap
 
         // Update match in TOURNAMENT_MATCHES table
-        // Using correct columns: score_p1, score_p2, high_run_p1, high_run_p2, start_player_id
         await query(`
             UPDATE tournament_matches
             SET 
