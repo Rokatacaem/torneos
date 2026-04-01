@@ -23,16 +23,18 @@ export async function updateMatchResult(matchId, formData) {
     }
 
     try {
-        // Fetch to determine IDs and Player Handicaps
+        // Fetch to determine IDs, Player Handicaps and Phase Type
         const matchRes = await query(`
             SELECT m.*, 
                    p1.handicap as hcp1, 
                    p2.handicap as hcp2,
-                   t.use_handicap
+                   t.use_handicap,
+                   ph.type as phase_type
             FROM tournament_matches m
             JOIN tournament_players p1 ON m.player1_id = p1.id
             JOIN tournament_players p2 ON m.player2_id = p2.id
             JOIN tournaments t ON m.tournament_id = t.id
+            JOIN tournament_phases ph ON m.phase_id = ph.id
             WHERE m.id = $1
         `, [matchId]);
 
@@ -54,8 +56,8 @@ export async function updateMatchResult(matchId, formData) {
                 winnerId = match.player1_id;
             } else if (scoreP2 > scoreP1) {
                 winnerId = match.player2_id;
-            } else if (scoreP1 === scoreP2 && scoreP1 > 0 && match.use_handicap) {
-                // TIED SCORE + HANDICAP TOURNAMENT -> Determine by Weighted Performance (Score / HCP)
+            } else if (scoreP1 === scoreP2 && scoreP1 > 0 && match.use_handicap && match.phase_type === 'group') {
+                // TIED SCORE + HANDICAP TOURNAMENT + GROUP PHASE -> Determine by Weighted Performance (Score / HCP)
                 // Higher percentage wins. Since scores are equal, lower handicap (meta) wins.
                 // Example: 20-20. P1(28) vs P2(20). P2 is 100%, P1 is 71%. P2 wins.
                 const h1 = match.hcp1 || 28;
@@ -114,23 +116,25 @@ export async function recalculateTournamentWinners(tournamentId) {
     }
 
     try {
-        // 1. Fetch Tournament Config and Completed Matches with HCPs
+        // 1. Fetch Tournament Config and Completed Matches with HCPs and Phase Type
         const res = await query(`
             SELECT m.*, 
                    p1.handicap as hcp1, 
                    p2.handicap as hcp2,
-                   t.use_handicap
+                   t.use_handicap,
+                   ph.type as phase_type
             FROM tournament_matches m
             JOIN tournament_players p1 ON m.player1_id = p1.id
             JOIN tournament_players p2 ON m.player2_id = p2.id
             JOIN tournaments t ON m.tournament_id = t.id
+            JOIN tournament_phases ph ON m.phase_id = ph.id
             WHERE m.tournament_id = $1 AND m.status = 'completed'
         `, [tournamentId]);
 
         let updatedCount = 0;
         for (const m of res.rows) {
-            // Recalculate winner IF it's a draw and use_handicap is active
-            if (m.score_p1 === m.score_p2 && m.score_p1 > 0 && m.use_handicap) {
+            // Recalculate winner IF it's a draw, use_handicap is active, and it's a GROUP match
+            if (m.score_p1 === m.score_p2 && m.score_p1 > 0 && m.use_handicap && m.phase_type === 'group') {
                 const h1 = m.hcp1 || 28;
                 const h2 = m.hcp2 || 28;
                 let newWinnerId = null;
