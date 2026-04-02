@@ -1,11 +1,124 @@
-'use server';
-
 import { query } from './db';
 import { revalidatePath } from 'next/cache';
+import { getSession } from './session';
 
-// Optimistic updates happen on client, but this ensures DB consistency
+// --- ASSIGNMENT MANAGEMENT ---
+
+/**
+ * Gets all tournaments assigned to a specific referee.
+ * If user is admin, returns all active tournaments instead.
+ */
+export async function getAssignedTournaments(userId, role) {
+    if (!userId) return [];
+
+    // Admins see everything
+    if (['admin', 'superadmin', 'delegate'].includes(role)) {
+        const res = await query(`
+            SELECT DISTINCT t.*
+            FROM tournaments t
+            JOIN tournament_matches m ON t.id = m.tournament_id
+            WHERE m.status IN ('scheduled', 'in_progress')
+            ORDER BY t.start_date DESC
+        `);
+        return res.rows;
+    }
+
+    // Referees only see assigned tournaments
+    const res = await query(`
+        SELECT t.*
+        FROM tournaments t
+        JOIN tournament_assignments ta ON t.id = ta.tournament_id
+        WHERE ta.user_id = $1
+        ORDER BY t.start_date DESC
+    `, [userId]);
+    
+    return res.rows;
+}
+
+/**
+ * Assigns a referee user to a tournament.
+ */
+export async function assignReferee(tournamentId, userId) {
+    try {
+        await query(`
+            INSERT INTO tournament_assignments (tournament_id, user_id)
+            VALUES ($1, $2)
+            ON CONFLICT DO NOTHING
+        `, [tournamentId, userId]);
+        revalidatePath(`/admin/tournaments/${tournamentId}`);
+        return { success: true };
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
+}
+
+/**
+ * Removes a referee assignment from a tournament.
+ */
+export async function removeReferee(tournamentId, userId) {
+    await query(`
+        DELETE FROM tournament_assignments 
+        WHERE tournament_id = $1 AND user_id = $2
+    `, [tournamentId, userId]);
+    revalidatePath(`/admin/tournaments/${tournamentId}`);
+    return { success: true };
+}
+
+/**
+ * Lists all referees assigned to a tournament.
+ */
+export async function getTournamentAssignments(tournamentId) {
+    const res = await query(`
+        SELECT u.id, u.username, u.role, ta.assigned_at
+        FROM users u
+        JOIN tournament_assignments ta ON u.id = ta.user_id
+        WHERE ta.tournament_id = $1
+    `, [tournamentId]);
+    return res.rows;
+}
+
+/**
+ * Lists all users with the 'referee' role for the assignment UI.
+ */
+export async function getAvailableReferees() {
+    const res = await query(`
+        SELECT id, username, role 
+        FROM users 
+        WHERE role IN ('referee', 'admin', 'delegate')
+        ORDER BY username ASC
+    `);
+    return res.rows;
+}
+
+/**
+ * Security helper to verify if the current user is authorized to manage a match.
+ */
+async function checkMatchAuthorization(matchId) {
+    const session = await getSession();
+    if (!session) throw new Error('No autorizado: Sesión no encontrada');
+
+    // Admins have global access
+    if (['admin', 'superadmin', 'delegate'].includes(session.role)) return true;
+
+    // Check if referee is assigned to this match's tournament
+    const res = await query(`
+        SELECT ta.id 
+        FROM tournament_assignments ta
+        JOIN tournament_matches m ON ta.tournament_id = m.tournament_id
+        WHERE m.id = $1 AND ta.user_id = $2
+    `, [matchId, session.userId]);
+
+    if (res.rows.length === 0) {
+        throw new Error('No autorizado: No tienes designación para este torneo');
+    }
+
+    return true;
+}
+
+// --- MATCH CONTROL ---
 // Optimistic updates happen on client, but this ensures DB consistency
 export async function updateMatchScore(matchId, options = {}) {
+    await checkMatchAuthorization(matchId);
     const { p1Delta = 0, p2Delta = 0, inningDelta = 0, currentPlayerId = null, highRunP1 = 0, highRunP2 = 0 } = options;
 
     // 1. Logic to build dynamic update
@@ -45,6 +158,7 @@ export async function updateMatchScore(matchId, options = {}) {
 }
 
 export async function setMatchStart(matchId, startPlayerId, currentPlayerId) {
+    await checkMatchAuthorization(matchId);
     await query(`
         UPDATE tournament_matches
         SET start_player_id = $2, current_player_id = $3, status = 'in_progress', updated_at = NOW()
@@ -54,6 +168,7 @@ export async function setMatchStart(matchId, startPlayerId, currentPlayerId) {
 }
 
 export async function setRefereeName(matchId, name) {
+    await checkMatchAuthorization(matchId);
     await query(`
         UPDATE tournament_matches
         SET referee_name = $2, updated_at = NOW()
@@ -64,6 +179,7 @@ export async function setRefereeName(matchId, name) {
 
 
 export async function finishMatch(matchId, winnerId) {
+    await checkMatchAuthorization(matchId);
     await query(`
         UPDATE tournament_matches
         SET status = 'completed', winner_id = $2, updated_at = NOW()
@@ -84,6 +200,7 @@ export async function finishMatch(matchId, winnerId) {
 }
 
 export async function finishMatchWO(matchId, winnerId, targetPoints) {
+    await checkMatchAuthorization(matchId);
     // Ensure types
     targetPoints = Number(targetPoints) || 0;
     // ...

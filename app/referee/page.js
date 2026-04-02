@@ -1,19 +1,11 @@
 import { query } from '@/app/lib/db';
 import Link from 'next/link';
-import { Trophy, Calendar, ArrowLeft, ExternalLink } from 'lucide-react';
+import { Trophy, Calendar, ArrowLeft, ExternalLink, ShieldCheck } from 'lucide-react';
+import { getSession } from '@/app/lib/session';
+import { getAssignedTournaments } from '@/app/lib/referee-actions';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
-
-async function getActiveTournaments() {
-    const res = await query(`
-        SELECT DISTINCT t.id, t.name, t.start_date, t.end_date, t.logo_image_url
-        FROM tournaments t
-        JOIN tournament_matches m ON t.id = m.tournament_id
-        WHERE m.status IN ('scheduled', 'in_progress')
-        ORDER BY t.start_date DESC
-    `);
-    return res.rows;
-}
 
 async function getActiveMatches(tournamentId) {
     let queryStr = `
@@ -51,17 +43,20 @@ async function getActiveMatches(tournamentId) {
 }
 
 export default async function RefereePage({ searchParams }) {
-    // Await searchParams as required by Next.js 15+ (if user is on latest version, but good practice anyway)
-    // Actually current project seems to be Next 14/15, but let's assume async access if possible or direct.
-    // In server components, props are promises in newer versions.
+    const session = await getSession();
+    
+    // Safety redirect if session lost (middleware should prevent this but just in case)
+    if (!session) {
+        redirect('/login');
+    }
+
     const sp = await searchParams;
     const selectedTournamentId = sp?.tournamentId;
 
     // 1. If Tournament Selected, Show Matches
     if (selectedTournamentId) {
+        // TODO: Check if user is assigned to this specific tournament for extra security
         const matches = await getActiveMatches(selectedTournamentId);
-        // Get tournament name from first match or fetch separately? 
-        // Let's fetch tournament details separately to be safe if no matches found but ID selected
         const tournamentName = matches.length > 0 ? matches[0].tournament_name : "Torneo";
 
         return (
@@ -76,7 +71,10 @@ export default async function RefereePage({ searchParams }) {
                             <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">{tournamentName}</div>
                         </div>
                     </div>
-                    <span className="text-xs bg-slate-800 px-2 py-1 rounded text-slate-400 animate-pulse">En Vivo</span>
+                    <div className="flex flex-col items-end">
+                        <span className="text-[10px] text-slate-500 mb-1">Juez: {session.userId.split('-')[0]}...</span>
+                        <span className="text-xs bg-slate-800 px-2 py-1 rounded text-slate-400 animate-pulse">En Vivo</span>
+                    </div>
                 </header>
 
                 <MatchesList matches={matches} />
@@ -84,22 +82,24 @@ export default async function RefereePage({ searchParams }) {
         );
     }
 
-    // 2. No Tournament Selected: Check Active Options
-    const activeTournaments = await getActiveTournaments();
+    // 2. No Tournament Selected: Get Assigned Options
+    const activeTournaments = await getAssignedTournaments(session.userId, session.role);
 
-    // Case A: No active tournaments
+    // Case A: No active tournaments assigned
     if (activeTournaments.length === 0) {
         return (
             <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-4">
-                <Trophy size={64} className="text-slate-800 mb-4" />
-                <h1 className="text-xl font-bold text-slate-500">No hay torneos activos</h1>
-                <p className="text-slate-600 mt-2">No se encontraron partidos programados o en progreso.</p>
+                <ShieldCheck size={64} className="text-slate-800 mb-4" />
+                <h1 className="text-xl font-bold text-slate-500 text-center">Sin Designaciones Activas</h1>
+                <p className="text-slate-600 mt-2 text-center max-w-xs">No tienes torneos asignados actualmente o no hay partidos activos en tus designaciones.</p>
+                <Link href="/" className="mt-8 text-orange-500 text-sm font-bold flex items-center gap-2">
+                    <ArrowLeft size={16} /> Volver al Inicio
+                </Link>
             </div>
         );
     }
 
-    // Case B: Single Active Tournament -> Redirect (or just render matches directly to avoid redirect flicker)
-    // We render directly for better UX
+    // Case B: Single Active Tournament -> Render directly
     if (activeTournaments.length === 1) {
         const matches = await getActiveMatches(activeTournaments[0].id);
         return (
@@ -107,7 +107,10 @@ export default async function RefereePage({ searchParams }) {
                 <header className="mb-6 flex justify-between items-center border-b border-white/10 pb-4">
                     <div>
                         <h1 className="text-2xl font-bold text-orange-500">Panel de Jueces</h1>
-                        <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">{activeTournaments[0].name}</div>
+                        <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">
+                           {activeTournaments[0].name} 
+                           {activeTournaments[0].discipline && <span className="ml-2 text-blue-400 opacity-60">• {activeTournaments[0].discipline}</span>}
+                        </div>
                     </div>
                     <span className="text-xs bg-slate-800 px-2 py-1 rounded text-slate-400 animate-pulse">En Vivo</span>
                 </header>
@@ -143,9 +146,15 @@ export default async function RefereePage({ searchParams }) {
                                 </div>
                             </div>
 
-                            <h2 className="text-xl font-bold text-white mb-2 leading-tight group-hover:text-amber-400 transition-colors">
+                            <h2 className="text-xl font-bold text-white mb-1 leading-tight group-hover:text-amber-400 transition-colors">
                                 {t.name}
                             </h2>
+
+                            {t.discipline && (
+                                <div className="text-[10px] text-blue-400/80 font-bold uppercase tracking-tighter mb-4">
+                                    {t.discipline}
+                                </div>
+                            )}
 
                             <div className="mt-auto pt-4 flex items-center gap-2 text-xs text-slate-500 font-medium border-t border-white/5">
                                 <Calendar size={14} />

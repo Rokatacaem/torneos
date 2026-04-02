@@ -3,6 +3,7 @@ import { Settings2 } from 'lucide-react';
 import { getTournament, getTournamentPlayers, getMatches, getClubs } from '@/app/lib/tournament-actions';
 import TournamentManager from '@/app/components/tournaments/TournamentManager';
 import PublicTournamentView from '@/app/components/tournaments/PublicTournamentView';
+import RefereeAssignmentManager from '@/app/components/admin/RefereeAssignmentManager';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,6 +63,9 @@ export default async function AdminTournamentDetailPage({ params }) {
                 matches={matchesData}
                 clubs={clubsData}
             />
+
+            {/* NEW: Referee Assignment Management */}
+            <RefereeAssignmentManager tournamentId={id} />
 
             <div className="bg-card border border-white/5 rounded-xl p-6 shadow-sm">
                 <h2 className="text-xl font-bold mb-4 text-white">Vista Previa Pública</h2>
