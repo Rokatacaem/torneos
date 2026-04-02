@@ -16,14 +16,14 @@ async function decrypt(input) {
 }
 
 // 1. Specify protected and public routes
-const protectedRoutes = ['/admin', '/mi-perfil'];
-const publicRoutes = ['/login', '/tournaments', '/', '/referee'];
+const protectedRoutes = ['/admin', '/mi-perfil', '/referee'];
+const publicRoutes = ['/login', '/tournaments', '/'];
 
 export default async function middleware(req) {
     // 2. Check if the current route is protected or public
     const path = req.nextUrl.pathname;
     const isProtectedRoute = protectedRoutes.some((route) => path.startsWith(route));
-    const isPublicRoute = publicRoutes.includes(path) || path.startsWith('/referee');
+    const isPublicRoute = publicRoutes.includes(path);
 
     // 3. Decrypt the session from the cookie
     const cookie = req.cookies.get('session')?.value;
@@ -42,6 +42,13 @@ export default async function middleware(req) {
             if (session?.role === 'referee') return NextResponse.redirect(new URL('/referee', req.nextUrl));
             if (session?.role === 'player') return NextResponse.redirect(new URL('/mi-perfil', req.nextUrl));
             return NextResponse.redirect(new URL('/', req.nextUrl));
+        }
+    }
+
+    if (path.startsWith('/referee')) {
+        const allowedRoles = ['admin', 'superadmin', 'delegate', 'referee'];
+        if (!allowedRoles.includes(session?.role)) {
+            return NextResponse.redirect(new URL('/login', req.nextUrl));
         }
     }
     // Prevent players/referees from accessing each other's protected areas? (optional, but good practice)
