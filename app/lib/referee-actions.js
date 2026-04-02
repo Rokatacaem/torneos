@@ -86,8 +86,8 @@ export async function getAvailableReferees() {
     const res = await query(`
         SELECT id, username, role 
         FROM users 
-        WHERE role IN ('referee', 'admin', 'delegate')
-        ORDER BY username ASC
+        WHERE role IN ('referee', 'admin', 'delegate', 'player')
+        ORDER BY role DESC, username ASC
     `);
     return res.rows;
 }
