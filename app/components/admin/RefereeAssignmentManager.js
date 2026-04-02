@@ -17,7 +17,7 @@ export default function RefereeAssignmentManager({ tournamentId }) {
         setLoading(true);
         try {
             const [available, current] = await Promise.all([
-                getAvailableReferees(),
+                getAvailableReferees(tournamentId),
                 getTournamentAssignments(tournamentId)
             ]);
             setAvailableReferees(available);
@@ -90,7 +90,7 @@ export default function RefereeAssignmentManager({ tournamentId }) {
                             .filter(ref => !assignments.some(a => a.id === ref.id))
                             .map(ref => (
                                 <option key={ref.id} value={ref.id}>
-                                    {ref.username} ({ref.role})
+                                    {ref.is_participant ? '⭐ ' : ''}{ref.username} ({ref.role}){ref.is_participant ? ' - PARTICIPANTE' : ''}
                                 </option>
                             ))
                         }

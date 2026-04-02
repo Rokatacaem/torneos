@@ -80,15 +80,20 @@ export async function getTournamentAssignments(tournamentId) {
 }
 
 /**
- * Lists all users with the 'referee' role for the assignment UI.
+ * Lists all users with potential referee roles.
+ * If tournamentId provided, checks if they are also participants.
  */
-export async function getAvailableReferees() {
+export async function getAvailableReferees(tournamentId = null) {
     const res = await query(`
-        SELECT id, username, role 
-        FROM users 
-        WHERE role IN ('referee', 'admin', 'delegate', 'player')
-        ORDER BY role DESC, username ASC
-    `);
+        SELECT u.id, u.username, u.role,
+               CASE WHEN tp.id IS NOT NULL THEN true ELSE false END as is_participant
+        FROM users u
+        LEFT JOIN tournament_players tp ON 
+            (u.username = tp.player_name OR u.id::text = tp.id::text) 
+            AND tp.tournament_id = $1
+        WHERE u.role IN ('referee', 'admin', 'delegate', 'player')
+        ORDER BY is_participant DESC, u.role DESC, u.username ASC
+    `, [tournamentId]);
     return res.rows;
 }
 
