@@ -1,3 +1,5 @@
+'use server';
+
 import { query } from './db';
 import { revalidatePath } from 'next/cache';
 import { getSession } from './session';
