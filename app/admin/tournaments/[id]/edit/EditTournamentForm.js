@@ -79,12 +79,16 @@ export default function EditTournamentForm({ tournament }) {
                 }
             }
 
-            if (brandingFile && brandingFile.size > 0) {
-                const blob = await upload(brandingFile.name, brandingFile, {
-                    access: 'public',
-                    handleUploadUrl: '/api/upload',
-                });
-                formData.set('branding_image_url', blob.url);
+            if (brandingFile && brandingFile instanceof File && brandingFile.size > 0) {
+                try {
+                    const blob = await upload(brandingFile.name, brandingFile, {
+                        access: 'public',
+                        handleUploadUrl: '/api/upload',
+                    });
+                    if (blob?.url) formData.set('branding_image_url', blob.url);
+                } catch (err) {
+                    console.error("Error uploading branding:", err);
+                }
             }
 
             // Clean up raw files
