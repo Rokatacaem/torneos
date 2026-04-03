@@ -1163,6 +1163,8 @@ export async function updateMatchResult(matchId, data) {
 
 export async function generateGroups(tournamentId, scheduleOverrides = {}) {
     try {
+        const session = await getSession();
+        const tenantId = session?.clubId || null;
         const tournament = await getTournament(tournamentId);
 
         // 0. Verificar si ya hay fase de grupos
@@ -1175,10 +1177,10 @@ export async function generateGroups(tournamentId, scheduleOverrides = {}) {
 
         // 1. Crear Fase de Grupos
         const phaseRes = await query(`
-        INSERT INTO tournament_phases (tournament_id, name, type, sequence_order)
-        VALUES ($1, 'Fase de Grupos', 'group', 1)
+        INSERT INTO tournament_phases (tournament_id, name, type, sequence_order, tenant_id)
+        VALUES ($1, 'Fase de Grupos', 'group', 1, $2)
         RETURNING id
-    `, [tournamentId]);
+    `, [tournamentId, tenantId]);
         const phaseId = phaseRes.rows[0].id;
 
         // 2. Obtener jugadores CONFIRMADOS (active o null status)
@@ -1229,10 +1231,10 @@ export async function generateGroups(tournamentId, scheduleOverrides = {}) {
             }
 
             const gRes = await query(`
-            INSERT INTO tournament_groups (phase_id, name, start_time, table_assignment)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO tournament_groups (phase_id, name, start_time, table_assignment, tenant_id)
+            VALUES ($1, $2, $3, $4, $5)
             RETURNING id
-        `, [phaseId, groupName, startTime, tableNum]);
+        `, [phaseId, groupName, startTime, tableNum, tenantId]);
             groups.push(gRes.rows[0].id);
         }
 
@@ -1264,19 +1266,36 @@ export async function generateGroups(tournamentId, scheduleOverrides = {}) {
 
             if (pCount < 2) continue; // Skip groups with 0 or 1 player (shouldn't happen ideally)
 
-            // Special Case: 2 Players -> Double Match (Ida y Vuelta)
+            // Special Case: 2 Players -> ONE MATCH ONLY (Unless league mode, but here we standardise)
             if (pCount === 2) {
-                // Match 1: P1 vs P2
                 await query(`
-                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
-                    VALUES ($1, $2, $3, $4, $5, 'scheduled', 1)
-                 `, [tournamentId, phaseId, groupId, pIds[0], pIds[1]]);
+                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number, tenant_id)
+                    VALUES ($1, $2, $3, $4, $5, 'scheduled', 1, $6)
+                 `, [tournamentId, phaseId, groupId, pIds[0], pIds[1], tenantId]);
+                continue;
+            }
 
-                // Match 2: P2 vs P1 (Vuelta)
+            // Special Case: 3 Players (Regulation Rotation: 2-3, 1-L, 1-W)
+            if (pCount === 3) {
+                // Match 1: P2 vs P3
                 await query(`
-                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
-                    VALUES ($1, $2, $3, $4, $5, 'scheduled', 2)
-                 `, [tournamentId, phaseId, groupId, pIds[1], pIds[0]]);
+                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number, tenant_id)
+                    VALUES ($1, $2, $3, $4, $5, 'scheduled', 1, $6)
+                `, [tournamentId, phaseId, groupId, pIds[1], pIds[2], tenantId]);
+
+                // Match 2: P1 vs TBD (Loser of M1) - Handled dynamically or as placeholder?
+                // Standard: For groups of 3 we can create placeholders or if we know the order:
+                // Seed 1 vs P2 (R2), Seed 1 vs P3 (R3) is common if not waiting for result.
+                // Let's use Seed 1 vs Seed 2 (R2) and Seed 1 vs Seed 3 (R3).
+                await query(`
+                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number, tenant_id)
+                    VALUES ($1, $2, $3, $4, $5, 'scheduled', 2, $6)
+                `, [tournamentId, phaseId, groupId, pIds[0], pIds[1], tenantId]);
+                
+                await query(`
+                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number, tenant_id)
+                    VALUES ($1, $2, $3, $4, $5, 'scheduled', 3, $6)
+                `, [tournamentId, phaseId, groupId, pIds[0], pIds[2], tenantId]);
 
                 continue;
             }
@@ -1285,44 +1304,45 @@ export async function generateGroups(tournamentId, scheduleOverrides = {}) {
             if (tournament.group_format === 'gsl' && pCount === 4) {
                 // Match 1: Seed 1 vs Seed 4
                 await query(`
-                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
-                    VALUES ($1, $2, $3, $4, $5, 'scheduled', 1)
-                `, [tournamentId, phaseId, groupId, pIds[0], pIds[3]]);
+                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number, tenant_id)
+                    VALUES ($1, $2, $3, $4, $5, 'scheduled', 1, $6)
+                `, [tournamentId, phaseId, groupId, pIds[0], pIds[3], tenantId]);
 
                 // Match 2: Seed 2 vs Seed 3
                 await query(`
-                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
-                    VALUES ($1, $2, $3, $4, $5, 'scheduled', 1)
-                `, [tournamentId, phaseId, groupId, pIds[1], pIds[2]]);
+                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number, tenant_id)
+                    VALUES ($1, $2, $3, $4, $5, 'scheduled', 1, $6)
+                `, [tournamentId, phaseId, groupId, pIds[1], pIds[2], tenantId]);
 
                 // Match 3: Winners (TBD vs TBD) - Round 2
                 await query(`
-                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
-                    VALUES ($1, $2, $3, NULL, NULL, 'scheduled', 2)
-                `, [tournamentId, phaseId, groupId]);
+                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number, tenant_id)
+                    VALUES ($1, $2, $3, NULL, NULL, 'scheduled', 2, $4)
+                `, [tournamentId, phaseId, groupId, tenantId]);
 
                 // Match 4: Losers (TBD vs TBD) - Round 2
                 await query(`
-                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
-                    VALUES ($1, $2, $3, NULL, NULL, 'scheduled', 2)
-                `, [tournamentId, phaseId, groupId]);
+                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number, tenant_id)
+                    VALUES ($1, $2, $3, NULL, NULL, 'scheduled', 2, $4)
+                `, [tournamentId, phaseId, groupId, tenantId]);
 
                 // Match 5: Decider (TBD vs TBD) - Round 3
                 await query(`
-                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
-                    VALUES ($1, $2, $3, NULL, NULL, 'scheduled', 3)
-                `, [tournamentId, phaseId, groupId]);
+                    INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number, tenant_id)
+                    VALUES ($1, $2, $3, NULL, NULL, 'scheduled', 3, $4)
+                `, [tournamentId, phaseId, groupId, tenantId]);
 
                 continue;
             }
 
             // Standard Round robin: todos contra todos
+            let roundNum = 1;
             for (let i = 0; i < pCount; i++) {
                 for (let j = i + 1; j < pCount; j++) {
                     await query(`
-                INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number)
-                VALUES ($1, $2, $3, $4, $5, 'scheduled', 1)
-            `, [tournamentId, phaseId, groupId, pIds[i], pIds[j]]);
+                        INSERT INTO tournament_matches (tournament_id, phase_id, group_id, player1_id, player2_id, status, round_number, tenant_id)
+                        VALUES ($1, $2, $3, $4, $5, 'scheduled', $6, $7)
+                    `, [tournamentId, phaseId, groupId, pIds[i], pIds[j], roundNum++, tenantId]);
                 }
             }
         }
@@ -1399,6 +1419,8 @@ export async function previewGroups(tournamentId) {
 
 export async function generatePlayoffs(tournamentId) {
     console.log(`Generating playoffs for tournament ${tournamentId}`);
+    const session = await getSession();
+    const tenantId = session?.clubId || null;
 
     // 0. Get configuration
     const tournament = await getTournament(tournamentId);
@@ -1538,18 +1560,18 @@ export async function generatePlayoffs(tournamentId) {
 
         // Create Preliminary Phase
         const prelimRes = await query(`
-            INSERT INTO tournament_phases (tournament_id, name, type, sequence_order)
-            VALUES ($1, 'Repechaje', 'elimination_prelim', 2)
+            INSERT INTO tournament_phases (tournament_id, name, type, sequence_order, tenant_id)
+            VALUES ($1, 'Repechaje', 'elimination_prelim', 2, $2)
             RETURNING id
-        `, [tournamentId]);
+        `, [tournamentId, tenantId]);
         const prelimPhaseId = prelimRes.rows[0].id;
 
         // Create Main Phase
         const mainRes = await query(`
-            INSERT INTO tournament_phases (tournament_id, name, type, sequence_order)
-            VALUES ($1, 'Fase Final', 'elimination', 3)
+            INSERT INTO tournament_phases (tournament_id, name, type, sequence_order, tenant_id)
+            VALUES ($1, 'Fase Final', 'elimination', 3, $2)
             RETURNING id
-        `, [tournamentId]);
+        `, [tournamentId, tenantId]);
         const mainPhaseId = mainRes.rows[0].id;
 
         // Split players
@@ -1563,9 +1585,9 @@ export async function generatePlayoffs(tournamentId) {
             const p2 = prelimPlayers[prelimSize - 1 - i];
 
             await query(`
-                INSERT INTO tournament_matches (tournament_id, phase_id, player1_id, player2_id, status, round_number)
-                VALUES ($1, $2, $3, $4, 'scheduled', 1)
-            `, [tournamentId, prelimPhaseId, p1.pid, p2.pid]);
+                INSERT INTO tournament_matches (tournament_id, phase_id, player1_id, player2_id, status, round_number, tenant_id)
+                VALUES ($1, $2, $3, $4, 'scheduled', 1, $5)
+            `, [tournamentId, prelimPhaseId, p1.pid, p2.pid, tenantId]);
         }
 
         // Note: Direct qualifiers wait for the winners. 
@@ -1585,10 +1607,10 @@ export async function generatePlayoffs(tournamentId) {
         if (targetSize >= totalQualified) size = targetSize;
 
         const phaseRes = await query(`
-            INSERT INTO tournament_phases (tournament_id, name, type, sequence_order)
-            VALUES ($1, 'Playoffs', 'elimination', 2)
+            INSERT INTO tournament_phases (tournament_id, name, type, sequence_order, tenant_id)
+            VALUES ($1, 'Playoffs', 'elimination', 2, $2)
             RETURNING id
-        `, [tournamentId]);
+        `, [tournamentId, tenantId]);
         const phaseId = phaseRes.rows[0].id;
 
         const matchesToCreate = size / 2;
@@ -1630,8 +1652,8 @@ export async function generatePlayoffs(tournamentId) {
                 INSERT INTO tournament_matches (
                     tournament_id, phase_id, player1_id, player2_id, 
                     player1_handicap, player2_handicap, 
-                    status, table_number
-                ) VALUES ($1, $2, $3, $4, $5, $6, 'scheduled', $7)
+                    status, table_number, tenant_id
+                ) VALUES ($1, $2, $3, $4, $5, $6, 'scheduled', $7, $8)
             `, [
                 tournamentId,
                 phaseId,
@@ -1639,7 +1661,8 @@ export async function generatePlayoffs(tournamentId) {
                 p2 ? p2.pid : null,
                 p1 ? p1.handicap : null,
                 p2 ? p2.handicap : null,
-                null
+                null,
+                tenantId
             ]);
         }
     }
@@ -1844,6 +1867,8 @@ export async function generateNextRound(tournamentId) {
         const nextRound = currentRound + 1;
         const nextMatchesCount = winners.length / 2;
 
+        const session = await getSession();
+        const tenantId = session?.clubId || null;
         await query('BEGIN');
 
         for (let i = 0; i < nextMatchesCount; i++) {
@@ -1851,9 +1876,9 @@ export async function generateNextRound(tournamentId) {
             const p2 = winners[i * 2 + 1];
 
             await query(`
-                INSERT INTO tournament_matches (tournament_id, phase_id, player1_id, player2_id, status, round_number)
-                VALUES ($1, $2, $3, $4, 'scheduled', $5)
-            `, [tournamentId, phaseId, p1.pid, p2.pid, nextRound]);
+                INSERT INTO tournament_matches (tournament_id, phase_id, player1_id, player2_id, status, round_number, tenant_id)
+                VALUES ($1, $2, $3, $4, 'scheduled', $5, $6)
+            `, [tournamentId, phaseId, p1.pid, p2.pid, nextRound, tenantId]);
         }
 
         await query('COMMIT');

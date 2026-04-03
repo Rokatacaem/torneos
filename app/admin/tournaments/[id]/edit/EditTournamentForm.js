@@ -53,21 +53,30 @@ export default function EditTournamentForm({ tournament }) {
         }
 
         try {
-            // Client-Side Uploads
-            if (logoFile && logoFile.size > 0) {
-                const blob = await upload(logoFile.name, logoFile, {
-                    access: 'public',
-                    handleUploadUrl: '/api/upload',
-                });
-                formData.set('logo_image_url', blob.url);
+            // Client-Side Uploads with robust error handling
+            if (logoFile && logoFile instanceof File && logoFile.size > 0) {
+                try {
+                    const blob = await upload(logoFile.name, logoFile, {
+                        access: 'public',
+                        handleUploadUrl: '/api/upload',
+                    });
+                    if (blob?.url) formData.set('logo_image_url', blob.url);
+                } catch (err) {
+                    console.error("Error uploading logo:", err);
+                    // Do not block save, but warn or keep old URL
+                }
             }
 
-            if (bannerFile && bannerFile.size > 0) {
-                const blob = await upload(bannerFile.name, bannerFile, {
-                    access: 'public',
-                    handleUploadUrl: '/api/upload',
-                });
-                formData.set('banner_image_url', blob.url);
+            if (bannerFile && bannerFile instanceof File && bannerFile.size > 0) {
+                try {
+                    const blob = await upload(bannerFile.name, bannerFile, {
+                        access: 'public',
+                        handleUploadUrl: '/api/upload',
+                    });
+                    if (blob?.url) formData.set('banner_image_url', blob.url);
+                } catch (err) {
+                    console.error("Error uploading banner:", err);
+                }
             }
 
             if (brandingFile && brandingFile.size > 0) {
@@ -452,6 +461,16 @@ export default function EditTournamentForm({ tournament }) {
                                 </div>
                             </div>
                         </div>
+
+                        {error && (
+                            <div className="bg-red-500/10 text-red-500 p-3 rounded-md text-sm mb-4 border border-red-500/20">
+                                <p className="font-bold">Error:</p>
+                                <p>{error}</p>
+                                {error.includes('Vercel Blob') && (
+                                    <p className="mt-1 text-xs opacity-70">Tip: Asegúrate de tener configurado el token BLOB_READ_WRITE_TOKEN.</p>
+                                )}
+                            </div>
+                        )}
 
                         <button
                             type="submit"
