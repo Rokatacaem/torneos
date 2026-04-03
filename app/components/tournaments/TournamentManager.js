@@ -1043,24 +1043,19 @@ export default function TournamentManager({ tournament, players, matches, clubs 
 
 
 function PreviewModal({ groups = [], onClose, onConfirm, loading, tournament }) {
+    const [viewMode, setViewMode] = useState('config'); // 'config' or 'report'
+    
     // Determine available slots based on tournament config
-    // Default range: covering enough slots for groups + buffer
     const tablesAvailable = tournament.tables_available || 4;
-    // Safe Date Initialization
     let startDate;
     try {
         startDate = tournament.start_date ? new Date(tournament.start_date) : new Date();
         if (isNaN(startDate.getTime())) startDate = new Date();
     } catch { startDate = new Date(); }
 
-    // Ensure blockDuration is a number
     const blockDuration = parseInt(tournament.block_duration) || 180;
-
-    // Calculate normal turns
     const groupsCount = groups.length || 0;
     const normalTurns = tablesAvailable > 0 ? Math.ceil(groupsCount / tablesAvailable) : 1;
-
-    // Offer a few extra turns for flexibility
     const MAX_TURNS = normalTurns + 4;
 
     const slots = [];
@@ -1078,16 +1073,13 @@ function PreviewModal({ groups = [], onClose, onConfirm, loading, tournament }) 
         });
     }
 
-    // State for assignments: { groupName: { slotIndex, table } }
     const [assignments, setAssignments] = useState({});
 
-    // Initialize assignments from default groups data
     useEffect(() => {
         const initial = {};
         groups.forEach(g => {
-            // Find matching slot index based on time
             const gTime = new Date(g.schedule.startTime).getTime();
-            const foundSlot = slots.findIndex(s => Math.abs(s.time.getTime() - gTime) < 1000); // 1s tolerance
+            const foundSlot = slots.findIndex(s => Math.abs(s.time.getTime() - gTime) < 1000);
 
             initial[g.name] = {
                 slotIndex: foundSlot !== -1 ? foundSlot : 0,
@@ -1108,12 +1100,10 @@ function PreviewModal({ groups = [], onClose, onConfirm, loading, tournament }) 
     };
 
     const handleConfirm = () => {
-        // Build overrides object
-        // Map: groupName -> { startTime: ISOString, table: number }
         const overrides = {};
         Object.keys(assignments).forEach(gName => {
             const assign = assignments[gName];
-            const slot = slots[assign.slotIndex]; // Use safe access
+            const slot = slots[assign.slotIndex];
             if (slot) {
                 overrides[gName] = {
                     startTime: slot.time.toISOString(),
@@ -1124,82 +1114,150 @@ function PreviewModal({ groups = [], onClose, onConfirm, loading, tournament }) 
         onConfirm(overrides);
     };
 
+    const handlePrint = () => {
+        setViewMode('report');
+        setTimeout(() => {
+            window.print();
+        }, 500);
+    };
+
     return (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-[#0B1120] w-full max-w-5xl max-h-[90vh] rounded-2xl shadow-2xl border border-white/10 flex flex-col">
-                <div className="p-6 border-b border-white/10 flex justify-between items-center bg-blue-600/10">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 print:p-0 print:bg-white print:static">
+            <div className={`w-full max-w-5xl rounded-2xl shadow-2xl border border-white/10 flex flex-col print:shadow-none print:border-0 print:rounded-none ${viewMode === 'report' ? 'bg-white text-black h-fit' : 'bg-[#0B1120] text-white h-[90vh]'}`}>
+                
+                {/* Header - Hidden on Print */}
+                <div className="p-4 border-b border-white/10 flex justify-between items-center bg-blue-600/10 print:hidden shrink-0">
                     <div>
-                        <h3 className="text-xl font-bold text-white">Vista Previa y Programación</h3>
-                        <p className="text-sm text-blue-400">Distribución calculada. Ajusta horarios y mesas según necesidad.</p>
+                        <h3 className={`text-xl font-bold ${viewMode === 'report' ? 'text-black' : 'text-white'}`}>Vista Previa de Grupos</h3>
+                        <p className={`text-sm ${viewMode === 'report' ? 'text-gray-500' : 'text-blue-400'}`}>Distribución calculada. Ajusta horarios y mesas o genera el informe.</p>
                     </div>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 18 18" /></svg>
-                    </button>
+                    <div className="flex gap-2">
+                        <div className="bg-slate-800/50 p-1 rounded-md border border-white/5 flex gap-1 mr-4">
+                            <button 
+                                onClick={() => setViewMode('config')}
+                                className={`px-3 py-1 text-xs rounded transition-all ${viewMode === 'config' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                            >
+                                Gestión
+                            </button>
+                            <button 
+                                onClick={() => setViewMode('report')}
+                                className={`px-3 py-1 text-xs rounded transition-all ${viewMode === 'report' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                            >
+                                Vista Informe
+                            </button>
+                        </div>
+                        <button onClick={handlePrint} className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded text-xs flex items-center gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+                            Imprimir
+                        </button>
+                        <button onClick={onClose} className="text-slate-400 hover:text-white ml-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                        </button>
+                    </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6">
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {groups.map((group) => {
-                            const assign = assignments[group.name] || {};
-                            // Safe access to slot time. 
-                            // If defaults logic fails, fallbacks to date from props or today.
-                            const currentSlot = slots[assign.slotIndex] || slots[0];
-
-                            return (
-                                <div key={group.name} className="border border-white/10 rounded-lg bg-[#131B2D] overflow-hidden flex flex-col">
-                                    <div className="bg-slate-800/50 px-4 py-2 border-b border-white/5 flex justify-between items-center">
-                                        <div className="font-bold text-white">Grupo {group.name}</div>
-                                        <span className="text-xs text-slate-400">{group.players.length} Jugadores</span>
-                                    </div>
-
-                                    {/* Programming Controls */}
-                                    <div className="p-3 bg-slate-900/50 border-b border-white/5 grid grid-cols-2 gap-2">
-                                        <div>
-                                            <label className="text-[10px] text-slate-500 block mb-1">Horario / Bloque</label>
-                                            <select
-                                                className="w-full bg-slate-800 border border-white/10 text-xs text-white rounded p-1"
-                                                value={assign.slotIndex ?? 0}
-                                                onChange={(e) => handleAssignChange(group.name, 'slotIndex', e.target.value)}
-                                            >
-                                                {slots.map((s, idx) => (
-                                                    <option key={s.id} value={idx}>{s.label}</option>
-                                                ))}
-                                            </select>
+                <div className={`flex-1 overflow-y-auto ${viewMode === 'report' ? 'p-8 print:p-0' : 'p-6'}`}>
+                    {viewMode === 'config' ? (
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {groups.map((group) => {
+                                const assign = assignments[group.name] || {};
+                                return (
+                                    <div key={group.name} className="border border-white/10 rounded-lg bg-[#131B2D] overflow-hidden flex flex-col">
+                                        <div className="bg-slate-800/50 px-4 py-2 border-b border-white/5 flex justify-between items-center">
+                                            <div className="font-bold text-white">Grupo {group.name}</div>
+                                            <span className="text-xs text-slate-400">{group.players.length} Jugadores</span>
                                         </div>
-                                        <div>
-                                            <label className="text-[10px] text-slate-500 block mb-1">Mesa</label>
-                                            <select
-                                                className="w-full bg-slate-800 border border-white/10 text-xs text-white rounded p-1"
-                                                value={assign.table ?? 1}
-                                                onChange={(e) => handleAssignChange(group.name, 'table', e.target.value)}
-                                            >
-                                                {Array.from({ length: tablesAvailable }).map((_, i) => (
-                                                    <option key={i + 1} value={i + 1}>Mesa {i + 1}</option>
-                                                ))}
-                                            </select>
+                                        <div className="p-3 bg-slate-900/50 border-b border-white/5 grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label className="text-[10px] text-slate-500 block mb-1">Horario / Bloque</label>
+                                                <select
+                                                    className="w-full bg-slate-800 border border-white/10 text-xs text-white rounded p-1"
+                                                    value={assign.slotIndex ?? 0}
+                                                    onChange={(e) => handleAssignChange(group.name, 'slotIndex', e.target.value)}
+                                                >
+                                                    {slots.map((s, idx) => (
+                                                        <option key={s.id} value={idx}>{s.label}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] text-slate-500 block mb-1">Mesa</label>
+                                                <select
+                                                    className="w-full bg-slate-800 border border-white/10 text-xs text-white rounded p-1"
+                                                    value={assign.table ?? 1}
+                                                    onChange={(e) => handleAssignChange(group.name, 'table', e.target.value)}
+                                                >
+                                                    {Array.from({ length: tablesAvailable }).map((_, i) => (
+                                                        <option key={i + 1} value={i + 1}>Mesa {i + 1}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
                                         </div>
-                                    </div>
-
-                                    <div className="divide-y divide-white/5 flex-1 overflow-y-auto max-h-[200px]">
-                                        {(group.players || []).map((p, idx) => (
-                                            <div key={p.id || idx} className="px-4 py-2 flex items-center gap-3 text-sm">
-                                                <span className="text-slate-500 font-mono w-4">{idx + 1}.</span>
-                                                <div>
-                                                    <div className="text-slate-200 font-medium">{p.player_name || 'Desconocido'}</div>
-                                                    <div className="text-slate-500 text-xs">
-                                                        Avg: {p.average || '-'} • Rk: {p.ranking || 0} • HCP: {p.handicap || 0} • {p.team_name || ''}
+                                        <div className="divide-y divide-white/5 flex-1 overflow-y-auto max-h-[200px]">
+                                            {(group.players || []).map((p, idx) => (
+                                                <div key={p.id || idx} className="px-4 py-2 flex items-center gap-3 text-sm">
+                                                    <span className="text-slate-500 font-mono w-4">{idx + 1}.</span>
+                                                    <div className="flex-1 truncate">
+                                                        <div className="text-slate-200 font-medium truncate">{p.player_name}</div>
+                                                        <div className="text-slate-500 text-[10px] truncate">
+                                                            {p.team_name} • Avg: {p.average} • HCP: {p.handicap}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            );
-                        })}
-                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        /* FORMAL REPORT VIEW (AS PER SCREENSHOT) */
+                        <div className="grid grid-cols-2 gap-12 max-w-4xl mx-auto print:gap-8">
+                            {groups.map((group) => {
+                                const assign = assignments[group.name] || {};
+                                const currentSlot = slots[assign.slotIndex];
+                                const turnLabel = currentSlot ? currentSlot.label.split('-')[1].trim() : '';
+
+                                return (
+                                    <div key={group.name} className="flex flex-col mb-4">
+                                        <div className="text-center font-bold text-2xl uppercase border-x border-t border-black py-2 tracking-widest bg-gray-50">
+                                            GRUPO {group.name}
+                                        </div>
+                                        <table className="w-full border-collapse border border-black text-[12px] font-sans">
+                                            <thead>
+                                                <tr className="bg-gray-100 uppercase font-bold text-center border-b border-black">
+                                                    <th className="border-r border-black w-8 py-1"></th>
+                                                    <th className="border-r border-black text-left px-2">JUGADOR</th>
+                                                    <th className="border-r border-black text-left px-2">CLUB</th>
+                                                    <th className="border-r border-black w-14">RANK</th>
+                                                    <th className="w-14">HAND</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {group.players.map((p, i) => (
+                                                    <tr key={p.id || i} className="border-b border-black last:border-0 h-8">
+                                                        <td className="border-r border-black text-center font-bold">{i + 1}</td>
+                                                        <td className="border-r border-black px-2 uppercase font-medium">{p.player_name}</td>
+                                                        <td className="border-r border-black px-2 uppercase text-[10px]">{p.team_name || 'SIN CLUB'}</td>
+                                                        <td className="border-r border-black text-center">{p.ranking || '-'}</td>
+                                                        <td className="text-center font-bold">{p.handicap}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                        <div className="flex justify-between mt-1 px-1 text-[9px] font-bold text-gray-500 uppercase print:hidden">
+                                            <span>Mesa: {assign.table}</span>
+                                            <span>Turno: {turnLabel}</span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
 
-                <div className="p-6 border-t border-white/10 flex justify-end gap-3 bg-[#0B1120] rounded-b-2xl">
+                {/* Footer Actions - Hidden on Print */}
+                <div className="p-6 border-t border-white/10 flex justify-end gap-3 bg-[#0B1120] rounded-b-2xl print:hidden shrink-0">
                     <button
                         onClick={onClose}
                         className="px-4 py-2 text-slate-300 hover:bg-white/5 rounded-md transition-colors font-medium border border-transparent"
