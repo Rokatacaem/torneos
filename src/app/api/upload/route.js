@@ -1,12 +1,11 @@
-
-import { handleUpload } from '@vercel/blob';
+import * as VercelBlob from '@vercel/blob';
 import { NextResponse } from 'next/server';
 
 export async function POST(request) {
     const body = await request.json();
 
     try {
-        const jsonResponse = await handleUpload({
+        const jsonResponse = await VercelBlob.handleUpload({
             body,
             request,
             onBeforeGenerateToken: async (pathname, clientPayload) => {
