@@ -1574,23 +1574,6 @@ export async function disqualifyPlayer(tournamentId, playerId) {
     }
 
     try {
-        await query('BEGIN');
-
-        // 1. Mark player as disqualified
-        await query(`
-            UPDATE tournament_players 
-            SET status = 'disqualified' 
-            WHERE tournament_id = $1 AND id = $2
-        `, [tournamentId, playerId]);
-
-export async function disqualifyPlayer(tournamentId, playerId) {
-    const session = await getSession();
-    const role = session?.role;
-    if (role !== 'admin' && role !== 'superadmin' && role !== 'SUPERADMIN') {
-        throw new Error('No autorizado: Solo los administradores pueden descalificar jugadores.');
-    }
-
-    try {
         const tid = parseInt(tournamentId);
         const pid = parseInt(playerId);
 

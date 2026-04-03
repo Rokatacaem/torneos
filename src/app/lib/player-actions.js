@@ -1,3 +1,5 @@
+'use server';
+
 import prisma from './prisma';
 import { getSession } from './session';
 import { saveFile } from './upload-utils';
