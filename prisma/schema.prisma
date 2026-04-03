@@ -1,0 +1,171 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Club {
+  id               Int      @id @default(autoincrement())
+  name             String
+  shortName        String?  @map("short_name")
+  country          String?
+  city             String?
+  address          String?
+  logoUrl          String?  @map("logo_url")
+  locationUrl      String?  @map("location_url")
+  slug             String?  @unique
+  primaryColor     String?  @default("#3b82f6") @map("primary_color")
+  secondaryColor   String?  @default("#1e293b") @map("secondary_color")
+  tenantType       String?  @default("CLUB") @map("tenant_type")
+  tablesBillar     Int?     @default(0) @map("tables_billar")
+  tablesPool       Int?     @default(0) @map("tables_pool")
+  tablesBola9      Int?     @default(0) @map("tables_bola9")
+  tablesSnooker    Int?     @default(0) @map("tables_snooker")
+  
+  tournaments      Tournament[]
+  players          Player[]
+
+  @@map("clubs")
+}
+
+model Tournament {
+  id                    Int      @id @default(autoincrement())
+  name                  String
+  startDate             DateTime @map("start_date")
+  endDate               DateTime? @map("end_date")
+  maxPlayers            Int?      @map("max_players")
+  format                String?
+  groupSize             Int?      @default(4) @map("group_size")
+  shotClockSeconds      Int?      @default(40) @map("shot_clock_seconds")
+  groupPointsLimit      Int?      @map("group_points_limit")
+  groupInningsLimit     Int?      @map("group_innings_limit")
+  playoffPointsLimit    Int?      @map("playoff_points_limit")
+  playoffInningsLimit   Int?      @map("playoff_innings_limit")
+  useHandicap           Boolean?  @default(false) @map("use_handicap")
+  blockDuration         Int?      @map("block_duration")
+  playoffTargetSize     Int?      @default(16) @map("playoff_target_size")
+  qualifiersPerGroup    Int?      @default(2) @map("qualifiers_per_group")
+  discipline            String?
+  tablesAvailable       Int?      @default(4) @map("tables_available")
+  groupFormat           String?   @default("round_robin") @map("group_format")
+  isOfficial            Boolean?  @default(false) @map("is_official")
+  bannerImageUrl        String?   @map("banner_image_url")
+  logoImageUrl          String?   @map("logo_image_url")
+  brandingImageUrl      String?   @map("branding_image_url")
+  
+  hostClubId            Int?      @map("host_club_id")
+  hostClub              Club?     @relation(fields: [hostClubId], references: [id])
+  
+  tenantId              Int?      @map("tenant_id")
+  
+  players               TournamentPlayer[]
+  phases                TournamentPhase[]
+  matches               TournamentMatch[]
+
+  @@map("tournaments")
+}
+
+model Player {
+  id               String   @id @default(uuid())
+  name             String
+  identification   String?  @unique
+  photoUrl         String?  @map("photo_url")
+  average          Float?   @default(0)
+  
+  clubId           Int?     @map("club_id")
+  club             Club?    @relation(fields: [clubId], references: [id])
+  
+  tournaments      TournamentPlayer[]
+
+  @@map("players")
+}
+
+model TournamentPlayer {
+  id            Int      @id @default(autoincrement())
+  playerName    String   @map("player_name")
+  teamName      String?  @map("team_name")
+  handicap      Int?     @default(0)
+  status        String?  @default("active")
+  average       Float?   @default(0)
+  ranking       Int?
+  
+  tournamentId  Int      @map("tournament_id")
+  tournament    Tournament @relation(fields: [tournamentId], references: [id])
+  
+  playerId      String?  @map("player_id")
+  player        Player?  @relation(fields: [playerId], references: [id])
+  
+  matches1      TournamentMatch[] @relation("Player1")
+  matches2      TournamentMatch[] @relation("Player2")
+  winners       TournamentMatch[] @relation("Winner")
+
+  @@map("tournament_players")
+}
+
+model TournamentPhase {
+  id             Int      @id @default(autoincrement())
+  name           String
+  type           String
+  sequenceOrder  Int      @map("sequence_order")
+  
+  tournamentId   Int      @map("tournament_id")
+  tournament     Tournament @relation(fields: [tournamentId], references: [id])
+  
+  tenantId       Int?     @map("tenant_id")
+  groups         TournamentGroup[]
+  matches        TournamentMatch[]
+
+  @@map("tournament_phases")
+}
+
+model TournamentGroup {
+  id               Int      @id @default(autoincrement())
+  name             String
+  startTime        DateTime? @map("start_time")
+  tableAssignment  Int?      @map("table_assignment")
+  
+  phaseId          Int      @map("phase_id")
+  phase            TournamentPhase @relation(fields: [phaseId], references: [id])
+  
+  tenantId         Int?     @map("tenant_id")
+  matches          TournamentMatch[]
+
+  @@map("tournament_groups")
+}
+
+model TournamentMatch {
+  id               Int      @id @default(autoincrement())
+  scoreP1          Int?     @default(0) @map("score_p1")
+  scoreP2          Int?     @default(0) @map("score_p2")
+  innings          Int?     @default(0)
+  highRunP1        Int?     @default(0) @map("high_run_p1")
+  highRunP2        Int?     @default(0) @map("high_run_p2")
+  status           String?  @default("scheduled")
+  tableNumber      Int?     @map("table_number")
+  roundNumber      Int?     @map("round_number")
+  
+  tournamentId     Int      @map("tournament_id")
+  tournament       Tournament @relation(fields: [tournamentId], references: [id])
+  
+  phaseId          Int?     @map("phase_id")
+  phase            TournamentPhase? @relation(fields: [phaseId], references: [id])
+  
+  groupId          Int?     @map("group_id")
+  group            TournamentGroup? @relation(fields: [groupId], references: [id])
+  
+  player1Id        Int?     @map("player1_id")
+  player1          TournamentPlayer? @relation("Player1", fields: [player1Id], references: [id])
+  
+  player2Id        Int?     @map("player2_id")
+  player2          TournamentPlayer? @relation("Player2", fields: [player2Id], references: [id])
+  
+  winnerId         Int?     @map("winner_id")
+  winner           TournamentPlayer? @relation("Winner", fields: [winnerId], references: [id])
+  
+  tenantId         Int?     @map("tenant_id")
+
+  @@map("tournament_matches")
+}
