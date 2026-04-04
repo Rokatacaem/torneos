@@ -7,13 +7,15 @@ import { cn } from '@/app/lib/utils';
 import { logoutAction } from '@/app/lib/auth-actions';
 import { AdminNav } from './AdminNav';
 
-export function AdminSidebar({ role }) {
+export default function AdminSidebar({ role, slug: propSlug }) {
     const pathname = usePathname();
     const segments = pathname.split('/').filter(Boolean);
     
-    // Detectar si el primer segmento es un slug (multi-tenant path strategy)
+    // Prioridad al slug pasado por prop (del Layout), fallback a la URL
     const reserved = ['admin', 'login', 'api', 'referee'];
-    const slug = (!reserved.includes(segments[0]) && segments.length > 1) ? segments[0] : '';
+    const detectedSlug = (!reserved.includes(segments[0]) && segments.length > 1) ? segments[0] : '';
+    const slug = propSlug || detectedSlug;
+
     const adminPath = slug ? `/${slug}/admin` : '/admin';
 
     const isActive = (path) => pathname === path || pathname === `${slug}${path}`;
