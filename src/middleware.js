@@ -40,6 +40,11 @@ export default async function middleware(req) {
         actualPath = '/' + pathSegments.slice(1).join('/');
     }
 
+    // Redirect /admin/dashboard to /admin to avoid structure mismatches
+    if (actualPath === '/admin/dashboard') {
+        actualPath = '/admin';
+    }
+
     // 2. Auth Logic
     const cookie = req.cookies.get('session')?.value;
     const session = await decrypt(cookie);
