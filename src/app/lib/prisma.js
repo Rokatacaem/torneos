@@ -22,7 +22,16 @@ const prismaClientSingleton = () => {
 
             if (tenantId) {
               // 1. Aislamiento en Lecturas, Updates y Deletes
-              if (['findMany', 'findFirst', 'findUnique', 'update', 'updateMany', 'delete', 'deleteMany', 'count', 'aggregate'].includes(operation)) {
+              // MODIFICACIÓN: Permitir registros donde tenantId sea nulo O coincida con el ID actual
+              if (['findMany', 'findFirst', 'findUnique', 'count', 'aggregate'].includes(operation)) {
+                args.where = { 
+                    ...args.where, 
+                    OR: [
+                        { tenantId: tenantId },
+                        { tenantId: null, hostClubId: tenantId } // Retrocompatibilidad para datos antiguos
+                    ]
+                };
+              } else if (['update', 'updateMany', 'delete', 'deleteMany'].includes(operation)) {
                 args.where = { ...args.where, tenantId };
               }
 
