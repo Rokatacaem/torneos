@@ -24,9 +24,11 @@ model Club {
   tablesPool       Int?     @default(0) @map("tables_pool")
   tablesBola9      Int?     @default(0) @map("tables_bola9")
   tablesSnooker    Int?     @default(0) @map("tables_snooker")
+  createdAt        DateTime @default(now()) @map("created_at")
   
   tournaments      Tournament[]
   players          Player[]
+  users            User[]
 
   @@map("clubs")
 }
@@ -55,6 +57,13 @@ model Tournament {
   bannerImageUrl        String?   @map("banner_image_url")
   logoImageUrl          String?   @map("logo_image_url")
   brandingImageUrl      String?   @map("branding_image_url")
+  status                String?   @default("draft")
+
+  // Branding fields (footer)
+  footerBrandingTitle    String?  @map("footer_branding_title")
+  footerBrandingSubtitle String?  @map("footer_branding_subtitle")
+  footerCenterTitle      String?  @map("footer_center_title")
+  footerInfoText         String?  @map("footer_info_text")
   
   hostClubId            Int?      @map("host_club_id")
   hostClub              Club?     @relation(fields: [hostClubId], references: [id])
@@ -69,18 +78,51 @@ model Tournament {
 }
 
 model Player {
-  id               String   @id @default(uuid())
+  id               Int      @id @default(autoincrement())
   name             String
   identification   String?  @unique
   photoUrl         String?  @map("photo_url")
   average          Float?   @default(0)
   
+  // Legacy / Missing fields to avoid data loss
+  active           Boolean? @default(true)
+  category         String?
+  handicap         Int?     @default(0)
+  ranking          Int?     @default(0)
+  rankingAnnual    Int?     @default(0) @map("ranking_annual")
+  isMember         Boolean? @default(false) @map("is_member")
+  currentDebt      Float?   @default(0) @map("current_debt")
+  debtLimit        Float?   @default(0) @map("debt_limit")
+  totalCarambolas  Int?     @default(0) @map("total_carambolas")
+  totalInnings     Int?     @default(0) @map("total_innings")
+  tournamentsPlayed Int?    @default(0) @map("tournaments_played")
+  tournamentsPlayedAnnual Int? @default(0) @map("tournaments_played_annual")
+  
+  tenantId         Int?     @map("tenant_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
   clubId           Int?     @map("club_id")
   club             Club?    @relation(fields: [clubId], references: [id])
   
   tournaments      TournamentPlayer[]
 
   @@map("players")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String?  @unique
+  role         String   @default("player")
+  passwordHash String   @map("password_hash")
+  clubId       Int?     @map("club_id")
+  club         Club?    @relation(fields: [clubId], references: [id])
+  tenantId     Int?     @map("tenant_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
 }
 
 model TournamentPlayer {
@@ -91,11 +133,13 @@ model TournamentPlayer {
   status        String?  @default("active")
   average       Float?   @default(0)
   ranking       Int?
+  rankingPoints Int?     @map("ranking_points")
   
   tournamentId  Int      @map("tournament_id")
   tournament    Tournament @relation(fields: [tournamentId], references: [id])
   
-  playerId      String?  @map("player_id")
+  // Note: Original player ID might be Int, check later
+  playerId      Int?     @map("player_id")
   player        Player?  @relation(fields: [playerId], references: [id])
   
   matches1      TournamentMatch[] @relation("Player1")
@@ -147,6 +191,11 @@ model TournamentMatch {
   tableNumber      Int?     @map("table_number")
   roundNumber      Int?     @map("round_number")
   
+  startPlayerId    Int?     @map("start_player_id")
+  winReason        String?  @map("win_reason")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
   tournamentId     Int      @map("tournament_id")
   tournament       Tournament @relation(fields: [tournamentId], references: [id])
   
@@ -168,4 +217,16 @@ model TournamentMatch {
   tenantId         Int?     @map("tenant_id")
 
   @@map("tournament_matches")
+}
+
+model Tenant {
+  id        Int      @id @default(autoincrement())
+  name      String
+  domain    String?  @unique
+  slug      String?  @unique
+  type      String?  @default("CLUB")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("tenants")
 }
