@@ -21,52 +21,56 @@ export default async function middleware(req) {
     const path = url.pathname;
 
     // 1. Detect Tenant (Slug) from Subdomain or Path
-    // Localhost / Development: we can use the folder structure or subdomains if configured
-    // Production: slug.domain.com
-    
     const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000';
     let slug = '';
 
-    // Simple subdomain detection logic (excluding common ones)
+    // Subdomain detection logic
     if (hostname !== rootDomain && !hostname.includes('vercel.app')) {
         slug = hostname.split('.')[0];
     }
     
-    // Note: If on Vercel preview or main app domain, slug will be empty here.
-    // This allows root routes (like /admin) to handle their own data/redirects.
+    // Path segment detection logic (if no subdomain slug found)
+    const pathSegments = path.split('/').filter(Boolean);
+    const reservedSegments = ['admin', 'api', 'login', 'register', 'ranking', 'clubs', 'components', '_next', 'favicon.ico'];
+    
+    let actualPath = path;
+
+    if (!slug && pathSegments.length > 0 && !reservedSegments.includes(pathSegments[0])) {
+        slug = pathSegments[0];
+        actualPath = '/' + pathSegments.slice(1).join('/');
+    }
 
     // 2. Auth Logic
     const cookie = req.cookies.get('session')?.value;
     const session = await decrypt(cookie);
 
-    // Filter paths for Rewriting vs Global
+    // Filter paths for Global Routes (don't rewrite these)
     const isPublicAsset = path.includes('.') || path.startsWith('/api') || path.startsWith('/_next') || path.startsWith('/favicon');
-    const isGlobal = isPublicAsset || path === '/login' || path === '/register';
+    const isGlobal = isPublicAsset || path === '/login' || path === '/register' || reservedSegments.includes(pathSegments[0]) && !slug;
 
     // 3. SaaS Rewriting
-    // If we have a slug, we rewrite everything non-global to /_tenant/[slug]/path
+    // If we have a slug, we rewrite to /_tenant/[slug]/path
     if (slug && !isGlobal) {
         
         // 4. Protection Layer inside Tenant
         const protectedTenantRoutes = ['/admin', '/referee', '/mi-perfil'];
-        const isProtectedRoute = protectedTenantRoutes.some(r => path.startsWith(r));
+        const isProtectedRoute = protectedTenantRoutes.some(r => actualPath.startsWith(r));
 
         if (isProtectedRoute && !session?.userId) {
             return NextResponse.redirect(new URL('/login', req.url));
         }
 
-        // Multi-tenant Security: Check if user belongs to this tenant if accessing /admin
-        // Note: clubId in session should match the slug-based tenant id (optional, but recommended)
-        // If they are admin for Club A, they shouldn't access Club B's /admin.
-        if (path.startsWith('/admin')) {
+        // Multi-tenant Security Check
+        if (actualPath.startsWith('/admin')) {
             const allowedRoles = ['admin', 'superadmin', 'delegate'];
             if (!allowedRoles.includes(session?.role)) {
                  return NextResponse.redirect(new URL('/', req.url));
             }
-            // TODO: Cross-verify session.clubId with slug if possible via cache/header
         }
 
-        return NextResponse.rewrite(new URL(`/_tenant/${slug}${path}`, req.url));
+        // Internal rewrite to the _tenant folder hierarchy
+        const rewriteUrl = new URL(`/_tenant/${slug}${actualPath}`, req.url);
+        return NextResponse.rewrite(rewriteUrl);
     }
 
     // Default Fallback: Standard Authentication for Global Routes
