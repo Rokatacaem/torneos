@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Users, Trophy, Activity, Calendar } from "lucide-react";
 import { getTournaments, getRecentMatches } from '@/app/lib/tournament-actions';
 import { formatDate } from '@/app/lib/utils';
