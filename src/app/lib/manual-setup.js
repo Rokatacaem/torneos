@@ -2,6 +2,7 @@
 
 import prisma from './prisma';
 import { revalidatePath } from 'next/cache';
+import { getSession, createSession } from './session';
 
 const GROUP_DATA = [
   {
@@ -110,7 +111,8 @@ export async function setupManualGroups() {
                 startDate: new Date(),
                 format: 'groups',
                 groupSize: 3,
-                status: 'active'
+                status: 'active',
+                tenantId: null // We will set this after identifying the host
             }
         });
     }
@@ -215,8 +217,34 @@ export async function setupManualGroups() {
         }
     });
 
+    // --- FIX: USER & TOURNAMENT BINDING ---
+    const session = await getSession();
+    if (session && session.userId) {
+        // Find "Santiago" club from our map (default host for this setup)
+        const hostClubId = clubsMap["Santiago"];
+        
+        if (hostClubId) {
+            // Update the user in DB
+            await prisma.user.update({
+                where: { id: session.userId },
+                data: { clubId: hostClubId, tenantId: hostClubId }
+            });
+
+            // Update Tournament Host
+            await prisma.tournament.update({
+                where: { id: tid },
+                data: { hostClubId: hostClubId, tenantId: hostClubId }
+            });
+
+            // IMPORTANT: REFRESH SESSION COOKIE
+            await createSession(session.userId, session.role, hostClubId);
+            console.log(`[Setup] User ${session.userId} linked to Club ${hostClubId}. Session refreshed.`);
+        }
+    }
+
     console.log('--- MANUAL GROUPS SETUP COMPLETE ---');
     revalidatePath(`/admin/tournaments/${tid}`);
+    revalidatePath('/admin');
     return { success: true, tournamentId: tid };
 
   } catch (e) {
