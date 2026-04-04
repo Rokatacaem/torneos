@@ -1,17 +1,17 @@
-import { AdminSidebar } from "@/app/components/admin/AdminSidebar";
+import AdminSidebar from "@/app/components/admin/AdminSidebar";
+import AdminHeader from "@/app/components/admin/AdminHeader";
 import { getSession } from '@/app/lib/session';
 
-import { AdminHeader } from "@/app/components/admin/AdminHeader";
-
-export default async function AdminLayout({ children }) {
+export default async function AdminLayout({ children, params }) {
+    const { slug } = await params;
     const session = await getSession();
-    const userRole = session?.role || 'DIRECTOR'; // Default to restricted if unknown
-    const userName = session?.role === 'SUPERADMIN' ? 'Admin User' : 'Director'; // Placeholder name logic
+    const userRole = session?.role || 'DIRECTOR'; 
+    const userName = session?.role === 'SUPERADMIN' ? 'Admin User' : (session?.userName || 'Director');
 
     return (
         <div className="min-h-screen flex bg-muted/20">
             {/* Sidebar - Client Component */}
-            <AdminSidebar role={userRole} />
+            <AdminSidebar role={userRole} slug={slug} />
 
             {/* Main Content */}
             <div className="flex-1 flex flex-col">

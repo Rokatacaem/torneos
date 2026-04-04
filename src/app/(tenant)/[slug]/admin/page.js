@@ -21,9 +21,10 @@ function StatCard({ title, value, icon: Icon, description }) {
     );
 }
 
-export default async function AdminDashboard() {
-    const tournaments = await getTournaments();
-    const recentMatches = await getRecentMatches();
+export default async function AdminDashboard({ params }) {
+    const { slug } = await params;
+    const tournaments = await getTournaments() || [];
+    const recentMatches = await getRecentMatches() || [];
 
     // Calcular estadísticas
     const activeTournament = tournaments.find(t => t.status === 'active');
@@ -45,7 +46,7 @@ export default async function AdminDashboard() {
             <div className="flex justify-between items-center bg-card p-6 rounded-xl border border-white/5 shadow-sm">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-white mb-1">Dashboard</h1>
-                    <p className="text-slate-400">Bienvenido al panel de control de Torneos Pro.</p>
+                    <p className="text-slate-400">Bienvenido al panel de control de {slug}.</p>
                 </div>
                 <SimulationControls />
             </div>
@@ -88,17 +89,19 @@ export default async function AdminDashboard() {
                                 <div key={m.id} className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0">
                                     <div className="flex items-center gap-3">
                                         <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                                            M{m.table_number || '?'}
+                                            M{m.tableNumber || '?'}
                                         </div>
                                         <div>
-                                            <div className="text-sm font-medium">{m.player1_name} vs {m.player2_name}</div>
-                                            <div className="text-xs text-muted-foreground">{m.tournament_name}</div>
+                                            <div className="text-sm font-medium">
+                                                {m.player1?.playerName || 'P1'} vs {m.player2?.playerName || 'P2'}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">{m.tournament?.name}</div>
                                         </div>
                                     </div>
                                     <div className="text-sm font-bold flex gap-2">
-                                        <span className={m.score_p1 > m.score_p2 ? "text-primary" : ""}>{m.score_p1}</span>
+                                        <span className={(m.scoreP1 || 0) > (m.scoreP2 || 0) ? "text-primary" : ""}>{m.scoreP1 || 0}</span>
                                         -
-                                        <span className={m.score_p2 > m.score_p1 ? "text-primary" : ""}>{m.score_p2}</span>
+                                        <span className={(m.scoreP2 || 0) > (m.scoreP1 || 0) ? "text-primary" : ""}>{m.scoreP2 || 0}</span>
                                     </div>
                                 </div>
                             ))
