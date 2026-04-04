@@ -7,7 +7,14 @@ import { cn } from '@/app/lib/utils';
 
 export function AdminNav({ role, onLinkClick }) {
     const pathname = usePathname();
-    const isActive = (path) => pathname === path;
+    const segments = pathname.split('/').filter(Boolean);
+    
+    // Detectar si el primer segmento es un slug (multi-tenant path strategy)
+    const reserved = ['admin', 'login', 'api', 'referee'];
+    const slug = (!reserved.includes(segments[0]) && segments.length > 1) ? segments[0] : '';
+    const adminPath = slug ? `/${slug}/admin` : '/admin';
+
+    const isActive = (path) => pathname === path || pathname === `${slug}${path}`;
     const isSuperAdmin = role === 'SUPERADMIN' || role === 'superadmin';
 
     const handleClick = () => {
@@ -18,11 +25,11 @@ export function AdminNav({ role, onLinkClick }) {
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-2">Menu</p>
             <Link
-                href="/admin"
+                href={adminPath}
                 onClick={handleClick}
                 className={cn(
                     "flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-                    isActive('/admin')
+                    pathname === adminPath
                         ? "bg-blue-600 text-white shadow-md shadow-blue-900/20"
                         : "text-slate-400 hover:bg-white/5 hover:text-white"
                 )}
@@ -31,11 +38,11 @@ export function AdminNav({ role, onLinkClick }) {
                 Dashboard
             </Link>
             <Link
-                href="/admin/tournaments"
+                href={`${adminPath}/tournaments`}
                 onClick={handleClick}
                 className={cn(
                     "flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-                    pathname.startsWith('/admin/tournaments')
+                    pathname.startsWith(`${adminPath}/tournaments`)
                         ? "bg-blue-600 text-white shadow-md shadow-blue-900/20"
                         : "text-slate-400 hover:bg-white/5 hover:text-white"
                 )}
@@ -44,11 +51,11 @@ export function AdminNav({ role, onLinkClick }) {
                 Torneos
             </Link>
             <Link
-                href="/admin/ranking"
+                href={`${adminPath}/ranking`}
                 onClick={handleClick}
                 className={cn(
                     "flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-                    pathname.startsWith('/admin/ranking')
+                    pathname.startsWith(`${adminPath}/ranking`)
                         ? "bg-blue-600 text-white shadow-md shadow-blue-900/20"
                         : "text-slate-400 hover:bg-white/5 hover:text-white"
                 )}
@@ -63,11 +70,11 @@ export function AdminNav({ role, onLinkClick }) {
                 Ranking Nacional
             </Link>
             <Link
-                href="/admin/players"
+                href={`${adminPath}/players`}
                 onClick={handleClick}
                 className={cn(
                     "flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-                    pathname.startsWith('/admin/players')
+                    pathname.startsWith(`${adminPath}/players`)
                         ? "bg-blue-600 text-white shadow-md shadow-blue-900/20"
                         : "text-slate-400 hover:bg-white/5 hover:text-white"
                 )}
@@ -76,11 +83,11 @@ export function AdminNav({ role, onLinkClick }) {
                 Jugadores
             </Link>
             <Link
-                href="/admin/clubs"
+                href={`${adminPath}/clubs`}
                 onClick={handleClick}
                 className={cn(
                     "flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-                    pathname.startsWith('/admin/clubs')
+                    pathname.startsWith(`${adminPath}/clubs`)
                         ? "bg-blue-600 text-white shadow-md shadow-blue-900/20"
                         : "text-slate-400 hover:bg-white/5 hover:text-white"
                 )}
@@ -108,11 +115,11 @@ export function AdminNav({ role, onLinkClick }) {
             <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-6">Administración</p>
             {(role === 'admin' || isSuperAdmin) && (
                 <Link
-                    href="/admin/users"
+                    href={`${adminPath}/users`}
                     onClick={handleClick}
                     className={cn(
                         "flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-                        pathname.startsWith('/admin/users')
+                        pathname.startsWith(`${adminPath}/users`)
                             ? "bg-blue-600 text-white shadow-md shadow-blue-900/20"
                             : "text-slate-400 hover:bg-white/5 hover:text-white"
                     )}
@@ -122,11 +129,11 @@ export function AdminNav({ role, onLinkClick }) {
                 </Link>
             )}
             <Link
-                href="/admin/profile"
+                href={`${adminPath}/profile`}
                 onClick={handleClick}
                 className={cn(
                     "flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-                    pathname.startsWith('/admin/profile')
+                    pathname.startsWith(`${adminPath}/profile`)
                         ? "bg-blue-600 text-white shadow-md shadow-blue-900/20"
                         : "text-slate-400 hover:bg-white/5 hover:text-white"
                 )}
