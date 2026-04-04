@@ -31,6 +31,9 @@ export default async function middleware(req) {
     if (hostname !== rootDomain && !hostname.includes('vercel.app')) {
         slug = hostname.split('.')[0];
     }
+    
+    // Note: If on Vercel preview or main app domain, slug will be empty here.
+    // This allows root routes (like /admin) to handle their own data/redirects.
 
     // 2. Auth Logic
     const cookie = req.cookies.get('session')?.value;
