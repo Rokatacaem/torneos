@@ -32,18 +32,6 @@ export async function getTournament(id) {
     });
 }
 
-export async function getClubById(id) {
-    return await prisma.club.findUnique({
-        where: { id: parseInt(id) }
-    });
-}
-
-export async function getClubBySlug(slug) {
-    return await prisma.club.findUnique({
-        where: { slug: slug }
-    });
-}
-
 // Moved to top
 export async function createTournament(formData) {
     try {
@@ -713,6 +701,9 @@ export async function getClub(id) {
         where: { id: parseInt(id) }
     });
 }
+
+
+
 
 export async function getClubBySlug(slug) {
     return await prisma.club.findUnique({

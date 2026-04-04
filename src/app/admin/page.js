@@ -1,5 +1,5 @@
 import { getSession } from '@/app/lib/session';
-import { getClubById } from '@/app/lib/tournament-actions';
+import { getClub } from '@/app/lib/tournament-actions';
 import { redirect } from 'next/navigation';
 
 export default async function AdminRootPage() {
@@ -10,7 +10,7 @@ export default async function AdminRootPage() {
     }
 
     if (session.clubId) {
-        const club = await getClubById(session.clubId);
+        const club = await getClub(session.clubId);
         if (club && club.slug) {
             // Redirect to the tenant-specific admin page
             redirect(`/${club.slug}/admin`);

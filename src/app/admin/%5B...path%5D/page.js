@@ -1,5 +1,5 @@
 import { getSession } from '@/app/lib/session';
-import { getClubById } from '@/app/lib/tournament-actions';
+import { getClub } from '@/app/lib/tournament-actions';
 import { redirect } from 'next/navigation';
 
 export default async function AdminCatchAllPage({ params }) {
@@ -11,7 +11,7 @@ export default async function AdminCatchAllPage({ params }) {
     }
 
     if (session.clubId) {
-        const club = await getClubById(session.clubId);
+        const club = await getClub(session.clubId);
         if (club && club.slug) {
             const extraPath = path && path.length > 0 ? path.join('/') : '';
             // Redirect to the tenant-specific equivalent
