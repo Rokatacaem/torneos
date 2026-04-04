@@ -1,9 +1,15 @@
 'use client';
 
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { setupManualGroups } from '@/app/lib/manual-setup';
 
 export default function ManualSetupPage() {
+    const pathname = usePathname();
+    const segments = pathname.split('/').filter(Boolean);
+    const slug = segments.length > 1 && segments[0] !== 'admin' ? segments[0] : '';
+    const adminPath = slug ? `/${slug}/admin` : '/admin';
+
     const [status, setStatus] = useState('idle');
     const [result, setResult] = useState(null);
 
@@ -44,7 +50,7 @@ export default function ManualSetupPage() {
                         <>
                             <h2 className="font-bold flex items-center mb-1">✅ ¡Éxito!</h2>
                             <p>El torneo ha sido configurado con 11 grupos y 33 jugadores.</p>
-                            <a href={`/admin/tournaments/${result.tournamentId}`} className="mt-4 inline-block font-semibold underline">Ver Torneo en el Panel de Administración</a>
+                            <a href={`${adminPath}/tournaments/${result.tournamentId}`} className="mt-4 inline-block font-semibold underline">Ver Torneo en el Panel de Administración</a>
                         </>
                     ) : (
                         <>
